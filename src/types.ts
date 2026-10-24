@@ -22,8 +22,6 @@ export type Mesa = {
   modo: ModoJuego
 }
 
-export type ModoCobro = 'tiempo' | 'partida'
-
 // Ajuste de precio para ciertos días y horas (negativo = descuento). Si `desde` es mayor
 // que `hasta`, la franja cruza la medianoche (ej. 20:00 a 02:00).
 export type ReglaHorario = {
@@ -36,7 +34,7 @@ export type ReglaHorario = {
 }
 
 export type ConfigTarifas = {
-  porModo: Record<ModoJuego, { hora: number; partida: number }>
+  porModo: Record<ModoJuego, { hora: number }>
   reglas: ReglaHorario[]
 }
 
@@ -53,12 +51,9 @@ export type Sesion = {
   pausadaDesde: number | null
   // Momento en que el admin pulsó Finalizar: el tiempo queda congelado hasta cobrar.
   detenidaEn?: number | null
-  // Precios congelados al iniciar: si cambian las tarifas, no afectan a quien ya está jugando.
-  // Las sesiones guardadas antes de M2 no los traen y se cobran por tiempo con la tarifa base.
-  modoCobro?: ModoCobro
+  // Tarifa congelada al iniciar: si cambian las tarifas, no afecta a quien ya está jugando.
+  // Las sesiones guardadas antes de M2 no la traen y se cobran con la tarifa base.
   tarifaHora?: number
-  precioPartida?: number
-  partidas?: number
   regla?: string | null
   // Productos pedidos en la mesa (las sesiones guardadas antes de Consumos no los traen).
   consumos?: Consumo[]

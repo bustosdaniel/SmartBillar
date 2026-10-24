@@ -46,6 +46,23 @@ export function listarClientes(): Usuario[] {
     .map(sinPassword)
 }
 
+// Solo los dígitos: "1.098.765.432" y "1098765432" son la misma cédula.
+export function normalizarCedula(cedula: string) {
+  return cedula.replace(/\D/g, '')
+}
+
+export function buscarPorCedula(cedula: string): Usuario | null {
+  const buscada = normalizarCedula(cedula)
+  if (!buscada) return null
+  const cliente = listarClientes().find((u) => normalizarCedula(u.cedula ?? '') === buscada)
+  return cliente ?? null
+}
+
+export function cedulaEnUso(cedula: string, exceptoId?: number) {
+  const buscada = normalizarCedula(cedula)
+  return !!buscada && todosLosUsuarios().some((u) => u.id !== exceptoId && normalizarCedula(u.cedula ?? '') === buscada)
+}
+
 export function emailEnUso(email: string, exceptoId?: number) {
   return todosLosUsuarios().some((u) => u.id !== exceptoId && u.email.toLowerCase() === email.toLowerCase())
 }
@@ -54,6 +71,7 @@ export function emailEnUso(email: string, exceptoId?: number) {
 export function actualizarDatos(usuarioId: number, datos: DatosPerfil): string | null {
   if (!datos.nombre.trim()) return 'El nombre no puede quedar vacío.'
   if (emailEnUso(datos.email, usuarioId)) return 'Ya existe otra cuenta con ese correo.'
+  if (cedulaEnUso(datos.cedula, usuarioId)) return 'Ya existe otra cuenta con esa cédula.'
   cambios.guardar({ ...cambios.obtener(), [usuarioId]: { ...cambios.obtener()[usuarioId], ...datos } })
   return null
 }

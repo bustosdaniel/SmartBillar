@@ -1,16 +1,13 @@
 import { totalConsumos } from '../consumos/productos'
 import { estadoMembresia, useMembresias, usePlanes } from '../membresias/membresias'
-import type { Mesa, ModoCobro, Plan, Sesion, SesionFinalizada } from '../types'
+import type { Mesa, Plan, Sesion, SesionFinalizada } from '../types'
 import { calcularCosto, tiempoJugado, useSesionesFinalizadas } from './sesiones'
-import { cobroDeSesion } from './tarifas'
+import { tarifaDeSesion } from './tarifas'
 
 const HORA = 60 * 60 * 1000
 
 export type CuentaMesa = {
-  modoCobro: ModoCobro
   tarifaHora: number
-  precioPartida: number
-  partidas: number
   tiempoMs: number
   subtotalMesa: number
   consumos: number
@@ -39,29 +36,25 @@ export function gratisUsadoEnMes(finalizadas: SesionFinalizada[], clienteId: num
     .reduce((total, s) => total + (s.gratisMs ?? 0), 0)
 }
 
-type Cobro = Pick<CuentaMesa, 'modoCobro' | 'tarifaHora' | 'precioPartida' | 'partidas'>
-
-// Por tiempo: primero se descuentan las horas gratis del plan y luego el % sobre lo que queda.
-// Por partida: las horas gratis no aplican (son horas), solo el % de descuento del plan.
+// Primero se descuentan las horas gratis del plan y luego el % sobre lo que queda.
 // Los consumos llevan aparte el % de descuento en bar del plan.
 export function calcularCuenta(
   tiempoMs: number,
-  cobro: Cobro,
+  tarifaHora: number,
   plan: Plan | null,
   gratisDisponibleMs: number,
   consumos = 0,
 ): CuentaMesa {
-  const porTiempo = cobro.modoCobro === 'tiempo'
-  const subtotalMesa = porTiempo ? calcularCosto(tiempoMs, cobro.tarifaHora) : cobro.partidas * cobro.precioPartida
-  const gratisMs = plan && porTiempo ? Math.min(Math.max(0, gratisDisponibleMs), tiempoMs) : 0
-  const valorGratis = porTiempo ? subtotalMesa - calcularCosto(tiempoMs - gratisMs, cobro.tarifaHora) : 0
+  const subtotalMesa = calcularCosto(tiempoMs, tarifaHora)
+  const gratisMs = plan ? Math.min(Math.max(0, gratisDisponibleMs), tiempoMs) : 0
+  const valorGratis = subtotalMesa - calcularCosto(tiempoMs - gratisMs, tarifaHora)
   const porcentaje = plan?.descuentoMesa ?? 0
   const despuesDeGratis = subtotalMesa - valorGratis
   const descuento = Math.round((despuesDeGratis * porcentaje) / 100 / 100) * 100
   const porcentajeBar = plan?.descuentoBar ?? 0
   const descuentoBar = Math.round((consumos * porcentajeBar) / 100 / 100) * 100
   return {
-    ...cobro,
+    tarifaHora,
     tiempoMs,
     subtotalMesa,
     consumos,
@@ -93,6 +86,6 @@ export function useCalculadoraCuenta() {
       plan && sesion.clienteId !== null
         ? plan.horasGratisMes * HORA - gratisUsadoEnMes(finalizadas, sesion.clienteId, hasta)
         : 0
-    return calcularCuenta(tiempo, cobroDeSesion(sesion, mesa.modo), plan, disponible, totalConsumos(sesion.consumos))
+    return calcularCuenta(tiempo, tarifaDeSesion(sesion, mesa.modo), plan, disponible, totalConsumos(sesion.consumos))
   }
 }

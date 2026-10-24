@@ -10,10 +10,10 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
   // Se edita una copia y solo se guarda al confirmar.
   const [config, setConfig] = useState<ConfigTarifas>(obtenerTarifas)
 
-  function cambiarPrecio(modo: ModoJuego, campo: 'hora' | 'partida', valor: string) {
+  function cambiarPrecio(modo: ModoJuego, valor: string) {
     setConfig((c) => ({
       ...c,
-      porModo: { ...c.porModo, [modo]: { ...c.porModo[modo], [campo]: Math.max(0, Number(valor) || 0) } },
+      porModo: { ...c.porModo, [modo]: { hora: Math.max(0, Number(valor) || 0) } },
     }))
   }
 
@@ -49,7 +49,6 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
           <tr>
             <th>Modo</th>
             <th>Por hora</th>
-            <th>Por partida</th>
           </tr>
         </thead>
         <tbody>
@@ -63,17 +62,7 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
                   step={500}
                   aria-label={`${NOMBRES_MODO[modo]} por hora`}
                   value={config.porModo[modo].hora}
-                  onChange={(e) => cambiarPrecio(modo, 'hora', e.target.value)}
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  min={0}
-                  step={500}
-                  aria-label={`${NOMBRES_MODO[modo]} por partida`}
-                  value={config.porModo[modo].partida}
-                  onChange={(e) => cambiarPrecio(modo, 'partida', e.target.value)}
+                  onChange={(e) => cambiarPrecio(modo, e.target.value)}
                 />
               </td>
             </tr>

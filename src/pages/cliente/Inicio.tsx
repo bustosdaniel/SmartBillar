@@ -86,7 +86,6 @@ export function Inicio() {
                 </div>
                 <span className="modo-mesa">{EQUIPO_MODO[modo].mesa}</span>
                 <span className="texto-suave modo-detalle">{EQUIPO_MODO[modo].detalle}</span>
-                <span className="nota">o {formatearPesos(tarifas.porModo[modo].partida)} por partida</span>
               </div>
             </article>
           ))}

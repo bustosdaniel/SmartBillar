@@ -1,14 +1,12 @@
 import { useState } from 'react'
-import { listarClientes } from '../../../auth/usuarios'
 import { registrarPago } from '../../../caja/caja'
+import { BuscarCliente } from '../../../components/BuscarCliente'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
 import { useAhora } from '../../../hooks/useAhora'
 import { planVigente, useMembresias, usePlanes } from '../../../membresias/membresias'
 import { inscribir, marcarPagado, precioInscripcion, validarInscripcion } from '../../../torneos/torneos'
-import type { Jugador, Torneo } from '../../../types'
+import type { Jugador, Torneo, Usuario } from '../../../types'
 import { formatearPesos } from '../../../utils/formato'
-
-const INVITADO = 'invitado'
 
 type DialogoInscribirProps = {
   torneo: Torneo
@@ -21,24 +19,19 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
   const membresias = useMembresias()
   const planes = usePlanes()
   const ahora = useAhora()
-  const [clientes] = useState(listarClientes)
-  const [seleccion, setSeleccion] = useState(String(clientes[0]?.id ?? INVITADO))
-  const [nombreInvitado, setNombreInvitado] = useState('')
+  const [cliente, setCliente] = useState<Usuario | null>(null)
   const [error, setError] = useState('')
 
-  const cliente = pendiente ? null : clientes.find((c) => String(c.id) === seleccion)
   const clienteId = pendiente ? pendiente.clienteId : (cliente?.id ?? null)
-  const nombre = pendiente ? pendiente.nombre : (cliente?.nombre ?? nombreInvitado.trim())
+  const nombre = pendiente ? pendiente.nombre : (cliente?.nombre ?? '')
   const plan = planVigente(membresias, planes, clienteId, ahora)
   const precio = pendiente ? pendiente.monto : precioInscripcion(torneo, plan)
-  const errorPrevio = pendiente ? null : validarInscripcion(torneo, clienteId)
+  // Sin cliente aún no se valida (validarInscripcion acepta null para los invitados antiguos).
+  const errorPrevio = pendiente || !cliente ? null : validarInscripcion(torneo, clienteId)
+  const listo = !!pendiente || !!cliente
 
   function completar(datos: DatosPago | null) {
-    if (!nombre) {
-      setError('Escribe el nombre del jugador.')
-      return
-    }
-    if (errorPrevio) return
+    if (!listo || errorPrevio) return
     if (datos && precio > 0) {
       const pago = registrarPago({ ...datos, concepto: `Inscripción ${torneo.nombre}`, cliente: nombre, monto: precio })
       if (!pago) return
@@ -62,25 +55,14 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
           Cobrar la inscripción de <strong>{pendiente.nombre}</strong>.
         </p>
       ) : (
-        <>
-          <label>
-            Jugador
-            <select value={seleccion} onChange={(e) => setSeleccion(e.target.value)}>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre} ({c.email})
-                </option>
-              ))}
-              <option value={INVITADO}>Invitado sin cuenta</option>
-            </select>
-          </label>
-          {seleccion === INVITADO && (
-            <label>
-              Nombre del invitado
-              <input value={nombreInvitado} onChange={(e) => setNombreInvitado(e.target.value)} required />
-            </label>
-          )}
-        </>
+        <BuscarCliente
+          cliente={cliente}
+          onCambio={(c) => {
+            setCliente(c)
+            setError('')
+          }}
+          mensajeEncontrado="Cliente encontrado."
+        />
       )}
 
       <dl className="resumen">
@@ -108,7 +90,8 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
         </p>
       )}
 
-      {!errorPrevio &&
+      {listo &&
+        !errorPrevio &&
         (precio === 0 ? (
           <div className="dialogo-acciones">
             <button type="button" className="boton boton-secundario" onClick={onListo}>

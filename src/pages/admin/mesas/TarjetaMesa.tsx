@@ -1,9 +1,8 @@
-import { Banknote, CupSoda, Minus, Pause, Play, Plus, Square, User } from 'lucide-react'
+import { Banknote, CupSoda, Pause, Play, Plus, Square, User } from 'lucide-react'
 import { NOMBRES_MODO, TEXTO_ESTADO_MESA } from '../../../mesas/datos'
 import { IMAGEN_MODO } from '../../../mesas/imagenes'
 import type { CuentaMesa } from '../../../mesas/cuenta'
 import {
-  cambiarPartidas,
   estadoMesa,
   pausarSesion,
   reanudarDetenida,
@@ -28,7 +27,6 @@ export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinaliza
   const estado = estadoMesa(sesion)
   const tiempo = sesion ? tiempoJugado(sesion, ahora) : 0
   const base = useTarifas().porModo[mesa.modo]
-  const porPartida = cuenta?.modoCobro === 'partida'
 
   return (
     <article className={`tarjeta mesa mesa-${estado}`}>
@@ -37,7 +35,6 @@ export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinaliza
           <h3>{mesa.nombre}</h3>
           <span className="mesa-modo">{NOMBRES_MODO[mesa.modo]}</span>
           <span className="mesa-modo">{formatearPesos(base.hora)}/h</span>
-          <span className="mesa-modo">{formatearPesos(base.partida)} por partida</span>
         </div>
         <span className={`estado estado-${estado}`}>{TEXTO_ESTADO_MESA[estado]}</span>
       </header>
@@ -61,34 +58,6 @@ export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinaliza
               Inició {formatearHora(sesion.inicio)} · <strong>{formatearPesos(cuenta?.total ?? 0)}</strong>
             </span>
             {sesion.regla && <span className="insignia-regla">{sesion.regla}</span>}
-            {porPartida && cuenta && (
-              <div className="contador-partidas">
-                <span>
-                  <strong>{cuenta.partidas}</strong> × {formatearPesos(cuenta.precioPartida)}
-                </span>
-                {estado !== 'por-cobrar' && (
-                  <span className="contador-botones">
-                    <button
-                      type="button"
-                      className="boton-icono boton-icono-claro"
-                      aria-label="Quitar una partida"
-                      disabled={cuenta.partidas <= 1}
-                      onClick={() => cambiarPartidas(mesa.id, -1)}
-                    >
-                      <Minus size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      className="boton-icono boton-icono-claro"
-                      aria-label="Sumar una partida"
-                      onClick={() => cambiarPartidas(mesa.id, 1)}
-                    >
-                      <Plus size={15} />
-                    </button>
-                  </span>
-                )}
-              </div>
-            )}
             <div className="mesa-consumos">
               <span>
                 <CupSoda size={15} aria-hidden="true" /> Consumos{' '}

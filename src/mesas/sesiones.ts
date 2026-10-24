@@ -1,5 +1,5 @@
 import { registrarMovimiento } from '../actividad/movimientos'
-import type { Consumo, EstadoMesa, MetodoPago, ModoCobro, Producto, Sesion, SesionFinalizada } from '../types'
+import type { Consumo, EstadoMesa, MetodoPago, Producto, Sesion, SesionFinalizada } from '../types'
 import type { CuentaMesa } from './cuenta'
 import { notificar } from '../notificaciones/notificaciones'
 import { formatearDuracion, formatearPesos } from '../utils/formato'
@@ -36,9 +36,7 @@ export function calcularCosto(tiempoMs: number, tarifaHora: number) {
 }
 
 export type CobroInicial = {
-  modoCobro: ModoCobro
   tarifaHora: number
-  precioPartida: number
   regla: string | null
 }
 
@@ -55,14 +53,12 @@ export function iniciarSesion(mesaId: number, cliente: { id: number | null; nomb
       pausadoMs: 0,
       pausadaDesde: null,
       ...cobro,
-      // Por partida, la primera se cuenta al entregar las bolas.
-      partidas: cobro.modoCobro === 'partida' ? 1 : 0,
     },
   })
   registrarMovimiento({
     tipo: 'inicio',
     titulo: `Mesa ${mesaId}`,
-    detalle: `Inicio de sesión · ${cliente.nombre}${cobro.modoCobro === 'partida' ? ' · por partida' : ''}`,
+    detalle: `Inicio de sesión · ${cliente.nombre}`,
   })
   notificar(
     cliente.id,
@@ -71,13 +67,6 @@ export function iniciarSesion(mesaId: number, cliente: { id: number | null; nomb
     'Ya empezó a contar tu tiempo. Síguelo en vivo desde Mi mesa. ¡Buen juego!',
     '/cliente/mesa',
   )
-}
-
-export function cambiarPartidas(mesaId: number, delta: number) {
-  const sesiones = activas.obtener()
-  const sesion = sesiones[mesaId]
-  if (!sesion || sesion.modoCobro !== 'partida' || estaDetenida(sesion)) return
-  activas.guardar({ ...sesiones, [mesaId]: { ...sesion, partidas: Math.max(1, (sesion.partidas ?? 1) + delta) } })
 }
 
 export function pausarSesion(mesaId: number) {
@@ -202,7 +191,7 @@ export function finalizarSesion(mesaId: number, cuenta: CuentaMesa, metodoPago: 
     sesion.clienteId,
     'factura',
     `Recibo de pago · Mesa ${mesaId}`,
-    `${cuenta.modoCobro === 'partida' ? `${cuenta.partidas} partidas` : `Jugaste ${formatearDuracion(cuenta.tiempoMs)}`}. ` +
+    `Jugaste ${formatearDuracion(cuenta.tiempoMs)}. ` +
       (cuenta.consumos > 0 ? `Consumos: ${formatearPesos(cuenta.consumos)}. ` : '') +
       `Total pagado: ${formatearPesos(cuenta.total)}${ahorro > 0 ? ` (ahorraste ${formatearPesos(ahorro)} con tu membresía)` : ''}.`,
     '/cliente/historial',

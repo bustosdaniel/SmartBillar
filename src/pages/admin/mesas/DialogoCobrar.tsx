@@ -55,14 +55,6 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
               <dt>Tiempo</dt>
               <dd>{formatearDuracion(cuenta.tiempoMs)}</dd>
             </div>
-            {cuenta.modoCobro === 'partida' && (
-              <div>
-                <dt>Partidas</dt>
-                <dd>
-                  {cuenta.partidas} × {formatearPesos(cuenta.precioPartida)}
-                </dd>
-              </div>
-            )}
             <div>
               <dt>Método</dt>
               <dd>{NOMBRES_METODO[pago.metodo]}</dd>
@@ -116,19 +108,10 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
           <dt>Tiempo jugado</dt>
           <dd>{formatearDuracion(cuenta.tiempoMs)}</dd>
         </div>
-        {cuenta.modoCobro === 'partida' ? (
-          <div>
-            <dt>Partidas</dt>
-            <dd>
-              {cuenta.partidas} × {formatearPesos(cuenta.precioPartida)}
-            </dd>
-          </div>
-        ) : (
-          <div>
-            <dt>Tarifa</dt>
-            <dd>{formatearPesos(cuenta.tarifaHora)}/h</dd>
-          </div>
-        )}
+        <div>
+          <dt>Tarifa</dt>
+          <dd>{formatearPesos(cuenta.tarifaHora)}/h</dd>
+        </div>
         {sesion.regla && (
           <div>
             <dt>Tarifa especial</dt>

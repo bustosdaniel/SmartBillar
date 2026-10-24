@@ -84,11 +84,8 @@ export function MiMesa() {
   const porCobrar = estado === 'por-cobrar'
   const tiempo = tiempoJugado(sesion, ahora)
   const cuenta = calcular(sesion, mesa, ahora)
-  const porPartida = cuenta.modoCobro === 'partida'
-  // Cuánto pagaría si sigue: media hora más, o una partida más.
-  const siSigue = porPartida
-    ? calcular({ ...sesion, partidas: cuenta.partidas + 1 }, mesa, ahora)
-    : calcular({ ...sesion, inicio: sesion.inicio - MEDIA_HORA }, mesa, ahora)
+  // Cuánto pagaría si juega media hora más.
+  const siSigue = calcular({ ...sesion, inicio: sesion.inicio - MEDIA_HORA }, mesa, ahora)
 
   return (
     <section className="pagina">
@@ -132,10 +129,8 @@ export function MiMesa() {
           <strong>{formatearHora(sesion.inicio)}</strong>
         </div>
         <div className="tarjeta dato">
-          <span>{porPartida ? `Por partida · ${cuenta.partidas} jugadas` : 'Tarifa'}</span>
-          <strong>
-            {porPartida ? `${formatearPesos(cuenta.precioPartida)} c/u` : `${formatearPesos(cuenta.tarifaHora)}/h`}
-          </strong>
+          <span>Tarifa</span>
+          <strong>{formatearPesos(cuenta.tarifaHora)}/h</strong>
           {sesion.regla && <span>{sesion.regla}</span>}
         </div>
         <Link to="/cliente/consumos" className="tarjeta dato dato-enlace">
@@ -144,7 +139,7 @@ export function MiMesa() {
         </Link>
         {!porCobrar && (
           <div className="tarjeta dato">
-            <span>{porPartida ? 'Con una partida más pagarías' : 'Con 30 min más pagarías'}</span>
+            <span>Con 30 min más pagarías</span>
             <strong>{formatearPesos(siSigue.total)}</strong>
           </div>
         )}

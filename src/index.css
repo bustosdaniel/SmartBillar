@@ -946,13 +946,8 @@ a { color: inherit; }
 .ficha-contacto span { display: inline-flex; align-items: center; gap: 0.35rem; }
 
 /* ---------- Tarifas (M2) ---------- */
-.metodos-dos { grid-template-columns: repeat(2, 1fr); }
 .metodos button strong { font-size: 0.85rem; }
 .insignia-regla { align-self: flex-start; padding: 0.15rem 0.55rem; border-radius: 999px; background: #ede9fe; color: #6d28d9; font-size: 0.75rem; font-weight: 600; }
-.contador-partidas { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.25rem; padding: 0.4rem 0.6rem; border-radius: 8px; background: var(--fondo); font-size: 0.88rem; }
-.contador-botones { display: flex; gap: 0.35rem; }
-.contador-botones .boton-icono { width: 30px; height: 30px; }
-.contador-botones .boton-icono:disabled { opacity: 0.4; cursor: not-allowed; }
 .modal:has(.tarifas) { width: min(620px, calc(100vw - 2rem)); }
 .tabla-tarifas input { width: 100%; max-width: 140px; padding: 0.45rem 0.6rem; border: 1px solid var(--borde); border-radius: 8px; font: inherit; }
 .regla { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--borde); border-radius: 10px; }
@@ -1200,3 +1195,13 @@ button.producto:hover { border-color: var(--verde-vivo); }
 /* Las 4 tarjetas del Inicio del admin: 4 en fila si caben, si no 2 × 2 (nunca 3 + 1). */
 .grid-datos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1180px) { .grid-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Buscar cliente por cédula ---------- */
+.buscar-cliente { display: flex; flex-direction: column; gap: 0.75rem; }
+.buscar-cliente-fila { display: flex; align-items: flex-end; gap: 0.6rem; }
+.buscar-cliente-fila label { flex: 1; min-width: 0; }
+.cliente-encontrado { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 0.8rem 0.9rem; border: 1px solid #bbf7d0; border-radius: 10px; background: #f0fdf4; }
+.cliente-encontrado > div { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.cliente-encontrado strong { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+.cliente-encontrado .texto-suave { font-size: 0.85rem; overflow-wrap: anywhere; }
+.cliente-encontrado-mensaje { color: #15803d; font-weight: 500; font-size: 0.9rem; }

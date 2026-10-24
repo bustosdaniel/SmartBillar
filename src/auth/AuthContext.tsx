@@ -3,7 +3,7 @@ import type { Usuario } from '../types'
 import { notificarAdministradores } from '../notificaciones/notificaciones'
 import { leer } from '../utils/almacen'
 import { AuthContext, type DatosRegistro } from './useAuth'
-import { actualizarDatos, emailEnUso, guardarRegistrado, sinPassword, todosLosUsuarios, type DatosPerfil } from './usuarios'
+import { actualizarDatos, cedulaEnUso, emailEnUso, guardarRegistrado, sinPassword, todosLosUsuarios, type DatosPerfil } from './usuarios'
 
 const SESION_KEY = 'billar.usuario'
 
@@ -33,6 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function registrar({ nombre, email, telefono, cedula, password }: DatosRegistro) {
     if (emailEnUso(email)) {
       return { ok: false as const, error: 'Ya existe una cuenta con ese correo' }
+    }
+    if (cedulaEnUso(cedula)) {
+      return { ok: false as const, error: 'Ya existe una cuenta con esa cédula' }
     }
     const u = sinPassword(guardarRegistrado({ nombre, email, telefono, cedula, password, rol: 'cliente' }))
     notificarAdministradores('cuenta', 'Nuevo cliente registrado', `${nombre} creó su cuenta (${email}).`, '/admin/usuarios')

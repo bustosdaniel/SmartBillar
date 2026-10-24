@@ -1,13 +1,13 @@
-import type { ConfigTarifas, ModoCobro, ModoJuego, ReglaHorario, Sesion } from '../types'
+import type { ConfigTarifas, ModoJuego, ReglaHorario, Sesion } from '../types'
 import { crearStoreLocal } from '../utils/storeLocal'
 
 export const NOMBRES_DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 const configInicial: ConfigTarifas = {
   porModo: {
-    pool: { hora: 12000, partida: 5000 },
-    'tres-bandas': { hora: 15000, partida: 6000 },
-    libre: { hora: 10000, partida: 4000 },
+    pool: { hora: 12000 },
+    'tres-bandas': { hora: 15000 },
+    libre: { hora: 10000 },
   },
   reglas: [
     { id: 'hora-feliz', nombre: 'Hora feliz', dias: [1, 2, 3, 4], desde: '14:00', hasta: '17:00', ajuste: -10 },
@@ -44,12 +44,12 @@ export function reglaVigente(reglas: ReglaHorario[], fecha: number): ReglaHorari
 
 const ajustar = (valor: number, ajuste: number) => Math.round((valor * (100 + ajuste)) / 100 / 100) * 100
 
-// Precios que se congelan en la sesión al iniciar la mesa.
+// Tarifa que se congela en la sesión al iniciar la mesa.
 export function preciosAl(config: ConfigTarifas, modo: ModoJuego, fecha: number) {
   const base = config.porModo[modo]
   const regla = reglaVigente(config.reglas, fecha)
   const ajuste = regla?.ajuste ?? 0
-  return { hora: ajustar(base.hora, ajuste), partida: ajustar(base.partida, ajuste), regla }
+  return { hora: ajustar(base.hora, ajuste), regla }
 }
 
 export function textoAjuste(ajuste: number) {
@@ -63,18 +63,7 @@ export function textoDias(dias: number[]) {
     .join(', ')
 }
 
-// Cobro de la sesión con compatibilidad para las sesiones anteriores a M2.
-export function cobroDeSesion(sesion: Sesion, modo: ModoJuego): {
-  modoCobro: ModoCobro
-  tarifaHora: number
-  precioPartida: number
-  partidas: number
-} {
-  const base = store.obtener().porModo[modo]
-  return {
-    modoCobro: sesion.modoCobro ?? 'tiempo',
-    tarifaHora: sesion.tarifaHora ?? base.hora,
-    precioPartida: sesion.precioPartida ?? base.partida,
-    partidas: sesion.partidas ?? 0,
-  }
+// Tarifa por hora de la sesión, con compatibilidad para las sesiones anteriores a M2.
+export function tarifaDeSesion(sesion: Sesion, modo: ModoJuego) {
+  return sesion.tarifaHora ?? store.obtener().porModo[modo].hora
 }

@@ -1,26 +1,40 @@
 import { useState, type FormEvent } from 'react'
-import { emailEnUso, guardarRegistrado, PASSWORD_TEMPORAL } from '../../../auth/usuarios'
+import { cedulaEnUso, emailEnUso, guardarRegistrado, PASSWORD_TEMPORAL, sinPassword } from '../../../auth/usuarios'
+import type { Usuario } from '../../../types'
 
-export function DialogoRegistrarCliente({ onListo }: { onListo: () => void }) {
+type DialogoRegistrarClienteProps = {
+  onListo: () => void
+  // Desde la búsqueda por cédula: llega la cédula ya escrita y se devuelve el cliente creado.
+  cedulaInicial?: string
+  onRegistrado?: (cliente: Usuario) => void
+}
+
+export function DialogoRegistrarCliente({ onListo, cedulaInicial = '', onRegistrado }: DialogoRegistrarClienteProps) {
   const [error, setError] = useState('')
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
     const email = String(datos.get('email')).trim()
+    const cedula = String(datos.get('cedula')).trim()
     if (emailEnUso(email)) {
       setError('Ya existe una cuenta con ese correo.')
       return
     }
-    guardarRegistrado({
+    if (cedulaEnUso(cedula)) {
+      setError('Ya existe una cuenta con esa cédula.')
+      return
+    }
+    const nuevo = guardarRegistrado({
       nombre: String(datos.get('nombre')).trim(),
       email,
       telefono: String(datos.get('telefono')).trim(),
-      cedula: String(datos.get('cedula')).trim(),
+      cedula,
       password: PASSWORD_TEMPORAL,
       rol: 'cliente',
     })
-    onListo()
+    if (onRegistrado) onRegistrado(sinPassword(nuevo))
+    else onListo()
   }
 
   return (
@@ -30,16 +44,16 @@ export function DialogoRegistrarCliente({ onListo }: { onListo: () => void }) {
         <input name="nombre" required autoFocus />
       </label>
       <label>
-        Correo
-        <input name="email" type="email" required />
+        Cédula
+        <input name="cedula" inputMode="numeric" defaultValue={cedulaInicial} required />
       </label>
       <label>
         Celular
         <input name="telefono" type="tel" inputMode="tel" autoComplete="tel" required />
       </label>
       <label>
-        Cédula
-        <input name="cedula" inputMode="numeric" required />
+        Correo
+        <input name="email" type="email" required />
       </label>
       {error && (
         <p role="alert" className="alerta-clara">
