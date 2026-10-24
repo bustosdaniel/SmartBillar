@@ -25,17 +25,18 @@ SmartBillar es una aplicación web para apoyar la operación diaria de un club d
 
 ## Tecnologías
 
-- React 19 y TypeScript
-- Vite para desarrollo y compilación
-- React Router para navegación y rutas protegidas por rol
-- Lucide React para iconos
-- Oxlint para análisis estático
+- **Frontend** (`frontend/`): React 19 y TypeScript, Vite, React Router, Lucide React y Oxlint.
+- **Backend** (`backend/`): Python con FastAPI, SQLAlchemy y Alembic.
+- **Base de datos**: PostgreSQL 17.
 
 ## Ejecución local
+
+### Frontend
 
 Se requiere Node.js y npm.
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
@@ -50,7 +51,13 @@ npm run lint     # Ejecuta Oxlint
 npm run preview  # Sirve localmente la compilación de producción
 ```
 
+### Backend
+
+Ver [`backend/README.md`](backend/README.md): instalación, base de datos, migraciones y cómo arrancar la API.
+
 ## Estructura del código
+
+El frontend está en `frontend/` y el backend en `backend/`. Dentro de `frontend/`:
 
 - `src/pages/`: pantallas de autenticación, administración y cliente.
 - `src/layouts/`: navegación y estructura compartida para cada tipo de usuario.
@@ -63,5 +70,7 @@ npm run preview  # Sirve localmente la compilación de producción
 
 ## Estado actual
 
-Esta versión es un prototipo frontend: usa cuentas y datos de demostración, y guarda los cambios en el almacenamiento local del navegador (`localStorage`). Por eso, los datos no se comparten entre distintos dispositivos ni usuarios del navegador. Las notificaciones y correos se registran en la aplicación, pero su envío real requiere conectar un backend.
+El frontend funciona completo con cuentas y datos de demostración, y guarda los cambios en el almacenamiento local del navegador (`localStorage`). Por eso, los datos no se comparten entre distintos dispositivos ni usuarios del navegador. Las notificaciones y correos se registran en la aplicación, pero su envío real requiere el backend.
+
+El backend está en construcción: ya tiene el esquema completo de la base de datos (18 tablas, en `backend/esquema.sql`) y la API base. Faltan los endpoints de cada módulo y conectar el frontend.
 
