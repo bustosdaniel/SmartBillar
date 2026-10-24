@@ -1,19 +1,6 @@
 from datetime import datetime, time
 
-from sqlalchemy import (
-    BigInteger,
-    CheckConstraint,
-    DateTime,
-    ForeignKey,
-    Index,
-    Integer,
-    SmallInteger,
-    String,
-    Time,
-    func,
-    text,
-)
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import JSON, BigInteger, CheckConstraint, Computed, DateTime, ForeignKey, Integer, String, Time, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -45,13 +32,13 @@ class ReglaHorario(Base):
     __tablename__ = "reglas_horario"
     __table_args__ = (
         CheckConstraint("ajuste BETWEEN -100 AND 100", name="ajuste_porcentaje"),
-        CheckConstraint("dias <@ ARRAY[0,1,2,3,4,5,6]::smallint[]", name="dias_validos"),
+        CheckConstraint("JSON_CONTAINS('[0,1,2,3,4,5,6]', dias)", name="dias_validos"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(60))
-    # 0 = domingo … 6 = sábado, como Date.getDay() en el frontend.
-    dias: Mapped[list[int]] = mapped_column(ARRAY(SmallInteger))
+    # Lista JSON con 0 = domingo … 6 = sábado, como Date.getDay() en el frontend.
+    dias: Mapped[list[int]] = mapped_column(JSON)
     desde: Mapped[time] = mapped_column(Time)
     hasta: Mapped[time] = mapped_column(Time)
     ajuste: Mapped[int] = mapped_column(Integer)
@@ -62,8 +49,6 @@ class SesionMesa(Base):
 
     __tablename__ = "sesiones"
     __table_args__ = (
-        # Una sola sesión activa por mesa: lo garantiza la base de datos, no solo el código.
-        Index("uq_sesiones_mesa_activa", "mesa_id", unique=True, postgresql_where=text("fin IS NULL")),
         CheckConstraint("pausado_ms >= 0", name="pausado_positivo"),
         CheckConstraint("fin IS NULL OR detenida_en IS NOT NULL", name="fin_tras_detener"),
     )
@@ -89,6 +74,12 @@ class SesionMesa(Base):
     descuento_bar: Mapped[int | None] = mapped_column(Integer)
     total: Mapped[int | None] = mapped_column(Integer)
     plan_id: Mapped[str | None] = mapped_column(ForeignKey("planes.id"))
+
+    # Una sola sesión activa por mesa, garantizado por la base de datos: vale mesa_id mientras la
+    # sesión está activa y NULL al cobrarla. La columna es única y MySQL admite muchos NULL.
+    mesa_activa: Mapped[int | None] = mapped_column(
+        Integer, Computed("(CASE WHEN fin IS NULL THEN mesa_id END)", persisted=True), unique=True
+    )
 
     consumos: Mapped[list["Consumo"]] = relationship(back_populates="sesion", cascade="all, delete-orphan")
 

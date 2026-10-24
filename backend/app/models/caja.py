@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, func, text
+from sqlalchemy import CheckConstraint, Computed, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -11,11 +11,7 @@ class Caja(Base):
     """Turno de caja: apertura con base y cierre con arqueo (efectivo contado)."""
 
     __tablename__ = "cajas"
-    __table_args__ = (
-        # Solo puede haber una caja abierta a la vez.
-        Index("uq_cajas_una_abierta", text("(cierre IS NULL)"), unique=True, postgresql_where=text("cierre IS NULL")),
-        CheckConstraint("base >= 0", name="base_positiva"),
-    )
+    __table_args__ = (CheckConstraint("base >= 0", name="base_positiva"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     apertura: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -23,6 +19,10 @@ class Caja(Base):
     cierre: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     contado: Mapped[int | None] = mapped_column(Integer)
     nota: Mapped[str | None] = mapped_column(Text)
+    # Solo una caja abierta a la vez: vale 1 mientras está abierta y NULL al cerrarla (columna única).
+    abierta: Mapped[int | None] = mapped_column(
+        Integer, Computed("(CASE WHEN cierre IS NULL THEN 1 END)", persisted=True), unique=True
+    )
 
 
 class Pago(Base):

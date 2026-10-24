@@ -23,6 +23,6 @@ app.add_middleware(
 
 @app.get("/salud", tags=["sistema"])
 def salud(db: Session = Depends(obtener_db)) -> dict[str, str]:
-    """Comprueba que la API responde y que llega a PostgreSQL."""
+    """Comprueba que la API responde y que llega a la base de datos."""
     db.execute(text("SELECT 1"))
     return {"api": "ok", "base_de_datos": "ok"}

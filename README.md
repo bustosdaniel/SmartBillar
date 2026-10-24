@@ -27,7 +27,7 @@ SmartBillar es una aplicación web para apoyar la operación diaria de un club d
 
 - **Frontend** (`frontend/`): React 19 y TypeScript, Vite, React Router, Lucide React y Oxlint.
 - **Backend** (`backend/`): Python con FastAPI, SQLAlchemy y Alembic.
-- **Base de datos**: PostgreSQL 17.
+- **Base de datos**: MySQL (8.4 o superior).
 
 ## Ejecución local
 

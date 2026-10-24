@@ -65,5 +65,5 @@ class TipoMovimiento(StrEnum):
 
 
 def columna_enum(enum: type[StrEnum], nombre: str) -> Enum:
-    """Tipo ENUM de PostgreSQL que guarda el valor ('tres-bandas'), no el nombre (TRES_BANDAS)."""
+    """Columna ENUM que guarda el valor ('tres-bandas'), no el nombre (TRES_BANDAS)."""
     return Enum(enum, name=nombre, values_callable=lambda e: [m.value for m in e])

@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -23,7 +22,8 @@ class Plan(Base):
     horas_gratis_mes: Mapped[int] = mapped_column(Integer, default=0)
     descuento_bar: Mapped[int] = mapped_column(Integer, default=0)
     descuento_torneo: Mapped[int] = mapped_column(Integer, default=0)
-    extras: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    # Lista JSON de beneficios extra (texto libre).
+    extras: Mapped[list[str]] = mapped_column(JSON, default=list)
 
 
 class Membresia(Base):
