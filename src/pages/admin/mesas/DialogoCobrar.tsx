@@ -3,6 +3,7 @@ import { Printer } from 'lucide-react'
 import { NOMBRES_METODO, registrarPago } from '../../../caja/caja'
 import { DetalleCuenta } from '../../../components/DetalleCuenta'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
+import { ListaConsumos } from '../../../components/ListaConsumos'
 import { useCalculadoraCuenta, type CuentaMesa } from '../../../mesas/cuenta'
 import { NOMBRES_MODO } from '../../../mesas/datos'
 import { finalizarSesion } from '../../../mesas/sesiones'
@@ -44,6 +45,7 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
           <p className="texto-suave">
             {mesa.nombre} · {NOMBRES_MODO[mesa.modo]} · {formatearHora(pago.fecha)}
           </p>
+          {sesion.consumos?.length ? <ListaConsumos consumos={sesion.consumos} /> : null}
           <dl className="resumen">
             <div>
               <dt>Cliente</dt>
@@ -95,6 +97,7 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
 
   return (
     <div className="formulario-claro">
+      {sesion.consumos?.length ? <ListaConsumos consumos={sesion.consumos} /> : null}
       <dl className="resumen">
         <div>
           <dt>Cliente</dt>

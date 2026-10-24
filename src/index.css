@@ -393,7 +393,7 @@ a { color: inherit; }
 .resumen-total dt { color: var(--texto); font-weight: 600; }
 
 /* ---------- Mesas ---------- */
-.grid-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; }
+.grid-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 1rem; }
 .dato { display: flex; flex-direction: column; gap: 0.3rem; }
 .dato span { color: var(--texto-suave); font-size: 0.88rem; }
 .dato strong { font: 700 1.6rem/1.1 var(--fuente-titulo); font-variant-numeric: tabular-nums; }
@@ -413,7 +413,7 @@ a { color: inherit; }
 }
 .filtros button.activo { background: var(--verde-profundo); border-color: var(--verde-profundo); color: var(--blanco); }
 
-.grid-mesas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.grid-mesas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 1rem; }
 .mesa { display: flex; flex-direction: column; gap: 1rem; border-top: 4px solid #cbd5e1; }
 .mesa-en-uso { border-top-color: var(--verde-vivo); }
 .mesa-pausada { border-top-color: #f59e0b; }
@@ -449,7 +449,7 @@ a { color: inherit; }
 .boton-icono-claro:hover { background: var(--verde-suave); }
 .panel-fecha { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.85rem; color: var(--texto-suave); }
 
-.grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 1rem; }
 .dato-color {
   display: flex;
   align-items: center;
@@ -467,9 +467,9 @@ a { color: inherit; }
 .dato-color-naranja { background: #d97706; }
 .dato-color-morado { background: #7c3aed; }
 
-.panel-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 1rem; align-items: stretch; }
+.panel-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(min(280px, 100%), 1fr); gap: 1rem; align-items: stretch; }
 .panel-bloque { display: flex; flex-direction: column; gap: 1rem; }
-.panel-bloque-cabecera { display: flex; justify-content: space-between; align-items: center; }
+.panel-bloque-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.25rem 0.75rem; }
 .panel-bloque-cabecera h2 { font-size: 1.05rem; }
 .panel-bloque-cabecera a { font-size: 0.88rem; color: #15803d; font-weight: 500; }
 
@@ -512,7 +512,7 @@ a { color: inherit; }
 .movimientos time { font-size: 0.78rem; color: var(--texto-suave); white-space: nowrap; }
 
 @media (max-width: 1000px) {
-  .panel-grid { grid-template-columns: 1fr; }
+  .panel-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---------- Cobro y caja ---------- */
@@ -647,7 +647,7 @@ a { color: inherit; }
   --plan-gold: #ca8a04;
 }
 .boton-chico { padding: 0.4rem 0.7rem; font-size: 0.82rem; gap: 0.3rem; }
-.grid-planes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; align-items: stretch; }
+.grid-planes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 1rem; align-items: stretch; }
 .plan { display: flex; flex-direction: column; gap: 1rem; border-top: 5px solid var(--borde); }
 .plan-basica { border-top-color: var(--plan-basica); }
 .plan-premium { border-top-color: var(--plan-premium); }
@@ -827,7 +827,7 @@ a { color: inherit; }
 .grafica-etiquetas { display: flex; padding-left: 3.9rem; font-size: 0.75rem; color: var(--texto-suave); }
 .grafica-etiquetas span { flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.grid-reportes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; align-items: start; }
+.grid-reportes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 1rem; align-items: start; }
 .desglose { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
 .desglose-fila { display: flex; justify-content: space-between; font-size: 0.92rem; }
 .desglose-fila strong { font-variant-numeric: tabular-nums; }
@@ -850,7 +850,7 @@ a { color: inherit; }
 .enlace-reporte { align-self: flex-end; font-size: 0.88rem; font-weight: 500; color: #15803d; }
 
 /* ---------- Inicio del cliente: cómo jugar y modos ---------- */
-.pasos { list-style: none; counter-reset: paso; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.pasos { list-style: none; counter-reset: paso; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 1rem; }
 .pasos li { counter-increment: paso; display: flex; flex-direction: column; gap: 0.25rem; padding-left: 2.75rem; position: relative; }
 .pasos li::before {
   content: counter(paso);
@@ -867,7 +867,7 @@ a { color: inherit; }
   font: 700 0.95rem/1 var(--fuente-titulo);
 }
 .pasos span { color: var(--texto-suave); font-size: 0.9rem; }
-.grid-modos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.grid-modos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 1rem; }
 .modo { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .modo-foto { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 .modo-texto { display: flex; flex-direction: column; gap: 0.4rem; padding: 1rem 1.25rem 1.25rem; }
@@ -884,7 +884,7 @@ a { color: inherit; }
 .dato-texto { font-size: 1.1rem !important; }
 .alerta-clara { padding: 0.6rem 0.8rem; border-radius: 8px; background: #fee2e2; color: #b91c1c; font-size: 0.9rem; }
 
-.grid-torneos { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.grid-torneos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1rem; }
 .torneo { display: flex; flex-direction: column; gap: 0.75rem; border-top: 4px solid var(--verde-vivo); }
 .torneo-tres-bandas { border-top-color: #2563eb; }
 .torneo-libre { border-top-color: #7c3aed; }
@@ -919,7 +919,7 @@ a { color: inherit; }
 .campeon.definido { border: 2px solid var(--plan-gold); background: #fefce8; color: #854d0e; }
 
 .aviso-campeon { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: var(--radio); background: linear-gradient(135deg, #854d0e, var(--plan-gold)); color: var(--blanco); font-size: 1.05rem; }
-.lista-inscritos { margin: 0; padding-left: 1.25rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.4rem; }
+.lista-inscritos { margin: 0; padding-left: 1.25rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 0.4rem; }
 .lista-inscritos .resaltado { font-weight: 600; color: #15803d; }
 .acciones-izquierda { justify-content: flex-start; }
 .check-claro { flex-direction: row !important; align-items: center; gap: 0.5rem !important; font-weight: 400 !important; }
@@ -1020,7 +1020,7 @@ a { color: inherit; }
 .banner-compacto .banner-texto p { font-size: 1.02rem; }
 .pasos-compactos li { align-items: center; text-align: center; padding: 0.85rem 1rem; }
 .pasos-compactos li::before { position: static; transform: none; margin-bottom: 0.35rem; }
-.pagina-inicio-cliente .grid-modos { grid-template-columns: 1fr; gap: 0.75rem; }
+.pagina-inicio-cliente .grid-modos { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
 .pagina-inicio-cliente .modo-compacto .modo-foto { width: 45%; height: 150px; min-height: 0; flex-shrink: 0; }
 .pagina-inicio-cliente .modo-compacto .modo-texto { justify-content: center; padding: 1rem 1.5rem; }
 .pagina-inicio-cliente .modo-compacto .modo-cabecera h3 { font-size: 1.2rem; }
@@ -1049,7 +1049,7 @@ a { color: inherit; }
 /* Inicio del cliente: ocupa el alto de la pantalla y las tarjetas de modos se reparten el espacio libre */
 .pagina-inicio-cliente { min-height: calc(100vh - 3rem); }
 .pagina-inicio-cliente > .panel-bloque:last-child { flex: 1; display: flex; flex-direction: column; }
-.pagina-inicio-cliente .grid-modos { flex: 1; grid-template-rows: repeat(3, minmax(122px, 1fr)); }
+.pagina-inicio-cliente .grid-modos { flex: 1; grid-template-rows: repeat(3, minmax(min(122px, 100%), 1fr)); }
 .pagina-inicio-cliente .modo-compacto { min-height: 0; }
 /* El marco toma la proporción de la foto (≈16:9) y su alto es el de la tarjeta: la imagen no se deforma ni se recorta de más. */
 .pagina-inicio-cliente .modo-foto-marco { width: auto; height: 100%; aspect-ratio: 16 / 9; max-width: 55%; }
@@ -1075,12 +1075,12 @@ a { color: inherit; }
 .perfil-contenido { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); gap: 1rem; align-items: stretch; }
 .perfil-lateral, .perfil-actividad { display: grid; gap: 1rem; }
 .perfil-lateral { height: 100%; }
-.perfil-actividad { grid-template-rows: repeat(3, minmax(88px, 1fr)); height: 100%; }
+.perfil-actividad { grid-template-rows: repeat(3, minmax(min(88px, 100%), 1fr)); height: 100%; }
 .perfil-actividad .dato { justify-content: center; }
 .perfil-seguridad { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .perfil-seguridad .titulo-bloque { margin: 0; }
 @media (max-width: 760px) {
-  .perfil-contenido { grid-template-columns: 1fr; }
+  .perfil-contenido { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---------- Notificaciones ---------- */
@@ -1107,11 +1107,11 @@ a { color: inherit; }
 
 /* Inicio del admin: la última fila (torneos y notificaciones) ocupa el alto que sobre */
 .pagina-panel { min-height: calc(100vh - 3rem); }
-.panel-grid-extra { flex: 1; grid-template-columns: 1fr 1fr; }
+.panel-grid-extra { flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .enlace-limpio { text-decoration: none; color: inherit; }
 .enlace-limpio:hover strong { color: #15803d; text-decoration: underline; }
 .panel-grid-extra .estado { font-size: 0.72rem; }
-@media (max-width: 1000px) { .panel-grid-extra { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .panel-grid-extra { grid-template-columns: minmax(0, 1fr); } }
 /* Pantallas bajas: se compacta el Inicio del admin para que entren torneos y notificaciones */
 @media (min-width: 861px) and (max-height: 950px) {
   .pagina-panel { gap: 0.75rem; }
@@ -1120,3 +1120,83 @@ a { color: inherit; }
   .panel-grid-extra .movimientos li:nth-child(n + 3) { display: none; }
   .pagina-panel .dato-color { padding: 0.75rem 1rem; }
 }
+
+/* ---------- Consumos ---------- */
+.movimiento-consumo { background: #ffedd5; color: #c2410c; }
+.mesa-consumos { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 8px; background: var(--fondo); font-size: 0.88rem; }
+.mesa-consumos span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.mesa-consumos .boton-icono { width: 30px; height: 30px; }
+
+.grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 0.75rem; }
+.producto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--blanco);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+}
+button.producto { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+button.producto:hover { border-color: var(--verde-vivo); }
+.producto.activo { border-color: var(--verde-vivo); box-shadow: 0 0 0 2px var(--verde-suave); }
+/* Espacio en blanco si el producto no tiene foto en src/consumos/imagenes.ts. */
+.producto-foto { display: block; aspect-ratio: 4 / 3; border: 1px solid var(--borde); border-radius: 8px; background: var(--blanco); overflow: hidden; }
+.producto-foto img { display: block; width: 100%; height: 100%; padding: 0.4rem; object-fit: contain; }
+.producto-nombre { font-weight: 600; font-size: 0.92rem; }
+.producto-precio { color: #15803d; font-variant-numeric: tabular-nums; }
+
+.modal:has(.consumo) { width: min(720px, calc(100vw - 2rem)); }
+.pedir-cantidad { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 10px; background: var(--fondo); }
+.pedir-cantidad > span { flex: 1 1 100%; font-weight: 500; }
+.cantidad { display: flex; align-items: center; gap: 0.35rem; }
+.cantidad input { width: 64px; padding: 0.45rem; border: 1px solid var(--borde); border-radius: 8px; font: inherit; text-align: center; }
+.cantidad .boton-icono:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.lista-consumos { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.lista-consumos li { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0; border-bottom: 1px solid var(--borde); font-size: 0.9rem; }
+.lista-consumos li:last-child { border-bottom: 0; }
+.consumo-cantidad { min-width: 2.2rem; font-weight: 600; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.consumo-nombre { display: flex; flex-direction: column; flex: 1; }
+.consumo-nombre .texto-suave { font-size: 0.8rem; }
+.lista-consumos strong { font-variant-numeric: tabular-nums; }
+.lista-consumos .boton-icono { width: 30px; height: 30px; }
+
+.grid-consumos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1rem; }
+.consumo-mesa { gap: 0.75rem; }
+
+/* ---------- Notificaciones con enlace ---------- */
+.notif-mesa { background: #ffedd5; color: #c2410c; }
+.notif-ir { align-self: center; flex-shrink: 0; color: var(--texto-suave); }
+.notif-fila { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.notif-fila:hover strong { color: #15803d; }
+.notif-sin-leer .movimiento-texto strong::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 0.4rem; border-radius: 50%; background: var(--verde-vivo); vertical-align: 2px; }
+.notif-fila .notif-icono { width: 36px; height: 36px; }
+.campana { position: relative; }
+.campana-insignia { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--error); color: var(--blanco); font-size: 0.7rem; font-weight: 700; line-height: 18px; text-align: center; }
+
+/* ---------- Celular ---------- */
+@media (max-width: 560px) {
+  /* Las tarjetas de números van de a dos en vez de una por fila. */
+  .grid-resumen,
+  .grid-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  .dato strong,
+  .dato-color strong { font-size: 1.3rem; }
+  .dato-color { gap: 0.6rem; padding: 0.9rem; }
+  .dato-color > svg { width: 24px; height: 24px; flex-shrink: 0; }
+  .grid-productos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+}
+
+/* Torneos del Inicio: cuando la tarjeta es angosta, el estado pasa a su propia línea para no apretar el nombre. */
+@media (max-width: 1280px) {
+  .panel-grid-extra .movimientos li { flex-wrap: wrap; row-gap: 0.35rem; }
+  .panel-grid-extra .movimientos li .movimiento-texto { flex-basis: calc(100% - 36px - 0.75rem); }
+  .panel-grid-extra .movimientos li .estado { margin-left: calc(36px + 0.75rem); }
+}
+
+/* Las 4 tarjetas del Inicio del admin: 4 en fila si caben, si no 2 × 2 (nunca 3 + 1). */
+.grid-datos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1180px) { .grid-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -8,13 +8,26 @@ import { useCalculadoraCuenta } from '../../mesas/cuenta'
 import { detenerSesion, estadoMesa, useSesiones } from '../../mesas/sesiones'
 import type { Mesa, ModoJuego, Sesion } from '../../types'
 import { formatearPesos } from '../../utils/formato'
+import { DialogoConsumo } from './consumos/DialogoConsumo'
 import { DialogoCobrar } from './mesas/DialogoCobrar'
 import { DialogoIniciar } from './mesas/DialogoIniciar'
 import { DialogoTarifas } from './mesas/DialogoTarifas'
 import { TarjetaMesa } from './mesas/TarjetaMesa'
 
 type Filtro = ModoJuego | 'todas'
-type Dialogo = { tipo: 'iniciar'; mesa: Mesa } | { tipo: 'cobrar'; mesa: Mesa; sesion: Sesion } | { tipo: 'tarifas' } | null
+type Dialogo =
+  | { tipo: 'iniciar'; mesa: Mesa }
+  | { tipo: 'cobrar'; mesa: Mesa; sesion: Sesion }
+  | { tipo: 'consumo'; mesa: Mesa }
+  | { tipo: 'tarifas' }
+  | null
+
+const TITULOS = {
+  iniciar: 'Iniciar sesión de juego',
+  cobrar: 'Finalizar y cobrar',
+  consumo: 'Agregar consumo',
+  tarifas: 'Tarifas',
+}
 
 const filtros: Filtro[] = ['todas', 'pool', 'tres-bandas', 'libre']
 
@@ -89,6 +102,7 @@ export function Mesas() {
             ahora={ahora}
             cuenta={cuentas.get(mesa.id) ?? null}
             onIniciar={() => setDialogo({ tipo: 'iniciar', mesa })}
+            onConsumo={() => setDialogo({ tipo: 'consumo', mesa })}
             onFinalizar={() => {
               const sesion = detenerSesion(mesa.id)
               if (sesion) setDialogo({ tipo: 'cobrar', mesa, sesion })
@@ -99,13 +113,12 @@ export function Mesas() {
 
       <Modal
         abierto={dialogo !== null}
-        titulo={
-          dialogo?.tipo === 'cobrar' ? 'Finalizar y cobrar' : dialogo?.tipo === 'tarifas' ? 'Tarifas' : 'Iniciar sesión de juego'
-        }
+        titulo={dialogo ? TITULOS[dialogo.tipo] : ''}
         onCerrar={cerrar}
       >
         {dialogo?.tipo === 'iniciar' && <DialogoIniciar mesa={dialogo.mesa} onListo={cerrar} />}
         {dialogo?.tipo === 'tarifas' && <DialogoTarifas onListo={cerrar} />}
+        {dialogo?.tipo === 'consumo' && <DialogoConsumo mesa={dialogo.mesa} onListo={cerrar} />}
         {dialogo?.tipo === 'cobrar' && (
           <DialogoCobrar mesa={dialogo.mesa} sesion={dialogo.sesion} onListo={cerrar} />
         )}

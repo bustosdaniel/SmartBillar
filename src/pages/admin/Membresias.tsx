@@ -79,7 +79,7 @@ export function Membresias() {
                   </span>
                 </span>
                 <div className="acciones-fila">
-                  <button type="button" className="boton boton-secundario boton-chico" onClick={() => cancelarSolicitud(s.clienteId)}>
+                  <button type="button" className="boton boton-secundario boton-chico" onClick={() => cancelarSolicitud(s.clienteId, 'admin')}>
                     Rechazar
                   </button>
                   <button type="button" className="boton boton-chico" onClick={() => setDialogo({ tipo: 'asignar', solicitud: s })}>

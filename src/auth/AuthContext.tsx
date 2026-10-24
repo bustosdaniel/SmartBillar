@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { Usuario } from '../types'
+import { notificarAdministradores } from '../notificaciones/notificaciones'
 import { leer } from '../utils/almacen'
 import { AuthContext, type DatosRegistro } from './useAuth'
 import { actualizarDatos, emailEnUso, guardarRegistrado, sinPassword, todosLosUsuarios, type DatosPerfil } from './usuarios'
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false as const, error: 'Ya existe una cuenta con ese correo' }
     }
     const u = sinPassword(guardarRegistrado({ nombre, email, telefono, cedula, password, rol: 'cliente' }))
+    notificarAdministradores('cuenta', 'Nuevo cliente registrado', `${nombre} creó su cuenta (${email}).`, '/admin/usuarios')
     guardarSesion(u, true)
     setUsuario(u)
     return { ok: true as const, usuario: u }

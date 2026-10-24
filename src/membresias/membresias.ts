@@ -87,12 +87,33 @@ export function solicitarPlan(cliente: { id: number; nombre: string }, planId: P
     'membresia',
     'Nueva solicitud de membresía',
     `${cliente.nombre} solicitó el plan ${planes.obtener()[planId].nombre}. Revisa la solicitud en Membresías y actívala al recibir el pago en caja.`,
+    '/admin/membresias',
   )
 }
 
-export function cancelarSolicitud(clienteId: number) {
-  const { [clienteId]: _omit, ...resto } = solicitudes.obtener()
+// Sin `origen` (al activar la membresía) no se avisa a nadie: ya llega el aviso de la activación.
+export function cancelarSolicitud(clienteId: number, origen?: 'cliente' | 'admin') {
+  const { [clienteId]: solicitud, ...resto } = solicitudes.obtener()
   solicitudes.guardar(resto)
+  if (!solicitud) return
+  const plan = planes.obtener()[solicitud.planId].nombre
+  if (origen === 'cliente') {
+    notificarAdministradores(
+      'membresia',
+      'Solicitud de membresía cancelada',
+      `${solicitud.clienteNombre} canceló su solicitud del plan ${plan}.`,
+      '/admin/membresias',
+    )
+  }
+  if (origen === 'admin') {
+    notificar(
+      clienteId,
+      'membresia',
+      `Solicitud del plan ${plan} rechazada`,
+      'El club no aprobó tu solicitud. Si tienes dudas, acércate a la caja o elige otro plan.',
+      '/cliente/membresia',
+    )
+  }
 }
 
 export function actualizarPlan(plan: Plan) {
@@ -120,6 +141,7 @@ export function asignarMembresia(cliente: { id: number; nombre: string }, planId
     `Tu membresía ${plan.nombre} está activa`,
     `Disfruta tus beneficios hasta el ${formatearFecha(nueva.vence)}: ${plan.descuentoMesa}% en mesa` +
       `${plan.horasGratisMes > 0 ? ` y ${plan.horasGratisMes} h gratis al mes` : ''}.`,
+    '/cliente/membresia',
   )
   return nueva
 }

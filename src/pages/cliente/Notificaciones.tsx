@@ -1,12 +1,11 @@
 import { Link } from 'react-router'
-import { BellOff, CheckCheck, Clock } from 'lucide-react'
+import { CheckCheck, Clock } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
+import { BandejaNotificaciones } from '../../components/BandejaNotificaciones'
 import { Encabezado } from '../../components/Encabezado'
-import { IconoNotificacion } from '../../components/IconoNotificacion'
 import { useAhora } from '../../hooks/useAhora'
 import { diasRestantes, estadoMembresia, useMembresias, usePlanes } from '../../membresias/membresias'
-import { marcarLeida, marcarTodasLeidas, useNotificaciones } from '../../notificaciones/notificaciones'
-import { formatearFecha, formatearHora } from '../../utils/formato'
+import { marcarTodasLeidas, useNotificaciones } from '../../notificaciones/notificaciones'
 
 export function Notificaciones() {
   const { usuario } = useAuth()
@@ -45,32 +44,10 @@ export function Notificaciones() {
         </Link>
       )}
 
-      {mias.length === 0 ? (
-        <div className="tarjeta sin-mesa">
-          <BellOff size={36} aria-hidden="true" />
-          <h2>No tienes notificaciones</h2>
-          <p className="texto-suave">Aquí verás tus recibos de pago, avisos de torneos y de tu membresía.</p>
-        </div>
-      ) : (
-        <ul className="tarjeta lista-notificaciones">
-          {mias.map((n) => (
-            <li key={n.id} className={n.leida ? '' : 'sin-leer'}>
-              <button type="button" onClick={() => marcarLeida(n.id)} aria-label={n.leida ? n.asunto : `${n.asunto} (sin leer)`}>
-                <IconoNotificacion tipo={n.tipo} />
-                <span className="notif-texto">
-                  <strong>{n.asunto}</strong>
-                  <span>{n.mensaje}</span>
-                </span>
-                <time dateTime={new Date(n.fecha).toISOString()}>
-                  {formatearFecha(n.fecha)}
-                  <br />
-                  {formatearHora(n.fecha)}
-                </time>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <BandejaNotificaciones
+        notificaciones={mias}
+        vacio="Aquí verás tus recibos de pago, avisos de torneos, de tu mesa y de tu membresía."
+      />
     </section>
   )
 }

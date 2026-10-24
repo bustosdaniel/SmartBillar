@@ -1,4 +1,4 @@
-import { Banknote, Minus, Pause, Play, Plus, Square, User } from 'lucide-react'
+import { Banknote, CupSoda, Minus, Pause, Play, Plus, Square, User } from 'lucide-react'
 import { NOMBRES_MODO, TEXTO_ESTADO_MESA } from '../../../mesas/datos'
 import { IMAGEN_MODO } from '../../../mesas/imagenes'
 import type { CuentaMesa } from '../../../mesas/cuenta'
@@ -21,9 +21,10 @@ type TarjetaMesaProps = {
   cuenta: CuentaMesa | null
   onIniciar: () => void
   onFinalizar: () => void
+  onConsumo: () => void
 }
 
-export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinalizar }: TarjetaMesaProps) {
+export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinalizar, onConsumo }: TarjetaMesaProps) {
   const estado = estadoMesa(sesion)
   const tiempo = sesion ? tiempoJugado(sesion, ahora) : 0
   const base = useTarifas().porModo[mesa.modo]
@@ -88,6 +89,20 @@ export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinaliza
                 )}
               </div>
             )}
+            <div className="mesa-consumos">
+              <span>
+                <CupSoda size={15} aria-hidden="true" /> Consumos{' '}
+                <strong>{formatearPesos(cuenta?.consumos ?? 0)}</strong>
+              </span>
+              <button
+                type="button"
+                className="boton-icono boton-icono-claro"
+                aria-label={`Agregar consumo a ${mesa.nombre}`}
+                onClick={onConsumo}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
           </div>
           <div className="mesa-acciones">
             {estado === 'por-cobrar' ? (

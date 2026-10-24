@@ -49,7 +49,7 @@ export function Membresia() {
             Solicitaste el plan <strong>{planes[solicitud.planId].nombre}</strong>. Acércate a la caja para pagarlo (
             {formatearPesos(planes[solicitud.planId].precioMensual)}) y quedará activo.
           </span>
-          <button type="button" className="boton boton-secundario boton-chico" onClick={() => cancelarSolicitud(solicitud.clienteId)}>
+          <button type="button" className="boton boton-secundario boton-chico" onClick={() => cancelarSolicitud(solicitud.clienteId, 'cliente')}>
             Cancelar solicitud
           </button>
         </div>

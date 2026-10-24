@@ -9,6 +9,8 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
+import { useAuth } from '../auth/useAuth'
+import { useNotificaciones } from '../notificaciones/notificaciones'
 import { AppLayout, type ItemMenu } from './AppLayout'
 
 const items: ItemMenu[] = [
@@ -24,5 +26,7 @@ const items: ItemMenu[] = [
 ]
 
 export function AdminLayout() {
-  return <AppLayout items={items} />
+  const { usuario } = useAuth()
+  const sinLeer = useNotificaciones().filter((n) => n.usuarioId === usuario?.id && !n.leida).length
+  return <AppLayout items={items.map((i) => (i.ruta === '/admin/notificaciones' ? { ...i, insignia: sinLeer } : i))} />
 }

@@ -1,6 +1,6 @@
 import { registrarMovimiento } from '../actividad/movimientos'
 import { NOMBRES_MODO } from '../mesas/datos'
-import { notificar } from '../notificaciones/notificaciones'
+import { notificar, notificarAdministradores, notificarClientes } from '../notificaciones/notificaciones'
 import { formatearPesos } from '../utils/formato'
 import type { CategoriaTorneo, EstadoTorneo, Jugador, Plan, Torneo } from '../types'
 import { crearStoreLocal } from '../utils/storeLocal'
@@ -19,6 +19,9 @@ export const TEXTO_ESTADO_TORNEO: Record<EstadoTorneo, string> = {
 }
 
 const DIA = 24 * 60 * 60 * 1000
+
+const rutaCliente = (torneoId: number) => `/cliente/torneos/${torneoId}`
+const rutaAdmin = (torneoId: number) => `/admin/torneos/${torneoId}`
 const fechaCorta = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })
 
 export function formatearFechaTorneo(torneo: Torneo) {
@@ -129,8 +132,17 @@ export type DatosTorneo = Omit<Torneo, 'id' | 'estado' | 'jugadores' | 'partidos
 export function crearTorneo(datos: DatosTorneo) {
   const torneos = store.obtener()
   const id = Math.max(0, ...torneos.map((t) => t.id)) + 1
-  store.guardar([...torneos, { ...datos, id, estado: 'inscripciones', jugadores: [], partidos: [] }])
+  const torneo: Torneo = { ...datos, id, estado: 'inscripciones', jugadores: [], partidos: [] }
+  store.guardar([...torneos, torneo])
   registrarMovimiento({ tipo: 'torneo', titulo: datos.nombre, detalle: `Torneo creado · ${NOMBRES_MODO[datos.modo]}` })
+  // Lleva a la lista de torneos, que es donde el cliente se inscribe.
+  notificarClientes(
+    'torneo',
+    `Nuevo torneo · ${datos.nombre}`,
+    `${NOMBRES_MODO[datos.modo]} · ${NOMBRES_CATEGORIA[datos.categoria]} · ${formatearFechaTorneo(torneo)}. ` +
+      `${datos.cupos} cupos, inscripción ${datos.inscripcion > 0 ? formatearPesos(datos.inscripcion) : 'gratis'}. ¡Inscríbete antes de que se acaben!`,
+    '/cliente/torneos',
+  )
   return id
 }
 
@@ -141,10 +153,11 @@ export function validarInscripcion(torneo: Torneo, clienteId: number | null): st
   return null
 }
 
-// Devuelve un mensaje de error, o null si quedó inscrito.
+// Devuelve un mensaje de error, o null si quedó inscrito. Si se inscribe el propio cliente, se avisa al admin.
 export function inscribir(
   torneoId: number,
   datos: { clienteId: number | null; nombre: string; pagado: boolean; monto: number },
+  origen: 'cliente' | 'admin' = 'admin',
 ): string | null {
   const torneo = buscar(torneoId)
   if (!torneo) return 'El torneo no existe.'
@@ -164,7 +177,17 @@ export function inscribir(
     datos.pagado
       ? `Quedaste inscrito para el ${formatearFechaTorneo(torneo)}. ¡Mucha suerte!`
       : `Reservamos tu cupo. Paga ${formatearPesos(datos.monto)} en caja antes del torneo para confirmarlo.`,
+    rutaCliente(torneoId),
   )
+  if (origen === 'cliente') {
+    notificarAdministradores(
+      'torneo',
+      `Nueva inscripción · ${torneo.nombre}`,
+      `${datos.nombre} se inscribió${datos.pagado ? '' : ` y debe pagar ${formatearPesos(datos.monto)} en caja`}. ` +
+        `Quedan ${cuposLibres(torneo) - 1} cupos.`,
+      rutaAdmin(torneoId),
+    )
+  }
   return null
 }
 
@@ -172,7 +195,7 @@ export function marcarPagado(torneoId: number, jugadorId: string) {
   const torneo = buscar(torneoId)
   const jugador = torneo?.jugadores.find((j) => j.id === jugadorId)
   if (torneo && jugador) {
-    notificar(jugador.clienteId, 'torneo', `Pago recibido · ${torneo.nombre}`, `Tu inscripción quedó confirmada. Nos vemos el ${formatearFechaTorneo(torneo)}.`)
+    notificar(jugador.clienteId, 'torneo', `Pago recibido · ${torneo.nombre}`, `Tu inscripción quedó confirmada. Nos vemos el ${formatearFechaTorneo(torneo)}.`, rutaCliente(torneoId))
   }
   actualizar(torneoId, (t) => ({
     ...t,
@@ -196,7 +219,16 @@ export function quitarJugador(torneoId: number, jugadorId: string, motivo: 'reti
     'torneo',
     `${motivo === 'retiro' ? 'Te retiraste de' : 'Inscripción anulada en'} ${torneo.nombre}`,
     motivo === 'retiro' ? 'Liberamos tu cupo. Puedes volver a inscribirte mientras haya cupos.' : 'El club anuló tu inscripción. Si tienes dudas, acércate a la caja.',
+    rutaCliente(torneoId),
   )
+  if (motivo === 'retiro') {
+    notificarAdministradores(
+      'torneo',
+      `Retiro · ${torneo.nombre}`,
+      `${jugador.nombre} se retiró del torneo. Ahora quedan ${cuposLibres(torneo) + 1} cupos.`,
+      rutaAdmin(torneoId),
+    )
+  }
 }
 
 // El cliente puede retirarse solo si no hay dinero que devolver; si pagó, la devolución se hace en caja.
@@ -218,6 +250,7 @@ export function iniciarTorneo(torneoId: number) {
       'torneo',
       `Las llaves de ${torneo.nombre} están listas`,
       rival ? `Tu primer partido es contra ${rival}.` : 'Tienes pase directo a la siguiente ronda.',
+      rutaCliente(torneoId),
     )
   }
   registrarMovimiento({ tipo: 'torneo', titulo: torneo.nombre, detalle: `Torneo iniciado · ${torneo.jugadores.length} jugadores` })
@@ -252,9 +285,10 @@ export function registrarGanador(torneoId: number, partidoId: string, jugadorId:
       'torneo',
       ganador ? `¡Eres campeón de ${torneo.nombre}!` : `Ganaste tu partido en ${torneo.nombre}`,
       ganador ? `Felicitaciones. Reclama tu premio en caja: ${torneo.premio}.` : `Avanzas a ${nombreRonda(partido.ronda + 1, totalRondas(partidos))}.`,
+      rutaCliente(torneoId),
     )
   }
-  if (perdedorJ) notificar(perdedorJ.clienteId, 'torneo', `Resultado en ${torneo.nombre}`, 'Esta vez no se dio. ¡Gracias por jugar, te esperamos en el próximo torneo!')
+  if (perdedorJ) notificar(perdedorJ.clienteId, 'torneo', `Resultado en ${torneo.nombre}`, 'Esta vez no se dio. ¡Gracias por jugar, te esperamos en el próximo torneo!', rutaCliente(torneoId))
 }
 
 export function nombreJugador(torneo: Torneo, jugadorId: string | null) {

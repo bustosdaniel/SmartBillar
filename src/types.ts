@@ -60,6 +60,8 @@ export type Sesion = {
   precioPartida?: number
   partidas?: number
   regla?: string | null
+  // Productos pedidos en la mesa (las sesiones guardadas antes de Consumos no los traen).
+  consumos?: Consumo[]
 }
 
 export type SesionFinalizada = Sesion & {
@@ -71,7 +73,28 @@ export type SesionFinalizada = Sesion & {
   subtotal?: number
   gratisMs?: number
   descuento?: number
+  descuentoBar?: number
   planId?: PlanId | null
+}
+
+export type CategoriaProducto = 'bebida' | 'paquete'
+
+export type Producto = {
+  id: string
+  nombre: string
+  categoria: CategoriaProducto
+  precio: number
+}
+
+// Producto pedido en una mesa. El precio queda fijo al pedirlo, igual que las tarifas.
+export type Consumo = {
+  id: string
+  productoId: string
+  nombre: string
+  categoria: CategoriaProducto
+  precio: number
+  cantidad: number
+  fecha: number
 }
 
 export type MetodoPago = 'efectivo' | 'transferencia' | 'tarjeta'
@@ -109,7 +132,7 @@ export type CajaCerrada = Caja & {
   nota?: string
 }
 
-export type TipoMovimiento = 'inicio' | 'pausa' | 'reanudar' | 'detener' | 'fin' | 'pago' | 'caja' | 'torneo'
+export type TipoMovimiento = 'inicio' | 'pausa' | 'reanudar' | 'detener' | 'fin' | 'pago' | 'caja' | 'torneo' | 'consumo'
 
 export type Movimiento = {
   id: string
@@ -190,7 +213,7 @@ export type SolicitudMembresia = {
   fecha: number
 }
 
-export type TipoNotificacion = 'factura' | 'membresia' | 'torneo' | 'cuenta'
+export type TipoNotificacion = 'factura' | 'membresia' | 'torneo' | 'cuenta' | 'mesa'
 
 // En esta fase el correo es simulado: queda registrado lo que el backend enviaría.
 export type Notificacion = {
@@ -203,4 +226,6 @@ export type Notificacion = {
   mensaje: string
   fecha: number
   leida: boolean
+  // Vista a la que lleva al abrirla (las guardadas antes no la traen).
+  ruta?: string
 }

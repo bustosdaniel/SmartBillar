@@ -5,6 +5,7 @@ import { useCaja, useCajasCerradas } from '../../caja/caja'
 import { useAhora } from '../../hooks/useAhora'
 import { mesasMock } from '../../mesas/datos'
 import { useSesiones, useSesionesFinalizadas } from '../../mesas/sesiones'
+import { useNotificaciones } from '../../notificaciones/notificaciones'
 import { useTorneos } from '../../torneos/torneos'
 import { esMismoDia, formatearFecha, formatearHora, formatearPesos } from '../../utils/formato'
 import { EstadoMesas } from './panel/EstadoMesas'
@@ -17,6 +18,7 @@ type Dato = { titulo: string; valor: string; icono: LucideIcon; color: string }
 
 export function Panel() {
   const { usuario } = useAuth()
+  const sinLeer = useNotificaciones().filter((n) => n.usuarioId === usuario?.id && !n.leida).length
   const ahora = useAhora()
   const sesiones = useSesiones()
   const finalizadas = useSesionesFinalizadas()
@@ -47,8 +49,13 @@ export function Panel() {
           <p>Aquí tienes un resumen de la actividad del club.</p>
         </div>
         <div className="panel-cabecera-extra">
-          <Link to="/admin/notificaciones" className="boton-icono boton-icono-claro" aria-label="Notificaciones">
+          <Link
+            to="/admin/notificaciones"
+            className="boton-icono boton-icono-claro campana"
+            aria-label={sinLeer > 0 ? `Notificaciones, ${sinLeer} sin leer` : 'Notificaciones'}
+          >
             <Bell size={18} />
+            {sinLeer > 0 && <span className="campana-insignia">{sinLeer > 9 ? '9+' : sinLeer}</span>}
           </Link>
           <div className="panel-fecha">
             <span>{formatearFecha(ahora)}</span>
@@ -76,7 +83,7 @@ export function Panel() {
       </div>
       <div className="panel-grid panel-grid-extra">
         <ProximosTorneos />
-        <UltimasNotificaciones ahora={ahora} />
+        <UltimasNotificaciones />
       </div>
     </section>
   )

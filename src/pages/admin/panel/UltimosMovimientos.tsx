@@ -1,4 +1,4 @@
-import { Banknote, CircleCheck, CirclePause, CirclePlay, CircleStop, Play, Trophy, Wallet, type LucideIcon } from 'lucide-react'
+import { Banknote, CircleCheck, CupSoda, CirclePause, CirclePlay, CircleStop, Play, Trophy, Wallet, type LucideIcon } from 'lucide-react'
 import { useMovimientos } from '../../../actividad/movimientos'
 import type { TipoMovimiento } from '../../../types'
 import { formatearHora } from '../../../utils/formato'
@@ -12,6 +12,7 @@ const ICONO_MOVIMIENTO: Record<TipoMovimiento, LucideIcon> = {
   pago: Banknote,
   caja: Wallet,
   torneo: Trophy,
+  consumo: CupSoda,
 }
 
 export function UltimosMovimientos() {

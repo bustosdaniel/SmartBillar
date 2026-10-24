@@ -89,7 +89,7 @@ export function Torneos() {
                             nombre: usuario.nombre,
                             pagado: precio === 0,
                             monto: precio,
-                          }) ?? '',
+                          }, 'cliente') ?? '',
                         )
                       }
                     >

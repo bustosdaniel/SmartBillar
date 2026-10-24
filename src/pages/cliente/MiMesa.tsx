@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { Banknote, CirclePause, Info, Timer } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
@@ -105,9 +106,9 @@ export function MiMesa() {
           <span className="mi-mesa-costo">
             {porCobrar ? 'Total a pagar' : 'Llevas'} <strong>{formatearPesos(cuenta.total)}</strong>
           </span>
-          {cuenta.plan && (cuenta.descuento > 0 || cuenta.valorGratis > 0) && (
+          {cuenta.plan && cuenta.subtotal > cuenta.total && (
             <span className="mi-mesa-ahorro">
-              Ahorras {formatearPesos(cuenta.descuento + cuenta.valorGratis)} con tu plan {cuenta.plan.nombre}
+              Ahorras {formatearPesos(cuenta.subtotal - cuenta.total)} con tu plan {cuenta.plan.nombre}
             </span>
           )}
         </div>
@@ -137,6 +138,10 @@ export function MiMesa() {
           </strong>
           {sesion.regla && <span>{sesion.regla}</span>}
         </div>
+        <Link to="/cliente/consumos" className="tarjeta dato dato-enlace">
+          <span>Consumos</span>
+          <strong>{formatearPesos(cuenta.consumos)}</strong>
+        </Link>
         {!porCobrar && (
           <div className="tarjeta dato">
             <span>{porPartida ? 'Con una partida más pagarías' : 'Con 30 min más pagarías'}</span>

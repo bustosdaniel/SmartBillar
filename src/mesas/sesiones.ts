@@ -1,5 +1,5 @@
 import { registrarMovimiento } from '../actividad/movimientos'
-import type { EstadoMesa, MetodoPago, ModoCobro, Sesion, SesionFinalizada } from '../types'
+import type { Consumo, EstadoMesa, MetodoPago, ModoCobro, Producto, Sesion, SesionFinalizada } from '../types'
 import type { CuentaMesa } from './cuenta'
 import { notificar } from '../notificaciones/notificaciones'
 import { formatearDuracion, formatearPesos } from '../utils/formato'
@@ -64,6 +64,13 @@ export function iniciarSesion(mesaId: number, cliente: { id: number | null; nomb
     titulo: `Mesa ${mesaId}`,
     detalle: `Inicio de sesión · ${cliente.nombre}${cobro.modoCobro === 'partida' ? ' · por partida' : ''}`,
   })
+  notificar(
+    cliente.id,
+    'mesa',
+    `Tu mesa está lista · Mesa ${mesaId}`,
+    'Ya empezó a contar tu tiempo. Síguelo en vivo desde Mi mesa. ¡Buen juego!',
+    '/cliente/mesa',
+  )
 }
 
 export function cambiarPartidas(mesaId: number, delta: number) {
@@ -115,6 +122,45 @@ export function detenerSesion(mesaId: number): Sesion | null {
   return detenida
 }
 
+// Registra el pedido en la cuenta de la mesa con el precio de ese momento.
+export function agregarConsumo(mesaId: number, producto: Producto, cantidad: number) {
+  const sesiones = activas.obtener()
+  const sesion = sesiones[mesaId]
+  if (!sesion || cantidad < 1) return false
+  const fecha = Date.now()
+  const consumo: Consumo = {
+    id: `${fecha}-${Math.random().toString(36).slice(2, 7)}`,
+    productoId: producto.id,
+    nombre: producto.nombre,
+    categoria: producto.categoria,
+    precio: producto.precio,
+    cantidad,
+    fecha,
+  }
+  activas.guardar({ ...sesiones, [mesaId]: { ...sesion, consumos: [...(sesion.consumos ?? []), consumo] } })
+  registrarMovimiento({
+    tipo: 'consumo',
+    titulo: `Mesa ${mesaId}`,
+    detalle: `${cantidad} × ${producto.nombre} · ${formatearPesos(cantidad * producto.precio)}`,
+  })
+  notificar(
+    sesion.clienteId,
+    'mesa',
+    `Pedido agregado · ${producto.nombre}`,
+    `Sumamos ${cantidad} × ${producto.nombre} (${formatearPesos(cantidad * producto.precio)}) a la cuenta de tu mesa.`,
+    '/cliente/consumos',
+  )
+  return true
+}
+
+// Para corregir un pedido registrado por error.
+export function quitarConsumo(mesaId: number, consumoId: string) {
+  const sesiones = activas.obtener()
+  const sesion = sesiones[mesaId]
+  if (!sesion?.consumos) return
+  activas.guardar({ ...sesiones, [mesaId]: { ...sesion, consumos: sesion.consumos.filter((c) => c.id !== consumoId) } })
+}
+
 // Por si se pulsó Finalizar por error: el rato que estuvo detenida no se cobra.
 export function reanudarDetenida(mesaId: number) {
   const sesiones = activas.obtener()
@@ -140,6 +186,7 @@ export function finalizarSesion(mesaId: number, cuenta: CuentaMesa, metodoPago: 
     subtotal: cuenta.subtotal,
     gratisMs: cuenta.gratisMs,
     descuento: cuenta.descuento,
+    descuentoBar: cuenta.descuentoBar,
     planId: cuenta.plan?.id ?? null,
   }
   finalizadas.guardar([...finalizadas.obtener(), finalizada])
@@ -156,7 +203,9 @@ export function finalizarSesion(mesaId: number, cuenta: CuentaMesa, metodoPago: 
     'factura',
     `Recibo de pago · Mesa ${mesaId}`,
     `${cuenta.modoCobro === 'partida' ? `${cuenta.partidas} partidas` : `Jugaste ${formatearDuracion(cuenta.tiempoMs)}`}. ` +
+      (cuenta.consumos > 0 ? `Consumos: ${formatearPesos(cuenta.consumos)}. ` : '') +
       `Total pagado: ${formatearPesos(cuenta.total)}${ahorro > 0 ? ` (ahorraste ${formatearPesos(ahorro)} con tu membresía)` : ''}.`,
+    '/cliente/historial',
   )
   return finalizada
 }

@@ -9,6 +9,7 @@ export const NOMBRES_TIPO: Record<TipoNotificacion, string> = {
   membresia: 'Membresía',
   torneo: 'Torneo',
   cuenta: 'Cuenta',
+  mesa: 'Mesa',
 }
 
 const store = crearStoreLocal<Notificacion[]>('billar.notificaciones', [])
@@ -16,7 +17,13 @@ const store = crearStoreLocal<Notificacion[]>('billar.notificaciones', [])
 export const useNotificaciones = store.useValor
 
 // Solo se notifica a quien tiene cuenta (los invitados no dejan correo).
-export function notificar(usuarioId: number | null, tipo: TipoNotificacion, asunto: string, mensaje: string) {
+export function notificar(
+  usuarioId: number | null,
+  tipo: TipoNotificacion,
+  asunto: string,
+  mensaje: string,
+  ruta?: string,
+) {
   if (usuarioId === null) return
   const usuario = todosLosUsuarios().find((u) => u.id === usuarioId)
   if (!usuario) return
@@ -31,14 +38,22 @@ export function notificar(usuarioId: number | null, tipo: TipoNotificacion, asun
     mensaje,
     fecha,
     leida: false,
+    ruta,
   }
   store.guardar([nueva, ...store.obtener()].slice(0, MAXIMO))
 }
 
-export function notificarAdministradores(tipo: TipoNotificacion, asunto: string, mensaje: string) {
+// Lo que hace un cliente le llega a cada administrador en su bandeja.
+export function notificarAdministradores(tipo: TipoNotificacion, asunto: string, mensaje: string, ruta?: string) {
   todosLosUsuarios()
     .filter((usuario) => usuario.rol === 'admin')
-    .forEach((usuario) => notificar(usuario.id, tipo, asunto, mensaje))
+    .forEach((usuario) => notificar(usuario.id, tipo, asunto, mensaje, ruta))
+}
+
+export function notificarClientes(tipo: TipoNotificacion, asunto: string, mensaje: string, ruta?: string) {
+  todosLosUsuarios()
+    .filter((usuario) => usuario.rol === 'cliente')
+    .forEach((usuario) => notificar(usuario.id, tipo, asunto, mensaje, ruta))
 }
 
 export function notificarPorEmail(email: string, tipo: TipoNotificacion, asunto: string, mensaje: string) {
