@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Printer } from 'lucide-react'
-import { NOMBRES_METODO, registrarPago } from '../../../caja/caja'
+import { Printer, Undo2 } from 'lucide-react'
+import { NOMBRES_METODO, puedeAnularse, registrarPago } from '../../../caja/caja'
 import { DetalleCuenta } from '../../../components/DetalleCuenta'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
 import { ListaConsumos } from '../../../components/ListaConsumos'
 import { useCalculadoraCuenta, type CuentaMesa } from '../../../mesas/cuenta'
 import { NOMBRES_MODO } from '../../../mesas/datos'
-import { finalizarSesion } from '../../../mesas/sesiones'
+import { anularCobroMesa, finalizarSesion } from '../../../mesas/sesiones'
 import type { Mesa, Pago, Sesion } from '../../../types'
 import { formatearDuracion, formatearHora, formatearPesos } from '../../../utils/formato'
 
@@ -21,6 +21,8 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
   const calcular = useCalculadoraCuenta()
   // Al cobrar se guarda la cuenta usada, para que el recibo no cambie si se recalcula.
   const [cobrado, setCobrado] = useState<{ pago: Pago; cuenta: CuentaMesa } | null>(null)
+  const [confirmarAnular, setConfirmarAnular] = useState(false)
+  const [aviso, setAviso] = useState('')
 
   const cuenta = cobrado?.cuenta ?? calcular(sesion, mesa, fin)
 
@@ -30,10 +32,24 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
       concepto: mesa.nombre,
       cliente: sesion.clienteNombre,
       monto: cuenta.total,
+      mesa: { mesaId: mesa.id, inicio: sesion.inicio },
     })
     if (!registrado) return
     finalizarSesion(mesa.id, cuenta, datos.metodo)
+    setAviso('')
     setCobrado({ pago: registrado, cuenta })
+  }
+
+  // El datáfono o el banco lo rechazó después de cobrar: se vuelve al cobro con la mesa Por cobrar.
+  function anular(pago: Pago) {
+    const error = anularCobroMesa(pago)
+    setConfirmarAnular(false)
+    if (error) {
+      setAviso(error)
+      return
+    }
+    setAviso(`Cobro con ${NOMBRES_METODO[pago.metodo].toLowerCase()} anulado. Cobra de nuevo, con el mismo u otro método.`)
+    setCobrado(null)
   }
 
   if (cobrado) {
@@ -75,6 +91,33 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
           </dl>
         </div>
         <p className="aviso-claro">Cobro registrado en caja. La mesa quedó disponible.</p>
+        {aviso && (
+          <p role="alert" className="alerta-clara">
+            {aviso}
+          </p>
+        )}
+        {confirmarAnular ? (
+          <div className="confirmar-anular" role="alertdialog" aria-label="Anular cobro">
+            <p>
+              ¿El {pago.metodo === 'tarjeta' ? 'datáfono' : 'banco'} rechazó el pago? Se anula el cobro de{' '}
+              <strong>{formatearPesos(pago.monto)}</strong> y la mesa vuelve a quedar Por cobrar.
+            </p>
+            <div className="dialogo-acciones">
+              <button type="button" className="boton boton-secundario" onClick={() => setConfirmarAnular(false)}>
+                No, fue aprobado
+              </button>
+              <button type="button" className="boton boton-peligro" onClick={() => anular(pago)}>
+                Sí, anular cobro
+              </button>
+            </div>
+          </div>
+        ) : (
+          puedeAnularse(pago) && (
+            <button type="button" className="boton-enlace" onClick={() => setConfirmarAnular(true)}>
+              <Undo2 size={15} aria-hidden="true" /> ¿Rechazado? Anular cobro
+            </button>
+          )
+        )}
         <div className="dialogo-acciones">
           <button type="button" className="boton boton-secundario" onClick={() => window.print()}>
             <Printer size={16} aria-hidden="true" /> Imprimir
@@ -89,6 +132,11 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
 
   return (
     <div className="formulario-claro">
+      {aviso && (
+        <p role="status" className="aviso-claro aviso-ambar">
+          {aviso}
+        </p>
+      )}
       {sesion.consumos?.length ? <ListaConsumos consumos={sesion.consumos} /> : null}
       <dl className="resumen">
         <div>

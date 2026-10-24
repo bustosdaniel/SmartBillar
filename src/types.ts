@@ -103,7 +103,12 @@ export type Pago = {
   metodo: MetodoPago
   recibido: number | null
   cambio: number | null
+  // Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
+  mesa?: { mesaId: number; inicio: number }
 }
+
+// Tarjeta o transferencia rechazada después de registrar el cobro.
+export type PagoAnulado = Pago & { anuladoEn: number }
 
 export type Egreso = {
   id: string
@@ -118,6 +123,8 @@ export type Caja = {
   pagos: Pago[]
   // Las cajas guardadas antes de existir los egresos no traen este campo.
   egresos?: Egreso[]
+  // Fuera de los pagos: no suman en caja, arqueo ni reportes.
+  anulados?: PagoAnulado[]
 }
 
 export type CajaCerrada = Caja & {

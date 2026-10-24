@@ -65,6 +65,29 @@ export function registrarEgreso(concepto: string, monto: number): Egreso | null 
   return nuevo
 }
 
+export function puedeAnularse(pago: Pago) {
+  return pago.metodo !== 'efectivo'
+}
+
+// El datáfono o el banco rechazó el pago después de registrarlo. Sale de los pagos y queda en
+// `anulados` como registro. El efectivo no se anula: ese dinero sí entró al cajón.
+export function anularPago(pagoId: string): Pago | null {
+  const caja = abierta.obtener()
+  const pago = caja?.pagos.find((p) => p.id === pagoId)
+  if (!caja || !pago || !puedeAnularse(pago)) return null
+  abierta.guardar({
+    ...caja,
+    pagos: caja.pagos.filter((p) => p.id !== pagoId),
+    anulados: [...(caja.anulados ?? []), { ...pago, anuladoEn: Date.now() }],
+  })
+  registrarMovimiento({
+    tipo: 'pago',
+    titulo: `Cobro anulado · ${pago.concepto}`,
+    detalle: `${NOMBRES_METODO[pago.metodo]} rechazada · ${formatearPesos(pago.monto)}`,
+  })
+  return pago
+}
+
 export function totalEgresos(caja: Caja) {
   return (caja.egresos ?? []).reduce((total, e) => total + e.monto, 0)
 }
