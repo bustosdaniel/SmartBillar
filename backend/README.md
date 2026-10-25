@@ -75,6 +75,22 @@ Para usarla desde el frontend, deja también corriendo `npm run dev` en `fronten
 - `GET /api/auth/yo` devuelve el usuario del token.
 - `JWT_SECRETO` en `.env` firma los tokens: cada instalación debe tener el suyo.
 
+## Usuarios y roles
+
+| Ruta | Quién | Para qué |
+|---|---|---|
+| `GET /api/usuarios` | personal | Clientes y empleados |
+| `GET /api/usuarios/empleados` | cualquiera con sesión | El personal (sin cédula ni celular) |
+| `GET /api/usuarios/cedula/{cedula}` | personal | Buscar un cliente (acepta puntos) |
+| `POST /api/usuarios/clientes` | personal | Registrar un cliente en caja (contraseña temporal `123456`) |
+| `PATCH /api/usuarios/yo` | cualquiera con sesión | Editar su perfil |
+| `PUT /api/usuarios/yo/password` | cualquiera con sesión | Cambiar su contraseña (pide la actual) |
+| `PATCH /api/usuarios/{id}/cargo` | administrador | Administrador o cajero (siempre queda al menos un administrador) |
+
+"Personal" es el administrador y el cajero. El cajero no puede: cambiar precios ni planes, ver
+reportes, gestionar empleados, anular cobros ni manejar torneos (crear, iniciar, llaves). En el
+backend se usan las dependencias `Empleado` y `Administrador` de `app/deps.py`.
+
 ## Cambiar una tabla
 
 1. Edita el modelo en `app/models/`.
