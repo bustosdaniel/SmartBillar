@@ -1,64 +1,88 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ErrorApi, fijarToken, pedir } from '../api/cliente'
 import type { Usuario } from '../types'
-import { notificarAdministradores } from '../notificaciones/notificaciones'
 import { leer } from '../utils/almacen'
 import { AuthContext, type DatosRegistro } from './useAuth'
-import { actualizarDatos, cedulaEnUso, emailEnUso, guardarRegistrado, sinPassword, todosLosUsuarios, type DatosPerfil } from './usuarios'
+import { actualizarDatos, recordarUsuarioDelServidor, type DatosPerfil } from './usuarios'
 
-const SESION_KEY = 'billar.usuario'
+// Token del backend + datos del usuario. "Recordarme" la guarda en localStorage; si no, en sessionStorage.
+const SESION_KEY = 'billar.sesion'
+// Clave de las sesiones del prototipo (sin token): se descartan y hay que volver a iniciar sesión.
+const SESION_ANTIGUA = 'billar.usuario'
+
+type Sesion = { token: string; usuario: Usuario }
 
 function leerSesion() {
-  return leer<Usuario | null>(SESION_KEY, null) ?? leer<Usuario | null>(SESION_KEY, null, sessionStorage)
+  localStorage.removeItem(SESION_ANTIGUA)
+  sessionStorage.removeItem(SESION_ANTIGUA)
+  return leer<Sesion | null>(SESION_KEY, null) ?? leer<Sesion | null>(SESION_KEY, null, sessionStorage)
 }
 
-function guardarSesion(usuario: Usuario, recordar: boolean) {
+function guardarSesion(sesion: Sesion, recordar: boolean) {
   const storage = recordar ? localStorage : sessionStorage
-  storage.setItem(SESION_KEY, JSON.stringify(usuario))
+  storage.setItem(SESION_KEY, JSON.stringify(sesion))
+}
+
+function borrarSesion() {
+  localStorage.removeItem(SESION_KEY)
+  sessionStorage.removeItem(SESION_KEY)
+}
+
+function iniciar() {
+  const sesion = leerSesion()
+  fijarToken(sesion?.token ?? null)
+  return sesion
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(leerSesion)
+  const [sesion, setSesion] = useState<Sesion | null>(iniciar)
+  const usuario = sesion?.usuario ?? null
 
-  function login(email: string, password: string, recordar: boolean) {
-    const encontrado = todosLosUsuarios().find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password,
-    )
-    if (!encontrado) return null
-    const u = sinPassword(encontrado)
-    guardarSesion(u, recordar)
-    setUsuario(u)
-    return u
-  }
-
-  function registrar({ nombre, email, telefono, cedula, password }: DatosRegistro) {
-    if (emailEnUso(email)) {
-      return { ok: false as const, error: 'Ya existe una cuenta con ese correo' }
-    }
-    if (cedulaEnUso(cedula)) {
-      return { ok: false as const, error: 'Ya existe una cuenta con esa cédula' }
-    }
-    const u = sinPassword(guardarRegistrado({ nombre, email, telefono, cedula, password, rol: 'cliente' }))
-    notificarAdministradores('cuenta', 'Nuevo cliente registrado', `${nombre} creó su cuenta (${email}).`, '/admin/usuarios')
-    guardarSesion(u, true)
-    setUsuario(u)
-    return { ok: true as const, usuario: u }
-  }
-
-  // Guarda los cambios y actualiza la sesión abierta, en el mismo almacenamiento donde estaba.
-  function actualizarPerfil(datos: DatosPerfil) {
-    if (!usuario) return 'No hay sesión iniciada.'
-    const error = actualizarDatos(usuario.id, datos)
-    if (error) return error
-    const actualizado = { ...usuario, ...datos }
-    guardarSesion(actualizado, localStorage.getItem(SESION_KEY) !== null)
-    setUsuario(actualizado)
-    return null
+  function abrir(nueva: Sesion, recordar: boolean) {
+    fijarToken(nueva.token)
+    recordarUsuarioDelServidor(nueva.usuario)
+    guardarSesion(nueva, recordar)
+    setSesion(nueva)
   }
 
   function logout() {
-    setUsuario(null)
-    localStorage.removeItem(SESION_KEY)
-    sessionStorage.removeItem(SESION_KEY)
+    fijarToken(null)
+    borrarSesion()
+    setSesion(null)
+  }
+
+  // Al abrir la app se confirma con el backend que el token sigue vigente (y se refrescan los datos).
+  useEffect(() => {
+    const guardada = leerSesion()
+    if (!guardada) return
+    pedir<Usuario>('/auth/yo')
+      .then((actual) => abrir({ ...guardada, usuario: actual }, localStorage.getItem(SESION_KEY) !== null))
+      .catch((error) => {
+        if (error instanceof ErrorApi && error.estado === 401) logout()
+      })
+  }, [])
+
+  async function login(email: string, password: string, recordar: boolean) {
+    const nueva = await pedir<Sesion>('/auth/login', { cuerpo: { email, password } })
+    abrir(nueva, recordar)
+    return nueva.usuario
+  }
+
+  async function registrar(datos: DatosRegistro) {
+    const nueva = await pedir<Sesion>('/auth/registro', { cuerpo: datos })
+    abrir(nueva, true)
+    return nueva.usuario
+  }
+
+  // TEMPORAL hasta el módulo de usuarios (paso 3): el perfil se sigue guardando en el navegador.
+  function actualizarPerfil(datos: DatosPerfil) {
+    if (!sesion) return 'No hay sesión iniciada.'
+    const error = actualizarDatos(sesion.usuario.id, datos)
+    if (error) return error
+    const actualizada = { ...sesion, usuario: { ...sesion.usuario, ...datos } }
+    guardarSesion(actualizada, localStorage.getItem(SESION_KEY) !== null)
+    setSesion(actualizada)
+    return null
   }
 
   return <AuthContext value={{ usuario, login, registrar, actualizarPerfil, logout }}>{children}</AuthContext>

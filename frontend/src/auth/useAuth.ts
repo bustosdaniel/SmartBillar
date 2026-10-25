@@ -12,8 +12,9 @@ export type DatosRegistro = {
 
 export type AuthContextValue = {
   usuario: Usuario | null
-  login: (email: string, password: string, recordar: boolean) => Usuario | null
-  registrar: (datos: DatosRegistro) => { ok: true; usuario: Usuario } | { ok: false; error: string }
+  // Lanzan ErrorApi con el mensaje del backend si algo falla.
+  login: (email: string, password: string, recordar: boolean) => Promise<Usuario>
+  registrar: (datos: DatosRegistro) => Promise<Usuario>
   actualizarPerfil: (datos: DatosPerfil) => string | null
   logout: () => void
 }

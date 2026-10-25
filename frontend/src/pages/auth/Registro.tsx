@@ -9,8 +9,9 @@ export function Registro() {
   const { registrar } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
     const password = String(datos.get('password'))
@@ -22,18 +23,21 @@ export function Registro() {
       setError('Las contraseñas no coinciden')
       return
     }
-    const resultado = registrar({
-      nombre: String(datos.get('nombre')).trim(),
-      email: String(datos.get('email')).trim(),
-      telefono: String(datos.get('telefono')).trim(),
-      cedula: String(datos.get('cedula')).trim(),
-      password,
-    })
-    if (!resultado.ok) {
-      setError(resultado.error)
-      return
+    setError('')
+    setEnviando(true)
+    try {
+      const usuario = await registrar({
+        nombre: String(datos.get('nombre')).trim(),
+        email: String(datos.get('email')).trim(),
+        telefono: String(datos.get('telefono')).trim(),
+        cedula: String(datos.get('cedula')).trim(),
+        password,
+      })
+      navigate(rutaInicio(usuario.rol), { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.')
+      setEnviando(false)
     }
-    navigate(rutaInicio(resultado.usuario.rol), { replace: true })
   }
 
   return (
@@ -67,8 +71,8 @@ export function Registro() {
           {error}
         </p>
       )}
-      <button type="submit" className="boton">
-        Crear cuenta
+      <button type="submit" className="boton" disabled={enviando}>
+        {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
       </button>
       <div className="formulario-enlaces">
         <span>

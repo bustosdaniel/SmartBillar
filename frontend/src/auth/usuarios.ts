@@ -84,6 +84,13 @@ export function cambiarPassword(usuarioId: number, actual: string, nueva: string
   return null
 }
 
+// TEMPORAL hasta conectar el módulo de usuarios a la API (paso 3): las cuentas que llegan del
+// backend se copian aquí, sin contraseña, para que la búsqueda por cédula y las listas las vean.
+export function recordarUsuarioDelServidor(usuario: Usuario) {
+  if (todosLosUsuarios().some((u) => u.id === usuario.id)) return
+  registrados.guardar([...registrados.obtener(), { ...usuario, password: '' }])
+}
+
 export function guardarRegistrado(datos: Omit<UsuarioConPassword, 'id' | 'creado'>): UsuarioConPassword {
   const nuevo: UsuarioConPassword = {
     ...datos,
