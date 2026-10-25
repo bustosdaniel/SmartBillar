@@ -48,7 +48,7 @@ cp .env.example .env            # pon la contraseña de root en DATABASE_URL
 ### Datos iniciales (seeds)
 
 - `python -m app.seeds`: mesas, tarifas, reglas de horario, planes, productos y empleados.
-- `python -m app.seeds --demo`: además clientes de prueba (con cédula), membresías, 3 torneos y 75 días
+- `python -m app.seeds --demo`: además clientes de prueba, membresías, 3 torneos y 75 días
   de historial de caja para Reportes.
 
 Solo crean lo que falta: se pueden correr varias veces sin duplicar nada ni pisar precios editados.
@@ -80,8 +80,8 @@ Para usarla desde el frontend, deja también corriendo `npm run dev` en `fronten
 | Ruta | Quién | Para qué |
 |---|---|---|
 | `GET /api/usuarios` | personal | Clientes y empleados |
-| `GET /api/usuarios/empleados` | cualquiera con sesión | El personal (sin cédula ni celular) |
-| `GET /api/usuarios/cedula/{cedula}` | personal | Buscar un cliente (acepta puntos) |
+| `GET /api/usuarios/empleados` | cualquiera con sesión | El personal (sin celular) |
+| `GET /api/usuarios/cliente?email=…` | personal | Buscar un cliente por su correo |
 | `POST /api/usuarios/clientes` | personal | Registrar un cliente en caja (contraseña temporal `123456`) |
 | `PATCH /api/usuarios/yo` | cualquiera con sesión | Editar su perfil |
 | `PUT /api/usuarios/yo/password` | cualquiera con sesión | Cambiar su contraseña (pide la actual) |
@@ -100,8 +100,25 @@ backend se usan las dependencias `Empleado` y `Administrador` de `app/deps.py`.
 ## Script SQL para el documento
 
 ```bash
-.venv/bin/alembic upgrade head --sql > esquema.sql
+.venv/bin/python -m app.exportar_esquema > esquema.sql
 ```
 
-Genera los `CREATE TABLE` de todas las tablas (sección "Diseño de Base de Datos"). El archivo
-`esquema.sql` del repo ya está generado con la migración inicial.
+Genera los `CREATE TABLE` de todas las tablas tal como quedan hoy (sección "Diseño de Base de
+Datos"). Hay que volver a generarlo después de cada migración.
+
+## Membresías
+
+| Ruta | Quién | Para qué |
+|---|---|---|
+| `GET /api/membresias/planes` | cualquiera con sesión | Planes con precios y beneficios |
+| `PUT /api/membresias/planes/{id}` | administrador | Editar precio y beneficios de un plan |
+| `GET /api/membresias` | personal | Todas las membresías |
+| `POST /api/membresias` | personal | Activar o renovar (30 días; el mismo plan antes de vencer suma al vencimiento) |
+| `GET /api/membresias/solicitudes` | personal | Solicitudes pendientes de pago |
+| `DELETE /api/membresias/solicitudes/{clienteId}` | personal | Rechazar una solicitud (avisa al cliente) |
+| `GET /api/membresias/mia` | cliente | Su membresía y su solicitud pendiente |
+| `POST /api/membresias/mia/solicitud` | cliente | Pedir un plan (lo paga en caja; avisa al personal) |
+| `DELETE /api/membresias/mia/solicitud` | cliente | Cancelar su solicitud |
+
+Los datos entran y salen con los nombres del frontend (`precioMensual`, `clienteId`): los esquemas heredan
+de `EsquemaCamel` (`app/schemas/comun.py`).

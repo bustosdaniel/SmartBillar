@@ -8,7 +8,7 @@ SmartBillar es una aplicación web para apoyar la operación diaria de un club d
 ### Administración
 
 - Consultar un panel con actividad del club, estado de mesas, caja y notificaciones.
-- Registrar clientes con nombre, correo, celular y cédula; consultar sus visitas y gastos.
+- Registrar clientes con nombre, correo y celular; buscarlos por correo y consultar sus visitas y gastos.
 - Administrar mesas, sesiones de juego, tarifas y consumos.
 - Registrar ingresos y egresos, abrir y cerrar caja, y consultar cierres.
 - Crear y administrar planes de membresía, solicitudes y asignaciones.
