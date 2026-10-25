@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router'
-import { RutaProtegida } from './auth/RutaProtegida'
+import { RutaProtegida, SoloAdministrador } from './auth/RutaProtegida'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AuthLayout } from './layouts/AuthLayout'
 import { ClienteLayout } from './layouts/ClienteLayout'
@@ -71,7 +71,14 @@ export const router = createBrowserRouter([
           { path: 'membresias', element: <Membresias /> },
           { path: 'torneos', element: <TorneosAdmin /> },
           { path: 'torneos/:id', element: <TorneoDetalleAdmin /> },
-          { path: 'reportes', element: <Reportes /> },
+          {
+            path: 'reportes',
+            element: (
+              <SoloAdministrador>
+                <Reportes />
+              </SoloAdministrador>
+            ),
+          },
           { path: 'notificaciones', element: <NotificacionesAdmin /> },
         ],
       },

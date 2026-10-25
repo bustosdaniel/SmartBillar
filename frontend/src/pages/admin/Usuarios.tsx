@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { Search, UserPlus } from 'lucide-react'
-import {
-  cambiarCargo,
-  NOMBRES_CARGO,
-  normalizar,
-  useCargos,
-  useUsuarios,
-} from '../../auth/usuarios'
+import { useEsAdministrador } from '../../auth/useAuth'
+import { cambiarCargo, NOMBRES_CARGO, normalizar, useUsuarios } from '../../auth/usuarios'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { useAhora } from '../../hooks/useAhora'
@@ -22,7 +17,7 @@ type Pestana = 'clientes' | 'empleados'
 const CARGOS: Cargo[] = ['administrador', 'cajero']
 
 export function Usuarios() {
-  const cargos = useCargos()
+  const esAdministrador = useEsAdministrador()
   const finalizadas = useSesionesFinalizadas()
   const membresias = useMembresias()
   const planes = usePlanes()
@@ -32,6 +27,7 @@ export function Usuarios() {
   const [busqueda, setBusqueda] = useState('')
   const [registrando, setRegistrando] = useState(false)
   const [ficha, setFicha] = useState<Usuario | null>(null)
+  const [errorCargo, setErrorCargo] = useState('')
 
   const usuarios = useUsuarios()
   const empleados = usuarios.filter((u) => u.rol === 'admin')
@@ -54,6 +50,17 @@ export function Usuarios() {
     .toSorted((a, b) => b.ultima - a.ultima || a.usuario.nombre.localeCompare(b.usuario.nombre))
 
   const fichaDatos = ficha && clientes.find((c) => c.usuario.id === ficha.id)
+  // La pestaña Empleados es solo del administrador.
+  const pestanas: Pestana[] = esAdministrador ? ['clientes', 'empleados'] : ['clientes']
+
+  async function elegirCargo(usuarioId: number, cargo: Cargo) {
+    setErrorCargo('')
+    try {
+      await cambiarCargo(usuarioId, cargo)
+    } catch (error) {
+      setErrorCargo(error instanceof Error ? error.message : 'No se pudo cambiar el cargo.')
+    }
+  }
 
   return (
     <section className="pagina">
@@ -67,7 +74,7 @@ export function Usuarios() {
       </header>
 
       <div className="filtros" role="tablist" aria-label="Tipo de usuario">
-        {(['clientes', 'empleados'] as Pestana[]).map((p) => (
+        {pestanas.map((p) => (
           <button
             key={p}
             type="button"
@@ -81,7 +88,7 @@ export function Usuarios() {
         ))}
       </div>
 
-      {pestana === 'clientes' ? (
+      {pestana === 'clientes' || !esAdministrador ? (
         <div className="tarjeta panel-bloque">
           <label className="buscador">
             <Search size={18} aria-hidden="true" />
@@ -149,7 +156,7 @@ export function Usuarios() {
         <div className="tarjeta panel-bloque">
           <ul className="empleados">
             {empleados.map((u) => {
-              const cargo = cargos[u.id] ?? u.cargo ?? 'administrador'
+              const cargo = u.cargo ?? 'administrador'
               return (
                 <li key={u.id}>
                   <span className="avatar" aria-hidden="true">
@@ -161,7 +168,7 @@ export function Usuarios() {
                   </span>
                   <label className="selector-cargo">
                     <span className="sr-only">Cargo de {u.nombre}</span>
-                    <select value={cargo} onChange={(e) => cambiarCargo(u.id, e.target.value as Cargo)}>
+                    <select value={cargo} onChange={(e) => elegirCargo(u.id, e.target.value as Cargo)}>
                       {CARGOS.map((c) => (
                         <option key={c} value={c}>
                           {NOMBRES_CARGO[c]}
@@ -173,9 +180,14 @@ export function Usuarios() {
               )
             })}
           </ul>
+          {errorCargo && (
+            <p role="alert" className="alerta-clara">
+              {errorCargo}
+            </p>
+          )}
           <p className="nota">
-            Por ahora los dos cargos entran a la misma vista de administración. Qué puede hacer el Cajero / Operador está
-            pendiente de definir con el equipo (G1).
+            El Cajero / Operador atiende mesas, consumos, caja, clientes, membresías e inscripciones. Precios y planes,
+            reportes, empleados, anular cobros y manejar torneos son solo del Administrador.
           </p>
         </div>
       )}

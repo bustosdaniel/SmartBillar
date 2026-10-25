@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { LogOut, Menu, X, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
-import { NOMBRES_CARGO, useCargos } from '../auth/usuarios'
+import { NOMBRES_CARGO } from '../auth/usuarios'
 import { Logo } from '../components/Logo'
 
 export type ItemMenu = {
@@ -16,8 +16,7 @@ export type ItemMenu = {
 export function AppLayout({ items }: { items: ItemMenu[] }) {
   const location = useLocation()
   const { usuario, logout } = useAuth()
-  const cargos = useCargos()
-  const cargo = usuario ? (cargos[usuario.id] ?? usuario.cargo ?? 'administrador') : 'administrador'
+  const cargo = usuario?.cargo ?? 'administrador'
   const [menuAbierto, setMenuAbierto] = useState(false)
 
   return (

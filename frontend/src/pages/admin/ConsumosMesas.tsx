@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CupSoda, Plus, Tags, User } from 'lucide-react'
+import { useEsAdministrador } from '../../auth/useAuth'
 import { CATEGORIAS, NOMBRES_CATEGORIA, totalConsumos, useProductos } from '../../consumos/productos'
 import { Encabezado } from '../../components/Encabezado'
 import { ListaConsumos } from '../../components/ListaConsumos'
@@ -16,6 +17,7 @@ import { DialogoPrecios } from './consumos/DialogoPrecios'
 type Dialogo = { tipo: 'consumo'; mesa: Mesa } | { tipo: 'precios' } | null
 
 export function ConsumosMesas() {
+  const esAdministrador = useEsAdministrador()
   const sesiones = useSesiones()
   const finalizadas = useSesionesFinalizadas()
   const productos = useProductos()
@@ -37,9 +39,11 @@ export function ConsumosMesas() {
     <section className="pagina">
       <header className="panel-cabecera">
         <Encabezado titulo="Consumos" subtitulo="Productos pedidos por mesa" />
-        <button type="button" className="boton boton-secundario" onClick={() => setDialogo({ tipo: 'precios' })}>
-          <Tags size={16} aria-hidden="true" /> Precios
-        </button>
+        {esAdministrador && (
+          <button type="button" className="boton boton-secundario" onClick={() => setDialogo({ tipo: 'precios' })}>
+            <Tags size={16} aria-hidden="true" /> Precios
+          </button>
+        )}
       </header>
 
       <div className="grid-resumen">

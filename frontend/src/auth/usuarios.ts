@@ -1,10 +1,8 @@
+import { ErrorApi, pedir } from '../api/cliente'
 import type { Cargo, Usuario } from '../types'
-import { crearStoreLocal } from '../utils/storeLocal'
-import { usuariosMock } from './mockUsers'
+import { crearStoreMemoria } from '../utils/storeMemoria'
 
-export type UsuarioConPassword = Usuario & { password: string }
-
-// Contraseña temporal de las cuentas que crea el admin (el cliente la cambia con "¿Olvidaste tu contraseña?").
+// Contraseña de las cuentas que crea el personal en caja (la asigna el backend).
 export const PASSWORD_TEMPORAL = '123456'
 
 export const NOMBRES_CARGO: Record<Cargo, string> = {
@@ -14,95 +12,71 @@ export const NOMBRES_CARGO: Record<Cargo, string> = {
 
 export type DatosPerfil = Pick<Usuario, 'nombre' | 'email'> & { telefono: string; cedula: string }
 
-const registrados = crearStoreLocal<UsuarioConPassword[]>('billar.registrados', [])
-const cargos = crearStoreLocal<Partial<Record<number, Cargo>>>('billar.cargos', {})
-// Cambios hechos desde el perfil. Así también se pueden editar los usuarios de prueba, que son fijos.
-const cambios = crearStoreLocal<Partial<Record<number, Partial<UsuarioConPassword>>>>('billar.perfiles', {})
+// Los usuarios del prototipo vivían en el navegador; ahora están en MySQL. Se limpian una vez.
+for (const clave of ['billar.registrados', 'billar.cargos', 'billar.perfiles']) localStorage.removeItem(clave)
 
-export const leerRegistrados = registrados.obtener
-export const useCargos = cargos.useValor
+// Usuarios que el backend deja ver a quien inició sesión: el personal ve a todos; un cliente, solo
+// al personal (para enviarle avisos) y a sí mismo. Se cargan al iniciar sesión (AuthContext).
+const store = crearStoreMemoria<Usuario[]>([])
 
-function conCambios(lista: UsuarioConPassword[], todos: Partial<Record<number, Partial<UsuarioConPassword>>>) {
-  return lista.map((u) => ({ ...u, ...todos[u.id] }))
+export const useUsuarios = store.useValor
+export const todosLosUsuarios = store.obtener
+
+export async function cargarUsuarios(yo: Usuario) {
+  const lista = yo.rol === 'admin' ? await pedir<Usuario[]>('/usuarios') : [...(await pedir<Usuario[]>('/usuarios/empleados')), yo]
+  store.guardar(lista)
 }
 
-export function todosLosUsuarios(): UsuarioConPassword[] {
-  return conCambios([...usuariosMock, ...registrados.obtener()], cambios.obtener())
+export function vaciarUsuarios() {
+  store.guardar([])
 }
 
-export function useUsuarios(): Usuario[] {
-  const lista = registrados.useValor()
-  const todos = cambios.useValor()
-  return conCambios([...usuariosMock, ...lista], todos).map(sinPassword)
-}
-
-export function sinPassword({ password: _omit, ...usuario }: UsuarioConPassword): Usuario {
-  return usuario
+// Pone (o actualiza) un usuario en la lista sin volver a pedirla completa.
+export function recordarUsuario(usuario: Usuario) {
+  store.guardar([...store.obtener().filter((u) => u.id !== usuario.id), usuario])
 }
 
 export function listarClientes(): Usuario[] {
-  return todosLosUsuarios()
-    .filter((u) => u.rol === 'cliente')
-    .map(sinPassword)
+  return store.obtener().filter((u) => u.rol === 'cliente')
 }
 
-// Solo los dígitos: "1.098.765.432" y "1098765432" son la misma cédula.
+// Solo los dígitos: "1.098.765.432" y "1098765432" son la misma cédula (igual que en el backend).
 export function normalizarCedula(cedula: string) {
   return cedula.replace(/\D/g, '')
 }
 
-export function buscarPorCedula(cedula: string): Usuario | null {
+export async function buscarPorCedula(cedula: string): Promise<Usuario | null> {
   const buscada = normalizarCedula(cedula)
   if (!buscada) return null
-  const cliente = listarClientes().find((u) => normalizarCedula(u.cedula ?? '') === buscada)
-  return cliente ?? null
-}
-
-export function cedulaEnUso(cedula: string, exceptoId?: number) {
-  const buscada = normalizarCedula(cedula)
-  return !!buscada && todosLosUsuarios().some((u) => u.id !== exceptoId && normalizarCedula(u.cedula ?? '') === buscada)
-}
-
-export function emailEnUso(email: string, exceptoId?: number) {
-  return todosLosUsuarios().some((u) => u.id !== exceptoId && u.email.toLowerCase() === email.toLowerCase())
-}
-
-// Devuelve un mensaje de error, o null si se guardó.
-export function actualizarDatos(usuarioId: number, datos: DatosPerfil): string | null {
-  if (!datos.nombre.trim()) return 'El nombre no puede quedar vacío.'
-  if (emailEnUso(datos.email, usuarioId)) return 'Ya existe otra cuenta con ese correo.'
-  if (cedulaEnUso(datos.cedula, usuarioId)) return 'Ya existe otra cuenta con esa cédula.'
-  cambios.guardar({ ...cambios.obtener(), [usuarioId]: { ...cambios.obtener()[usuarioId], ...datos } })
-  return null
-}
-
-export function cambiarPassword(usuarioId: number, actual: string, nueva: string): string | null {
-  const usuario = todosLosUsuarios().find((u) => u.id === usuarioId)
-  if (!usuario || usuario.password !== actual) return 'La contraseña actual no es correcta.'
-  if (nueva.length < 6) return 'La nueva contraseña debe tener al menos 6 caracteres.'
-  cambios.guardar({ ...cambios.obtener(), [usuarioId]: { ...cambios.obtener()[usuarioId], password: nueva } })
-  return null
-}
-
-// TEMPORAL hasta conectar el módulo de usuarios a la API (paso 3): las cuentas que llegan del
-// backend se copian aquí, sin contraseña, para que la búsqueda por cédula y las listas las vean.
-export function recordarUsuarioDelServidor(usuario: Usuario) {
-  if (todosLosUsuarios().some((u) => u.id === usuario.id)) return
-  registrados.guardar([...registrados.obtener(), { ...usuario, password: '' }])
-}
-
-export function guardarRegistrado(datos: Omit<UsuarioConPassword, 'id' | 'creado'>): UsuarioConPassword {
-  const nuevo: UsuarioConPassword = {
-    ...datos,
-    id: Math.max(...todosLosUsuarios().map((u) => u.id)) + 1,
-    creado: Date.now(),
+  try {
+    const cliente = await pedir<Usuario>(`/usuarios/cedula/${buscada}`)
+    recordarUsuario(cliente)
+    return cliente
+  } catch (error) {
+    if (error instanceof ErrorApi && error.estado === 404) return null
+    throw error
   }
-  registrados.guardar([...registrados.obtener(), nuevo])
-  return nuevo
 }
 
-export function cambiarCargo(usuarioId: number, cargo: Cargo) {
-  cargos.guardar({ ...cargos.obtener(), [usuarioId]: cargo })
+// El personal registra un cliente en caja; queda con PASSWORD_TEMPORAL.
+export async function registrarCliente(datos: DatosPerfil): Promise<Usuario> {
+  const cliente = await pedir<Usuario>('/usuarios/clientes', { cuerpo: datos })
+  recordarUsuario(cliente)
+  return cliente
+}
+
+export async function actualizarMiPerfil(datos: DatosPerfil): Promise<Usuario> {
+  const actualizado = await pedir<Usuario>('/usuarios/yo', { metodo: 'PATCH', cuerpo: datos })
+  recordarUsuario(actualizado)
+  return actualizado
+}
+
+export async function cambiarPassword(actual: string, nueva: string) {
+  await pedir<null>('/usuarios/yo/password', { metodo: 'PUT', cuerpo: { actual, nueva } })
+}
+
+export async function cambiarCargo(usuarioId: number, cargo: Cargo) {
+  recordarUsuario(await pedir<Usuario>(`/usuarios/${usuarioId}/cargo`, { metodo: 'PATCH', cuerpo: { cargo } }))
 }
 
 // Ignora mayúsculas y tildes: "nunez" encuentra "Nuñez".

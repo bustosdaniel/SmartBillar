@@ -3,7 +3,7 @@ import { ErrorApi, fijarToken, pedir } from '../api/cliente'
 import type { Usuario } from '../types'
 import { leer } from '../utils/almacen'
 import { AuthContext, type DatosRegistro } from './useAuth'
-import { actualizarDatos, recordarUsuarioDelServidor, type DatosPerfil } from './usuarios'
+import { actualizarMiPerfil, cargarUsuarios, vaciarUsuarios, type DatosPerfil } from './usuarios'
 
 // Token del backend + datos del usuario. "Recordarme" la guarda en localStorage; si no, en sessionStorage.
 const SESION_KEY = 'billar.sesion'
@@ -40,14 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function abrir(nueva: Sesion, recordar: boolean) {
     fijarToken(nueva.token)
-    recordarUsuarioDelServidor(nueva.usuario)
     guardarSesion(nueva, recordar)
     setSesion(nueva)
+    // Si falla, las pantallas siguen funcionando y la lista se vuelve a pedir al recargar.
+    cargarUsuarios(nueva.usuario).catch(() => {})
   }
 
   function logout() {
     fijarToken(null)
     borrarSesion()
+    vaciarUsuarios()
     setSesion(null)
   }
 
@@ -74,15 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return nueva.usuario
   }
 
-  // TEMPORAL hasta el módulo de usuarios (paso 3): el perfil se sigue guardando en el navegador.
-  function actualizarPerfil(datos: DatosPerfil) {
-    if (!sesion) return 'No hay sesión iniciada.'
-    const error = actualizarDatos(sesion.usuario.id, datos)
-    if (error) return error
-    const actualizada = { ...sesion, usuario: { ...sesion.usuario, ...datos } }
+  async function actualizarPerfil(datos: DatosPerfil) {
+    if (!sesion) throw new Error('No hay sesión iniciada.')
+    const actualizada = { ...sesion, usuario: await actualizarMiPerfil(datos) }
     guardarSesion(actualizada, localStorage.getItem(SESION_KEY) !== null)
     setSesion(actualizada)
-    return null
+    return actualizada.usuario
   }
 
   return <AuthContext value={{ usuario, login, registrar, actualizarPerfil, logout }}>{children}</AuthContext>

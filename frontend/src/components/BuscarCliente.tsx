@@ -19,13 +19,23 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
   const ahora = useAhora()
   const [cedula, setCedula] = useState('')
   const [noEncontrado, setNoEncontrado] = useState(false)
+  const [error, setError] = useState('')
+  const [buscando, setBuscando] = useState(false)
   const [registrando, setRegistrando] = useState(false)
 
-  function buscar(e: FormEvent) {
+  async function buscar(e: FormEvent) {
     e.preventDefault()
-    const encontrado = buscarPorCedula(cedula)
-    setNoEncontrado(!encontrado)
-    onCambio(encontrado)
+    setBuscando(true)
+    setError('')
+    try {
+      const encontrado = await buscarPorCedula(cedula)
+      setNoEncontrado(!encontrado)
+      onCambio(encontrado)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo buscar al cliente.')
+    } finally {
+      setBuscando(false)
+    }
   }
 
   if (registrando) {
@@ -84,6 +94,7 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
             onChange={(e) => {
               setCedula(e.target.value)
               setNoEncontrado(false)
+              setError('')
             }}
             inputMode="numeric"
             placeholder="Ej. 1098765432"
@@ -91,10 +102,15 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
             required
           />
         </label>
-        <button type="submit" className="boton">
-          <Search size={16} aria-hidden="true" /> Buscar
+        <button type="submit" className="boton" disabled={buscando}>
+          <Search size={16} aria-hidden="true" /> {buscando ? 'Buscando…' : 'Buscar'}
         </button>
       </form>
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
       {noEncontrado && (
         <div className="aviso-claro aviso-ambar aviso-con-accion" role="alert">
           <span>No se encontró al cliente, intente de nuevo o regístrelo.</span>

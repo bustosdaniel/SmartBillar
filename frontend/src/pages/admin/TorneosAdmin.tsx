@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Plus } from 'lucide-react'
+import { useEsAdministrador } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { TarjetaTorneo } from '../../components/TarjetaTorneo'
@@ -8,6 +9,7 @@ import { useTorneos } from '../../torneos/torneos'
 import { DialogoCrearTorneo } from './torneos/DialogoCrearTorneo'
 
 export function TorneosAdmin() {
+  const esAdministrador = useEsAdministrador()
   const torneos = useTorneos()
   const navigate = useNavigate()
   const [creando, setCreando] = useState(false)
@@ -19,9 +21,11 @@ export function TorneosAdmin() {
     <section className="pagina">
       <header className="panel-cabecera">
         <Encabezado titulo="Torneos" subtitulo="Organización de torneos del club" />
-        <button type="button" className="boton" onClick={() => setCreando(true)}>
-          <Plus size={18} aria-hidden="true" /> Crear torneo
-        </button>
+        {esAdministrador && (
+          <button type="button" className="boton" onClick={() => setCreando(true)}>
+            <Plus size={18} aria-hidden="true" /> Crear torneo
+          </button>
+        )}
       </header>
 
       <div className="grid-torneos">

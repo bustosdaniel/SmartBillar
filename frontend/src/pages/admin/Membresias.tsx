@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Pencil, Plus, RefreshCw } from 'lucide-react'
+import { useEsAdministrador } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { TarjetaPlan } from '../../components/TarjetaPlan'
@@ -30,6 +31,7 @@ type Dialogo =
   | null
 
 export function Membresias() {
+  const esAdministrador = useEsAdministrador()
   const planes = usePlanes()
   const membresias = useMembresias()
   const solicitudes = Object.values(useSolicitudes()).filter((s) => s !== undefined)
@@ -99,13 +101,15 @@ export function Membresias() {
             plan={planes[id]}
             etiqueta={`${miembrosActivos(id)} ${miembrosActivos(id) === 1 ? 'miembro' : 'miembros'}`}
           >
-            <button
-              type="button"
-              className="boton boton-secundario"
-              onClick={() => setDialogo({ tipo: 'editar', plan: planes[id] })}
-            >
-              <Pencil size={16} aria-hidden="true" /> Editar plan
-            </button>
+            {esAdministrador && (
+              <button
+                type="button"
+                className="boton boton-secundario"
+                onClick={() => setDialogo({ tipo: 'editar', plan: planes[id] })}
+              >
+                <Pencil size={16} aria-hidden="true" /> Editar plan
+              </button>
+            )}
           </TarjetaPlan>
         ))}
       </div>

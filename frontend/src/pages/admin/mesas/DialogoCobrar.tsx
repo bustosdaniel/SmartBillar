@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Printer, Undo2 } from 'lucide-react'
+import { useEsAdministrador } from '../../../auth/useAuth'
 import { NOMBRES_METODO, puedeAnularse, registrarPago } from '../../../caja/caja'
 import { DetalleCuenta } from '../../../components/DetalleCuenta'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
@@ -17,6 +18,7 @@ type DialogoCobrarProps = {
 }
 
 export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
+  const esAdministrador = useEsAdministrador()
   const fin = sesion.detenidaEn ?? sesion.inicio
   const calcular = useCalculadoraCuenta()
   // Al cobrar se guarda la cuenta usada, para que el recibo no cambie si se recalcula.
@@ -112,6 +114,7 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
             </div>
           </div>
         ) : (
+          esAdministrador &&
           puedeAnularse(pago) && (
             <button type="button" className="boton-enlace" onClick={() => setConfirmarAnular(true)}>
               <Undo2 size={15} aria-hidden="true" /> ¿Rechazado? Anular cobro

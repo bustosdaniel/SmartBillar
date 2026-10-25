@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Lock, MinusCircle, Undo2 } from 'lucide-react'
+import { useEsAdministrador } from '../../auth/useAuth'
 import { efectivoEsperado, NOMBRES_METODO, puedeAnularse, totalEgresos, totalPorMetodo, useCaja } from '../../caja/caja'
 import { AbrirCaja } from '../../components/AbrirCaja'
 import { Encabezado } from '../../components/Encabezado'
@@ -12,6 +13,7 @@ import { DialogoEgreso } from './caja/DialogoEgreso'
 import { HistorialCierres } from './caja/HistorialCierres'
 
 export function Caja() {
+  const esAdministrador = useEsAdministrador()
   const caja = useCaja()
   const [confirmarCierre, setConfirmarCierre] = useState(false)
   const [egresoAbierto, setEgresoAbierto] = useState(false)
@@ -30,7 +32,7 @@ export function Caja() {
           </div>
           <AbrirCaja />
         </div>
-        <HistorialCierres />
+        {esAdministrador && <HistorialCierres />}
       </section>
     )
   }
@@ -127,7 +129,7 @@ export function Caja() {
                       <strong>{formatearPesos(p.monto)}</strong>
                     </td>
                     <td>
-                      {p.mesa && puedeAnularse(p) && (
+                      {esAdministrador && p.mesa && puedeAnularse(p) && (
                         <button
                           type="button"
                           className="boton-icono boton-icono-claro"
@@ -218,7 +220,7 @@ export function Caja() {
         <DialogoCerrarCaja caja={caja} onListo={() => setConfirmarCierre(false)} />
       </Modal>
 
-      <HistorialCierres />
+      {esAdministrador && <HistorialCierres />}
     </section>
   )
 }

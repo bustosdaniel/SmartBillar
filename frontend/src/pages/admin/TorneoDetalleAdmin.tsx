@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowLeft, Play, Trash2, UserPlus } from 'lucide-react'
+import { useEsAdministrador } from '../../auth/useAuth'
 import { Llaves } from '../../components/Llaves'
 import { Modal } from '../../components/Modal'
 import { NOMBRES_MODO } from '../../mesas/datos'
@@ -20,6 +21,7 @@ import { DialogoQuitar } from './torneos/DialogoQuitar'
 type Dialogo = { tipo: 'inscribir' } | { tipo: 'cobrar' | 'quitar'; jugador: Jugador } | null
 
 export function TorneoDetalleAdmin() {
+  const esAdministrador = useEsAdministrador()
   const { id } = useParams()
   const torneo = useTorneos().find((t) => String(t.id) === id)
   const [dialogo, setDialogo] = useState<Dialogo>(null)
@@ -85,9 +87,11 @@ export function TorneoDetalleAdmin() {
               >
                 <UserPlus size={15} aria-hidden="true" /> Inscribir jugador
               </button>
-              <button type="button" className="boton boton-chico" onClick={() => iniciarTorneo(torneo.id)} disabled={!puedeIniciar}>
-                <Play size={15} aria-hidden="true" /> Iniciar torneo
-              </button>
+              {esAdministrador && (
+                <button type="button" className="boton boton-chico" onClick={() => iniciarTorneo(torneo.id)} disabled={!puedeIniciar}>
+                  <Play size={15} aria-hidden="true" /> Iniciar torneo
+                </button>
+              )}
             </div>
           </header>
           {!puedeIniciar && (
@@ -133,14 +137,16 @@ export function TorneoDetalleAdmin() {
                               Cobrar
                             </button>
                           )}
-                          <button
-                            type="button"
-                            className="boton-icono boton-icono-claro"
-                            aria-label={`Quitar a ${j.nombre}`}
-                            onClick={() => setDialogo({ tipo: 'quitar', jugador: j })}
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {esAdministrador && (
+                            <button
+                              type="button"
+                              className="boton-icono boton-icono-claro"
+                              aria-label={`Quitar a ${j.nombre}`}
+                              onClick={() => setDialogo({ tipo: 'quitar', jugador: j })}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -154,9 +160,11 @@ export function TorneoDetalleAdmin() {
         <div className="tarjeta panel-bloque">
           <header className="panel-bloque-cabecera">
             <h2>Llaves</h2>
-            {torneo.estado === 'en-curso' && <span className="nota">Asigna mesa a cada partido y marca quién ganó.</span>}
+            {torneo.estado === 'en-curso' && esAdministrador && (
+              <span className="nota">Asigna mesa a cada partido y marca quién ganó.</span>
+            )}
           </header>
-          <Llaves torneo={torneo} editable={torneo.estado === 'en-curso'} />
+          <Llaves torneo={torneo} editable={torneo.estado === 'en-curso' && esAdministrador} />
         </div>
       )}
 

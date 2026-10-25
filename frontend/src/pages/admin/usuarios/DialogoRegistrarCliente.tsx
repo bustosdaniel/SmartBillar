@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { cedulaEnUso, emailEnUso, guardarRegistrado, PASSWORD_TEMPORAL, sinPassword } from '../../../auth/usuarios'
+import { PASSWORD_TEMPORAL, registrarCliente } from '../../../auth/usuarios'
 import type { Usuario } from '../../../types'
 
 type DialogoRegistrarClienteProps = {
@@ -11,30 +11,27 @@ type DialogoRegistrarClienteProps = {
 
 export function DialogoRegistrarCliente({ onListo, cedulaInicial = '', onRegistrado }: DialogoRegistrarClienteProps) {
   const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  // El backend valida correo y cédula repetidos, y asigna la contraseña temporal.
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
-    const email = String(datos.get('email')).trim()
-    const cedula = String(datos.get('cedula')).trim()
-    if (emailEnUso(email)) {
-      setError('Ya existe una cuenta con ese correo.')
-      return
+    setError('')
+    setEnviando(true)
+    try {
+      const nuevo = await registrarCliente({
+        nombre: String(datos.get('nombre')).trim(),
+        email: String(datos.get('email')).trim(),
+        telefono: String(datos.get('telefono')).trim(),
+        cedula: String(datos.get('cedula')).trim(),
+      })
+      if (onRegistrado) onRegistrado(nuevo)
+      else onListo()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo registrar al cliente.')
+      setEnviando(false)
     }
-    if (cedulaEnUso(cedula)) {
-      setError('Ya existe una cuenta con esa cédula.')
-      return
-    }
-    const nuevo = guardarRegistrado({
-      nombre: String(datos.get('nombre')).trim(),
-      email,
-      telefono: String(datos.get('telefono')).trim(),
-      cedula,
-      password: PASSWORD_TEMPORAL,
-      rol: 'cliente',
-    })
-    if (onRegistrado) onRegistrado(sinPassword(nuevo))
-    else onListo()
   }
 
   return (
@@ -61,15 +58,15 @@ export function DialogoRegistrarCliente({ onListo, cedulaInicial = '', onRegistr
         </p>
       )}
       <p className="nota">
-        La cuenta queda con la contraseña temporal <strong>{PASSWORD_TEMPORAL}</strong>; el cliente puede cambiarla con
-        "¿Olvidaste tu contraseña?".
+        La cuenta queda con la contraseña temporal <strong>{PASSWORD_TEMPORAL}</strong>; el cliente la cambia desde Mi
+        perfil al iniciar sesión.
       </p>
       <div className="dialogo-acciones">
         <button type="button" className="boton boton-secundario" onClick={onListo}>
           Cancelar
         </button>
-        <button type="submit" className="boton">
-          Registrar cliente
+        <button type="submit" className="boton" disabled={enviando}>
+          {enviando ? 'Registrando…' : 'Registrar cliente'}
         </button>
       </div>
     </form>

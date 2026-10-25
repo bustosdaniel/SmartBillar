@@ -33,19 +33,23 @@ export function Perfil() {
   const membresia = membresias[usuario.id]
   const membresiaVigente = membresia && estadoMembresia(membresia, ahora) !== 'vencida'
 
-  function guardarDatos(e: FormEvent<HTMLFormElement>) {
+  async function guardarDatos(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
-    const error = actualizarPerfil({
-      nombre: String(datos.get('nombre')).trim(),
-      email: String(datos.get('email')).trim(),
-      telefono: String(datos.get('telefono')).trim(),
-      cedula: String(datos.get('cedula')).trim(),
-    })
-    setMensajeDatos(error ? { tipo: 'error', texto: error } : { tipo: 'ok', texto: 'Tus datos se guardaron.' })
+    try {
+      await actualizarPerfil({
+        nombre: String(datos.get('nombre')).trim(),
+        email: String(datos.get('email')).trim(),
+        telefono: String(datos.get('telefono')).trim(),
+        cedula: String(datos.get('cedula')).trim(),
+      })
+      setMensajeDatos({ tipo: 'ok', texto: 'Tus datos se guardaron.' })
+    } catch (error) {
+      setMensajeDatos({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudieron guardar tus datos.' })
+    }
   }
 
-  function guardarClave(e: FormEvent<HTMLFormElement>) {
+  async function guardarClave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formulario = e.currentTarget
     const datos = new FormData(formulario)
@@ -54,9 +58,10 @@ export function Perfil() {
       setMensajeClave({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' })
       return
     }
-    const error = cambiarPassword(usuario!.id, String(datos.get('actual')), nueva)
-    if (error) {
-      setMensajeClave({ tipo: 'error', texto: error })
+    try {
+      await cambiarPassword(String(datos.get('actual')), nueva)
+    } catch (error) {
+      setMensajeClave({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.' })
       return
     }
     formulario.reset()

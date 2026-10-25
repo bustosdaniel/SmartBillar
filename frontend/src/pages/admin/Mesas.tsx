@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Tags } from 'lucide-react'
+import { useEsAdministrador } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { useAhora } from '../../hooks/useAhora'
@@ -32,6 +33,7 @@ const TITULOS = {
 const filtros: Filtro[] = ['todas', 'pool', 'tres-bandas', 'libre']
 
 export function Mesas() {
+  const esAdministrador = useEsAdministrador()
   const sesiones = useSesiones()
   const ahora = useAhora()
   const [filtro, setFiltro] = useState<Filtro>('todas')
@@ -55,9 +57,11 @@ export function Mesas() {
     <section className="pagina">
       <header className="panel-cabecera">
         <Encabezado titulo="Mesas" subtitulo="Control de mesas en tiempo real" />
-        <button type="button" className="boton boton-secundario" onClick={() => setDialogo({ tipo: 'tarifas' })}>
-          <Tags size={16} aria-hidden="true" /> Tarifas
-        </button>
+        {esAdministrador && (
+          <button type="button" className="boton boton-secundario" onClick={() => setDialogo({ tipo: 'tarifas' })}>
+            <Tags size={16} aria-hidden="true" /> Tarifas
+          </button>
+        )}
       </header>
 
       <div className="grid-resumen">

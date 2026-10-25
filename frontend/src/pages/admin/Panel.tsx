@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Banknote, Bell, CircleDot, Trophy, Users, type LucideIcon } from 'lucide-react'
-import { useAuth } from '../../auth/useAuth'
+import { esAdministrador, useAuth } from '../../auth/useAuth'
 import { useCaja, useCajasCerradas } from '../../caja/caja'
 import { useAhora } from '../../hooks/useAhora'
 import { mesasMock } from '../../mesas/datos'
@@ -77,8 +77,9 @@ export function Panel() {
       </div>
 
       <EstadoMesas ahora={ahora} />
-      <div className="panel-grid">
-        <ResumenCaja ahora={ahora} />
+      {/* La gráfica de "Caja y reportes" es solo del administrador; al cajero le quedan los movimientos. */}
+      <div className={esAdministrador(usuario) ? 'panel-grid' : ''}>
+        {esAdministrador(usuario) && <ResumenCaja ahora={ahora} />}
         <UltimosMovimientos />
       </div>
       <div className="panel-grid panel-grid-extra">
