@@ -42,7 +42,18 @@ python3 -m venv .venv
 cp .env.example .env            # pon la contraseña de root en DATABASE_URL
 .venv/bin/python -m app.crear_base   # crea la base vacía "smartbillar"
 .venv/bin/alembic upgrade head       # crea todas las tablas
+.venv/bin/python -m app.seeds --demo # datos iniciales (sin --demo: solo los datos base)
 ```
+
+### Datos iniciales (seeds)
+
+- `python -m app.seeds`: mesas, tarifas, reglas de horario, planes, productos y empleados.
+- `python -m app.seeds --demo`: además clientes de prueba (con cédula), membresías, 3 torneos y 75 días
+  de historial de caja para Reportes.
+
+Solo crean lo que falta: se pueden correr varias veces sin duplicar nada ni pisar precios editados.
+Todas las cuentas de prueba usan la contraseña `123456` (guardada con bcrypt), por ejemplo
+`admin@billar.com` (administrador), `neifer@billar.com` (cajero) o `juan@billar.com` (cliente).
 
 ## Arrancar la API
 
@@ -53,6 +64,16 @@ cp .env.example .env            # pon la contraseña de root en DATABASE_URL
 - API: http://localhost:8000
 - Documentación interactiva (manual técnico): http://localhost:8000/docs
 - Comprobar conexión: http://localhost:8000/salud
+
+Para usarla desde el frontend, deja también corriendo `npm run dev` en `frontend/`: Vite redirige
+`/api` al puerto 8000. Si el backend está apagado, el login muestra "No se pudo conectar con el servidor".
+
+## Autenticación
+
+- `POST /api/auth/login` y `POST /api/auth/registro` devuelven `{ token, usuario }`.
+- Las demás rutas piden el token en `Authorization: Bearer <token>` (vence a las 12 horas).
+- `GET /api/auth/yo` devuelve el usuario del token.
+- `JWT_SECRETO` en `.env` firma los tokens: cada instalación debe tener el suyo.
 
 ## Cambiar una tabla
 
