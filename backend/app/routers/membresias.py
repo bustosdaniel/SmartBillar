@@ -45,9 +45,9 @@ def membresias(db: BaseDeDatos, _empleado: Empleado):
 
 @router.post("", response_model=MembresiaSalida)
 def asignar(datos: AsignarEntrada, db: BaseDeDatos, _empleado: Empleado):
-    """Administrador o cajero: activa o renueva la membresía de un cliente (se cobra en caja)."""
+    """Administrador o cajero: cobra en caja y activa o renueva la membresía, en una sola transacción."""
     try:
-        membresia = servicio.asignar(db, datos.cliente_id, datos.plan_id)
+        membresia = servicio.asignar(db, datos.cliente_id, datos.plan_id, datos.pago.metodo, datos.pago.recibido)
     except ErrorDeDatos as error:
         raise _conflicto(error) from error
     db.commit()

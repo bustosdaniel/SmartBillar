@@ -1,5 +1,6 @@
 from pydantic import Field, field_validator
 
+from app.schemas.caja import DatosPago
 from app.schemas.comun import EsquemaCamel, Milisegundos
 
 
@@ -50,10 +51,11 @@ class SolicitudEntrada(EsquemaCamel):
 
 
 class AsignarEntrada(EsquemaCamel):
-    """El personal activa o renueva la membresía de un cliente después de cobrarla en caja."""
+    """El personal activa o renueva la membresía y la cobra en caja, en la misma operación."""
 
     cliente_id: int
     plan_id: str
+    pago: DatosPago
 
 
 class MiMembresia(EsquemaCamel):

@@ -19,6 +19,13 @@ NOMBRES_CAMPO = {
     "descuentoBar": ("El descuento en bar", "o"),
     "descuentoTorneo": ("El descuento en torneos", "o"),
     "planId": ("El plan", "o"),
+    "base": ("La base", "a"),
+    "contado": ("El efectivo contado", "o"),
+    "monto": ("El monto", "o"),
+    "concepto": ("El concepto", "o"),
+    "recibido": ("El efectivo recibido", "o"),
+    "metodo": ("El método de pago", "o"),
+    "cliente": ("El cliente", "o"),
 }
 
 

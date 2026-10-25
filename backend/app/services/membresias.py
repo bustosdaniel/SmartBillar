@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Membresia, Movimiento, Plan, SolicitudMembresia, Usuario
 from app.models.enums import Rol, TipoMovimiento, TipoNotificacion
+from app.services import caja
 from app.services.notificaciones import notificar, notificar_administradores
 from app.services.usuarios import ErrorDeDatos
 from app.tiempo import ZONA_CLUB, ahora_utc
@@ -108,11 +109,21 @@ def rechazar_solicitud(db: Session, cliente_id: int) -> None:
     )
 
 
-def asignar(db: Session, cliente_id: int, plan_id: str) -> Membresia:
-    """Activa o renueva por 30 días. Si renueva el mismo plan antes de vencer, se suman al vencimiento
+def asignar(db: Session, cliente_id: int, plan_id: str, metodo, recibido: int | None) -> Membresia:
+    """Cobra el plan en la caja abierta y activa o renueva por 30 días, todo en la misma transacción: si
+    el cobro falla, no se activa nada. Si renueva el mismo plan antes de vencer, se suman al vencimiento
     actual. Atiende (borra) la solicitud del cliente si tenía una."""
     cliente = _cliente(db, cliente_id)
     plan = _plan(db, plan_id)
+    caja.registrar_pago(
+        db,
+        concepto=f"Membresía {plan.nombre}",
+        cliente=cliente.nombre,
+        cliente_id=cliente.id,
+        monto=plan.precio_mensual,
+        metodo=metodo,
+        recibido=recibido,
+    )
     ahora = ahora_utc()
     membresia = db.get(Membresia, cliente.id)
     if membresia is not None and membresia.plan_id == plan.id and membresia.vence > ahora:
@@ -134,7 +145,6 @@ def asignar(db: Session, cliente_id: int, plan_id: str) -> Membresia:
         f"Disfruta tus beneficios hasta el {_fecha_club(membresia.vence)}: {plan.descuento_mesa}% en mesa{horas}.",
         ruta="/cliente/membresia",
     )
-    db.add(Movimiento(tipo=TipoMovimiento.PAGO, titulo=f"Membresía {plan.nombre}", detalle=f"{cliente.nombre} · 30 días"))
     db.flush()
     db.refresh(membresia)
     return membresia

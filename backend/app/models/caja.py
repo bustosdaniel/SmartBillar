@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, Computed, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 from app.models.enums import MetodoPago, columna_enum
@@ -23,6 +23,9 @@ class Caja(Base):
     abierta: Mapped[int | None] = mapped_column(
         Integer, Computed("(CASE WHEN cierre IS NULL THEN 1 END)", persisted=True), unique=True
     )
+
+    pagos: Mapped[list["Pago"]] = relationship(order_by="Pago.fecha", lazy="selectin")
+    egresos: Mapped[list["Egreso"]] = relationship(order_by="Egreso.fecha", lazy="selectin")
 
 
 class Pago(Base):
