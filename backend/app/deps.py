@@ -33,6 +33,12 @@ def usuario_actual(
 UsuarioActual = Annotated[Usuario, Depends(usuario_actual)]
 
 
+def cliente(usuario: UsuarioActual) -> Usuario:
+    if usuario.rol != Rol.CLIENTE:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esta opción es solo para clientes.")
+    return usuario
+
+
 def empleado(usuario: UsuarioActual) -> Usuario:
     """Administrador o cajero."""
     if usuario.rol != Rol.ADMIN:
@@ -47,5 +53,6 @@ def administrador(usuario: UsuarioActual) -> Usuario:
     return usuario
 
 
+Cliente = Annotated[Usuario, Depends(cliente)]
 Empleado = Annotated[Usuario, Depends(empleado)]
 Administrador = Annotated[Usuario, Depends(administrador)]

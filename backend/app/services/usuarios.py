@@ -1,5 +1,3 @@
-import re
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -16,20 +14,14 @@ class ErrorDeDatos(ValueError):
     """Dato rechazado por una regla del negocio; el mensaje se muestra tal cual al usuario."""
 
 
-def normalizar_cedula(cedula: str) -> str:
-    """Solo los dígitos: "1.098.765.432" y "1098765432" son la misma cédula (como en el frontend)."""
-    return re.sub(r"\D", "", cedula)
-
-
 def buscar_por_email(db: Session, email: str) -> Usuario | None:
     return db.scalar(select(Usuario).where(func.lower(Usuario.email) == email.strip().lower()))
 
 
-def buscar_cliente_por_cedula(db: Session, cedula: str) -> Usuario | None:
-    buscada = normalizar_cedula(cedula)
-    if not buscada:
-        return None
-    return db.scalar(select(Usuario).where(Usuario.cedula == buscada, Usuario.rol == Rol.CLIENTE))
+def buscar_cliente_por_email(db: Session, email: str) -> Usuario | None:
+    """Sin distinguir mayúsculas ni espacios alrededor, como en el login."""
+    usuario = buscar_por_email(db, email)
+    return usuario if usuario is not None and usuario.rol == Rol.CLIENTE else None
 
 
 def listar_usuarios(db: Session) -> list[Usuario]:
@@ -47,14 +39,10 @@ def autenticar(db: Session, email: str, password: str) -> Usuario | None:
     return usuario
 
 
-def _validar_unicos(db: Session, email: str, cedula: str | None, excepto_id: int | None = None) -> None:
+def _validar_correo_libre(db: Session, email: str, excepto_id: int | None = None) -> None:
     otro = buscar_por_email(db, email)
     if otro is not None and otro.id != excepto_id:
         raise ErrorDeDatos("Ya existe una cuenta con ese correo.")
-    if cedula:
-        otro = db.scalar(select(Usuario).where(Usuario.cedula == cedula))
-        if otro is not None and otro.id != excepto_id:
-            raise ErrorDeDatos("Ya existe una cuenta con esa cédula.")
 
 
 def registrar_cliente(
@@ -63,17 +51,15 @@ def registrar_cliente(
     nombre: str,
     email: str,
     telefono: str,
-    cedula: str,
     password: str = PASSWORD_TEMPORAL,
     avisar: bool = True,
 ) -> Usuario:
     """`avisar`: si el cliente se registra solo, se avisa al personal; si lo registra el personal, no."""
-    _validar_unicos(db, email, cedula)
+    _validar_correo_libre(db, email)
     cliente = Usuario(
         nombre=nombre,
         email=email.strip().lower(),
         telefono=telefono,
-        cedula=cedula,
         rol=Rol.CLIENTE,
         password_hash=encriptar_password(password),
     )
@@ -90,16 +76,11 @@ def registrar_cliente(
     return cliente
 
 
-def actualizar_perfil(
-    db: Session, usuario: Usuario, *, nombre: str, email: str, telefono: str, cedula: str | None
-) -> Usuario:
-    if usuario.rol == Rol.CLIENTE and not cedula:
-        raise ErrorDeDatos("La cédula es obligatoria.")
-    _validar_unicos(db, email, cedula, excepto_id=usuario.id)
+def actualizar_perfil(db: Session, usuario: Usuario, *, nombre: str, email: str, telefono: str) -> Usuario:
+    _validar_correo_libre(db, email, excepto_id=usuario.id)
     usuario.nombre = nombre
     usuario.email = email.strip().lower()
     usuario.telefono = telefono
-    usuario.cedula = cedula
     return usuario
 
 

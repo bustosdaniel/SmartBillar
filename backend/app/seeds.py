@@ -127,17 +127,17 @@ EMPLEADOS = [
 ]
 
 # Los tres primeros son los de prueba del frontend; el resto eran "invitados" de los torneos de
-# ejemplo y ahora son clientes con cédula (ya no hay clientes sin cuenta).
+# ejemplo y ahora son clientes con cuenta (ya no hay clientes sin cuenta).
 CLIENTES_DEMO = [
-    (1, "Cliente Demo", "cliente@billar.com", "3001234567", "1098765432"),
-    (3, "Juan Pérez", "juan@billar.com", "3109876543", "1012345678"),
-    (4, "Laura Gómez", "laura@billar.com", "3205551234", "1023456789"),
-    (8, "Carlos Ruiz", "carlos@billar.com", "3001110001", "1034567890"),
-    (9, "Andrés Mora", "andres@billar.com", "3001110002", "1045678901"),
-    (10, "Pedro Díaz", "pedro@billar.com", "3001110003", "1056789012"),
-    (11, "Sofía Castro", "sofia@billar.com", "3001110004", "1067890123"),
-    (12, "Mateo Rojas", "mateo@billar.com", "3001110005", "1078901234"),
-    (13, "Valentina León", "valentina@billar.com", "3001110006", "1089012345"),
+    (1, "Cliente Demo", "cliente@billar.com", "3001234567"),
+    (3, "Juan Pérez", "juan@billar.com", "3109876543"),
+    (4, "Laura Gómez", "laura@billar.com", "3205551234"),
+    (8, "Carlos Ruiz", "carlos@billar.com", "3001110001"),
+    (9, "Andrés Mora", "andres@billar.com", "3001110002"),
+    (10, "Pedro Díaz", "pedro@billar.com", "3001110003"),
+    (11, "Sofía Castro", "sofia@billar.com", "3001110004"),
+    (12, "Mateo Rojas", "mateo@billar.com", "3001110005"),
+    (13, "Valentina León", "valentina@billar.com", "3001110006"),
 ]
 
 
@@ -316,7 +316,7 @@ def _sembrar_cajas(db: Session, dias: int = 75) -> int:
 
 def sembrar_demo(db: Session) -> dict[str, int]:
     nuevos = dict.fromkeys(("clientes", "membresías", "torneos", "cajas"), 0)
-    for id_, nombre, email, telefono, cedula in CLIENTES_DEMO:
+    for id_, nombre, email, telefono in CLIENTES_DEMO:
         nuevos["clientes"] += _crear_si_falta(
             db,
             Usuario,
@@ -325,7 +325,6 @@ def sembrar_demo(db: Session) -> dict[str, int]:
             nombre=nombre,
             email=email,
             telefono=telefono,
-            cedula=cedula,
             rol=Rol.CLIENTE,
             password_hash=encriptar_password(PASSWORD_DEMO),
         )

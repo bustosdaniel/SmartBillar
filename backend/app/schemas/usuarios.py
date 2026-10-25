@@ -2,14 +2,6 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import Cargo, Rol
 from app.schemas.comun import Milisegundos
-from app.services.usuarios import normalizar_cedula
-
-
-def _validar_cedula(valor: str) -> str:
-    cedula = normalizar_cedula(valor)
-    if not 5 <= len(cedula) <= 20:
-        raise ValueError("La cédula debe tener entre 5 y 20 dígitos.")
-    return cedula
 
 
 class UsuarioSalida(BaseModel):
@@ -23,12 +15,11 @@ class UsuarioSalida(BaseModel):
     rol: Rol
     cargo: Cargo | None
     telefono: str | None
-    cedula: str | None
     creado: Milisegundos
 
 
 class EmpleadoPublico(BaseModel):
-    """Lo que un cliente puede saber del personal (para enviarle avisos); sin cédula ni celular."""
+    """Lo que un cliente puede saber del personal (para enviarle avisos); sin celular."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -53,22 +44,9 @@ class DatosPersonales(BaseModel):
 class ClienteNuevo(DatosPersonales):
     """Cliente que registra el personal en caja (con contraseña temporal)."""
 
-    cedula: str
-
-    @field_validator("cedula")
-    @classmethod
-    def cedula_valida(cls, valor: str) -> str:
-        return _validar_cedula(valor)
-
 
 class PerfilEntrada(DatosPersonales):
-    # Obligatoria para clientes; los empleados pueden no tenerla.
-    cedula: str | None = None
-
-    @field_validator("cedula")
-    @classmethod
-    def cedula_valida(cls, valor: str | None) -> str | None:
-        return _validar_cedula(valor) if valor else None
+    """Datos que cada usuario edita en su perfil."""
 
 
 class CambioPassword(BaseModel):

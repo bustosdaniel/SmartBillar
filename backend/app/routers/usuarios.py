@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from app.deps import Administrador, BaseDeDatos, Empleado, UsuarioActual
 from app.schemas.usuarios import (
@@ -31,10 +31,10 @@ def empleados(db: BaseDeDatos, _usuario: UsuarioActual):
     return servicio.listar_empleados(db)
 
 
-@router.get("/cedula/{cedula}", response_model=UsuarioSalida)
-def por_cedula(cedula: str, db: BaseDeDatos, _empleado: Empleado):
-    """Busca un cliente por cédula (con o sin puntos), como en caja al iniciar una mesa."""
-    cliente = servicio.buscar_cliente_por_cedula(db, cedula)
+@router.get("/cliente", response_model=UsuarioSalida)
+def buscar_cliente(db: BaseDeDatos, _empleado: Empleado, email: str = Query(min_length=1)):
+    """Busca un cliente por su correo, como en caja al iniciar una mesa o inscribir en un torneo."""
+    cliente = servicio.buscar_cliente_por_email(db, email)
     if cliente is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No se encontró al cliente, intente de nuevo o regístrelo.")
     return cliente

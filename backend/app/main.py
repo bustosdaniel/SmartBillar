@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import configuracion
 from app.db import obtener_db
 from app.errores import errores_de_validacion
-from app.routers import auth, usuarios
+from app.routers import auth, membresias, usuarios
 
 app = FastAPI(
     title="SmartBillar API",
@@ -36,3 +36,4 @@ def salud(db: Session = Depends(obtener_db)) -> dict[str, str]:
 # Todas las rutas de la API van bajo /api (el frontend las pide por ahí a través de Vite).
 app.include_router(auth.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
+app.include_router(membresias.router, prefix="/api")

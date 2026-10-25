@@ -9,11 +9,16 @@ NOMBRES_CAMPO = {
     "nombre": ("El nombre", "o"),
     "email": ("El correo", "o"),
     "telefono": ("El celular", "o"),
-    "cedula": ("La cédula", "a"),
     "password": ("La contraseña", "a"),
     "actual": ("La contraseña actual", "a"),
     "nueva": ("La contraseña nueva", "a"),
     "cargo": ("El cargo", "o"),
+    "precioMensual": ("El precio mensual", "o"),
+    "descuentoMesa": ("El descuento en mesa", "o"),
+    "horasGratisMes": ("Las horas gratis", "as"),
+    "descuentoBar": ("El descuento en bar", "o"),
+    "descuentoTorneo": ("El descuento en torneos", "o"),
+    "planId": ("El plan", "o"),
 }
 
 
@@ -29,6 +34,10 @@ def _mensaje(error: dict) -> str:
         return f"{nombre} es obligatori{o}." if minimo == 1 else f"{nombre} debe tener al menos {minimo} caracteres."
     if tipo == "string_too_long":
         return f"{nombre} no puede tener más de {contexto.get('max_length')} caracteres."
+    if tipo == "less_than_equal":
+        return f"{nombre} no puede ser mayor que {contexto.get('le')}."
+    if tipo == "greater_than_equal":
+        return f"{nombre} no puede ser menor que {contexto.get('ge')}."
     if tipo == "value_error" and campo == "email":
         return "El correo no es válido."
     if tipo == "value_error":

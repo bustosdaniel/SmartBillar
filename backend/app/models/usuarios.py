@@ -13,15 +13,12 @@ class Usuario(Base):
     __tablename__ = "usuarios"
     __table_args__ = (
         CheckConstraint("(rol = 'admin') = (cargo IS NOT NULL)", name="cargo_solo_empleados"),
-        # La cédula identifica al cliente en caja (BuscarCliente): obligatoria para clientes.
-        CheckConstraint("rol = 'admin' OR cedula IS NOT NULL", name="cedula_clientes"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120))
+    # Identifica al cliente: con él inicia sesión y el personal lo busca en caja (BuscarCliente).
     email: Mapped[str] = mapped_column(String(160), unique=True)
-    # Solo dígitos (normalizarCedula en el frontend).
-    cedula: Mapped[str | None] = mapped_column(String(20), unique=True)
     telefono: Mapped[str | None] = mapped_column(String(20))
     rol: Mapped[Rol] = mapped_column(columna_enum(Rol, "rol"))
     cargo: Mapped[Cargo | None] = mapped_column(columna_enum(Cargo, "cargo"))

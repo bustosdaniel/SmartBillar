@@ -1,9 +1,10 @@
 from datetime import datetime
 
 from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.models.usuarios import Usuario
 
 
 class Plan(Base):
@@ -36,6 +37,12 @@ class Membresia(Base):
     inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     vence: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+    cliente: Mapped[Usuario] = relationship(lazy="joined")
+
+    @property
+    def cliente_nombre(self) -> str:
+        return self.cliente.nombre
+
 
 class SolicitudMembresia(Base):
     """El cliente elige plan en la app y lo paga en caja (una solicitud abierta por cliente)."""
@@ -45,3 +52,9 @@ class SolicitudMembresia(Base):
     cliente_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
     plan_id: Mapped[str] = mapped_column(ForeignKey("planes.id"))
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    cliente: Mapped[Usuario] = relationship(lazy="joined")
+
+    @property
+    def cliente_nombre(self) -> str:
+        return self.cliente.nombre
