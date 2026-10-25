@@ -11,6 +11,9 @@ NOMBRES_CAMPO = {
     "telefono": ("El celular", "o"),
     "cedula": ("La cédula", "a"),
     "password": ("La contraseña", "a"),
+    "actual": ("La contraseña actual", "a"),
+    "nueva": ("La contraseña nueva", "a"),
+    "cargo": ("El cargo", "o"),
 }
 
 

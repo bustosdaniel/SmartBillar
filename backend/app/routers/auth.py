@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.deps import BaseDeDatos, UsuarioActual
-from app.schemas.auth import LoginEntrada, RegistroEntrada, SesionSalida, UsuarioSalida
+from app.schemas.auth import LoginEntrada, RegistroEntrada, SesionSalida
+from app.schemas.usuarios import UsuarioSalida
 from app.seguridad import crear_token
 from app.services.usuarios import ErrorDeDatos, autenticar, registrar_cliente
 
