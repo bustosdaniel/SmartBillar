@@ -202,14 +202,18 @@ export function finalizarSesion(mesaId: number, cuenta: CuentaMesa, metodoPago: 
 
 // Si el datáfono o el banco rechazó el pago después de cobrar: se anula el pago y la mesa vuelve
 // a quedar Por cobrar con el mismo tiempo y consumos. Devuelve un mensaje de error, o null.
-export function anularCobroMesa(pago: Pago): string | null {
+export async function anularCobroMesa(pago: Pago): Promise<string | null> {
   if (!pago.mesa) return 'Este pago no es de una mesa.'
   const { mesaId, inicio } = pago.mesa
   if (activas.obtener()[mesaId]) return `La Mesa ${mesaId} ya tiene otra sesión. Finalízala antes de anular este cobro.`
   const lista = finalizadas.obtener()
   const finalizada = lista.find((s) => s.mesaId === mesaId && s.inicio === inicio)
   if (!finalizada) return 'No se encontró la sesión de este cobro.'
-  if (!anularPago(pago.id)) return 'Solo se pueden anular cobros con tarjeta o transferencia de la caja abierta.'
+  try {
+    await anularPago(pago)
+  } catch (error) {
+    return error instanceof Error ? error.message : 'No se pudo anular el cobro.'
+  }
   // Se quitan los datos del cobro; `detenidaEn` sigue siendo el fin, así el tiempo no corre.
   const {
     fin: _fin,

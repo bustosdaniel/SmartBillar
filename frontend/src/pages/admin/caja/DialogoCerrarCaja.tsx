@@ -6,6 +6,20 @@ import { formatearPesos } from '../../../utils/formato'
 export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () => void }) {
   const [contado, setContado] = useState('')
   const [nota, setNota] = useState('')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  async function cerrar() {
+    setError('')
+    setEnviando(true)
+    try {
+      await cerrarCaja(Number(contado) || 0, nota.trim())
+      onListo()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cerrar la caja.')
+      setEnviando(false)
+    }
+  }
 
   const esperado = efectivoEsperado(caja)
   const total = caja.pagos.reduce((suma, p) => suma + p.monto, 0)
@@ -66,6 +80,12 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
         </label>
       )}
 
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
+
       <div className="dialogo-acciones">
         <button type="button" className="boton boton-secundario" onClick={onListo}>
           Cancelar
@@ -73,11 +93,8 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
         <button
           type="button"
           className="boton boton-peligro"
-          disabled={!hayConteo || (diferencia !== 0 && !nota.trim())}
-          onClick={() => {
-            cerrarCaja(Number(contado) || 0, nota.trim())
-            onListo()
-          }}
+          disabled={enviando || !hayConteo || (diferencia !== 0 && !nota.trim())}
+          onClick={cerrar}
         >
           Cerrar caja
         </button>

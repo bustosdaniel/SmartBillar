@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { listarClientes } from '../../../auth/usuarios'
-import { registrarPago } from '../../../caja/caja'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
 import { asignarMembresia, PLAN_IDS, usePlanes } from '../../../membresias/membresias'
 import type { Membresia, PlanId, SolicitudMembresia } from '../../../types'
@@ -26,15 +25,12 @@ export function DialogoAsignar({ renovar, solicitud, onListo }: DialogoAsignarPr
   const plan = planes[planId]
   const cliente = clientes.find((c) => String(c.id) === clienteId)
 
-  // Primero se activa en el servidor y, solo si sale bien, se registra el pago en la caja (que sigue
-  // en el navegador hasta el paso 4). Así nunca queda un pago sin su membresía.
+  // El backend cobra y activa en una sola operación: si el cobro falla, no se activa nada.
   async function pagar(datos: DatosPago) {
     if (!cliente) return
     setError('')
     try {
-      const membresia = await asignarMembresia(cliente, planId)
-      registrarPago({ ...datos, concepto: `Membresía ${plan.nombre}`, cliente: cliente.nombre, monto: plan.precioMensual })
-      setResultado(membresia)
+      setResultado(await asignarMembresia(cliente, planId, { metodo: datos.metodo, recibido: datos.recibido }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo activar la membresía.')
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ErrorApi, fijarToken, pedir } from '../api/cliente'
 import type { Usuario } from '../types'
+import { cargarCaja, vaciarCaja } from '../caja/caja'
 import { cargarMembresias, vaciarMembresias } from '../membresias/membresias'
 import { leer } from '../utils/almacen'
 import { AuthContext, type DatosRegistro } from './useAuth'
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Si falla, las pantallas siguen funcionando y los datos se vuelven a pedir al recargar.
     cargarUsuarios(nueva.usuario).catch(() => {})
     cargarMembresias(nueva.usuario).catch(() => {})
+    cargarCaja(nueva.usuario).catch(() => {})
   }
 
   function logout() {
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     borrarSesion()
     vaciarUsuarios()
     vaciarMembresias()
+    vaciarCaja()
     setSesion(null)
   }
 

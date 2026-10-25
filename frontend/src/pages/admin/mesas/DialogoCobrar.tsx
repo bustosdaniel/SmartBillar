@@ -28,23 +28,29 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
 
   const cuenta = cobrado?.cuenta ?? calcular(sesion, mesa, fin)
 
-  function cobrar(datos: DatosPago) {
-    const registrado = registrarPago({
-      ...datos,
-      concepto: mesa.nombre,
-      cliente: sesion.clienteNombre,
-      monto: cuenta.total,
-      mesa: { mesaId: mesa.id, inicio: sesion.inicio },
-    })
-    if (!registrado) return
+  async function cobrar(datos: DatosPago) {
+    let registrado: Pago
+    try {
+      registrado = await registrarPago({
+        ...datos,
+        concepto: mesa.nombre,
+        cliente: sesion.clienteNombre,
+        clienteId: sesion.clienteId,
+        monto: cuenta.total,
+        mesa: { mesaId: mesa.id, inicio: sesion.inicio },
+      })
+    } catch (err) {
+      setAviso(err instanceof Error ? err.message : 'No se pudo registrar el cobro.')
+      return
+    }
     finalizarSesion(mesa.id, cuenta, datos.metodo)
     setAviso('')
     setCobrado({ pago: registrado, cuenta })
   }
 
   // El datáfono o el banco lo rechazó después de cobrar: se vuelve al cobro con la mesa Por cobrar.
-  function anular(pago: Pago) {
-    const error = anularCobroMesa(pago)
+  async function anular(pago: Pago) {
+    const error = await anularCobroMesa(pago)
     setConfirmarAnular(false)
     if (error) {
       setAviso(error)

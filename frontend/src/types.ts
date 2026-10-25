@@ -94,7 +94,7 @@ export type Consumo = {
 export type MetodoPago = 'efectivo' | 'transferencia' | 'tarjeta'
 
 export type Pago = {
-  id: string
+  id: number
   fecha: number
   concepto: string
   cliente: string
@@ -110,13 +110,14 @@ export type Pago = {
 export type PagoAnulado = Pago & { anuladoEn: number }
 
 export type Egreso = {
-  id: string
+  id: number
   fecha: number
   concepto: string
   monto: number
 }
 
 export type Caja = {
+  id: number
   apertura: number
   base: number
   pagos: Pago[]
@@ -128,9 +129,10 @@ export type Caja = {
 
 export type CajaCerrada = Caja & {
   cierre: number
-  // Arqueo: efectivo que se contó al cerrar (las cajas de demostración no lo traen).
-  contado?: number
-  nota?: string
+  // Arqueo: efectivo que se contó al cerrar. El backend manda null en las cajas de demostración,
+  // que se cerraron sin contar.
+  contado?: number | null
+  nota?: string | null
 }
 
 export type TipoMovimiento = 'inicio' | 'pausa' | 'reanudar' | 'detener' | 'fin' | 'pago' | 'caja' | 'torneo' | 'consumo'

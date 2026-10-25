@@ -1,8 +1,9 @@
 import { pedir } from '../api/cliente'
+import { refrescarCaja } from '../caja/caja'
 import { registrarMovimiento } from '../actividad/movimientos'
 import { notificar, notificarAdministradores } from '../notificaciones/notificaciones'
 import { formatearFecha } from '../utils/formato'
-import type { EstadoMembresia, Membresia, Plan, PlanId, SolicitudMembresia, Usuario } from '../types'
+import type { EstadoMembresia, Membresia, MetodoPago, Plan, PlanId, SolicitudMembresia, Usuario } from '../types'
 import { crearStoreMemoria } from '../utils/storeMemoria'
 
 const DIA = 24 * 60 * 60 * 1000
@@ -150,11 +151,15 @@ export async function actualizarPlan(plan: Plan) {
   await recargar()
 }
 
-// Administrador o cajero, después de cobrar en caja. Si renueva el mismo plan antes de vencer, el
-// backend suma los 30 días al vencimiento actual.
-export async function asignarMembresia(cliente: { id: number; nombre: string }, planId: PlanId) {
-  const nueva = await pedir<Membresia>('/membresias', { cuerpo: { clienteId: cliente.id, planId } })
-  await recargar()
+// Administrador o cajero: el backend cobra en caja y activa en la misma transacción (si el cobro falla,
+// no se activa nada). Si renueva el mismo plan antes de vencer, suma los 30 días al vencimiento actual.
+export async function asignarMembresia(
+  cliente: { id: number; nombre: string },
+  planId: PlanId,
+  pago: { metodo: MetodoPago; recibido: number | null },
+) {
+  const nueva = await pedir<Membresia>('/membresias', { cuerpo: { clienteId: cliente.id, planId, pago } })
+  await Promise.all([recargar(), refrescarCaja()])
   const plan = planes.obtener()[planId]
   notificar(
     cliente.id,

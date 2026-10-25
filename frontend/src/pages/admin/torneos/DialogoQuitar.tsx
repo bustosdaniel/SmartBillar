@@ -9,11 +9,17 @@ export function DialogoQuitar({ torneo, jugador, onListo }: { torneo: Torneo; ju
   const caja = useCaja()
   const pagoDinero = jugador.pagado && jugador.monto > 0
   const [devolver, setDevolver] = useState(pagoDinero)
+  const [error, setError] = useState('')
 
-  function confirmar() {
+  async function confirmar() {
+    setError('')
     if (devolver) {
-      const egreso = registrarEgreso(`Devolución inscripción ${torneo.nombre} · ${jugador.nombre}`, jugador.monto)
-      if (!egreso) return
+      try {
+        await registrarEgreso(`Devolución inscripción ${torneo.nombre} · ${jugador.nombre}`, jugador.monto)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo registrar la devolución.')
+        return
+      }
     }
     quitarJugador(torneo.id, jugador.id)
     onListo()
@@ -37,6 +43,11 @@ export function DialogoQuitar({ torneo, jugador, onListo }: { torneo: Torneo; ju
           </p>
           <AbrirCaja />
         </div>
+      )}
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
       )}
       <div className="dialogo-acciones">
         <button type="button" className="boton boton-secundario" onClick={onListo}>

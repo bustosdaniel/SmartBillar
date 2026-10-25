@@ -45,9 +45,9 @@ export function Caja() {
     setErrorAnular('')
   }
 
-  function anular() {
+  async function anular() {
     if (!anulando) return
-    const error = anularCobroMesa(anulando)
+    const error = await anularCobroMesa(anulando)
     if (error) setErrorAnular(error)
     else cerrarAnular()
   }

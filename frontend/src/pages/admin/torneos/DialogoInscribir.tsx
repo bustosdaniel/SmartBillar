@@ -30,11 +30,15 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
   const errorPrevio = pendiente || !cliente ? null : validarInscripcion(torneo, clienteId)
   const listo = !!pendiente || !!cliente
 
-  function completar(datos: DatosPago | null) {
+  async function completar(datos: DatosPago | null) {
     if (!listo || errorPrevio) return
     if (datos && precio > 0) {
-      const pago = registrarPago({ ...datos, concepto: `Inscripción ${torneo.nombre}`, cliente: nombre, monto: precio })
-      if (!pago) return
+      try {
+        await registrarPago({ ...datos, concepto: `Inscripción ${torneo.nombre}`, cliente: nombre, clienteId, monto: precio })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo registrar el pago.')
+        return
+      }
     }
     if (pendiente) {
       marcarPagado(torneo.id, pendiente.id)
