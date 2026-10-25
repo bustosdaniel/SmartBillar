@@ -113,7 +113,7 @@ Datos"). Hay que volver a generarlo después de cada migración.
 | `GET /api/membresias/planes` | cualquiera con sesión | Planes con precios y beneficios |
 | `PUT /api/membresias/planes/{id}` | administrador | Editar precio y beneficios de un plan |
 | `GET /api/membresias` | personal | Todas las membresías |
-| `POST /api/membresias` | personal | Activar o renovar (30 días; el mismo plan antes de vencer suma al vencimiento) |
+| `POST /api/membresias` | personal | Cobrar en caja y activar o renovar, en una sola transacción (30 días; el mismo plan antes de vencer suma al vencimiento) |
 | `GET /api/membresias/solicitudes` | personal | Solicitudes pendientes de pago |
 | `DELETE /api/membresias/solicitudes/{clienteId}` | personal | Rechazar una solicitud (avisa al cliente) |
 | `GET /api/membresias/mia` | cliente | Su membresía y su solicitud pendiente |
@@ -122,3 +122,17 @@ Datos"). Hay que volver a generarlo después de cada migración.
 
 Los datos entran y salen con los nombres del frontend (`precioMensual`, `clienteId`): los esquemas heredan
 de `EsquemaCamel` (`app/schemas/comun.py`).
+
+## Caja
+
+| Ruta | Quién | Para qué |
+|---|---|---|
+| `GET /api/caja` | personal | La caja del turno (o `null` si está cerrada) |
+| `POST /api/caja/abrir` | personal | Abrir con la base inicial (solo una caja abierta a la vez) |
+| `POST /api/caja/cerrar` | personal | Arqueo: efectivo contado; si no cuadra, exige una observación |
+| `POST /api/caja/pagos` | personal | Registrar un cobro (en efectivo, el backend calcula el cambio) |
+| `POST /api/caja/egresos` | personal | Dinero que sale del cajón |
+| `POST /api/caja/pagos/{id}/anular` | administrador | Tarjeta o transferencia rechazada (el efectivo no se anula) |
+| `GET /api/caja/cierres` | administrador | Turnos cerrados (Reportes e historial de cierres) |
+
+Efectivo esperado = base + cobros en efectivo − egresos. Los pagos anulados no suman.
