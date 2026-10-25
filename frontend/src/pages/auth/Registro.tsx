@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { CreditCard, Lock, Mail, Phone, User } from 'lucide-react'
+import { Lock, Mail, Phone, User } from 'lucide-react'
 import { rutaInicio } from '../../auth/rutas'
 import { useAuth } from '../../auth/useAuth'
 import { CampoTexto } from '../../components/CampoTexto'
@@ -30,7 +30,6 @@ export function Registro() {
         nombre: String(datos.get('nombre')).trim(),
         email: String(datos.get('email')).trim(),
         telefono: String(datos.get('telefono')).trim(),
-        cedula: String(datos.get('cedula')).trim(),
         password,
       })
       navigate(rutaInicio(usuario.rol), { replace: true })
@@ -49,7 +48,6 @@ export function Registro() {
       <CampoTexto etiqueta="Nombre completo" icono={User} name="nombre" autoComplete="name" required />
       <CampoTexto etiqueta="Correo electrónico" icono={Mail} name="email" type="email" autoComplete="email" required />
       <CampoTexto etiqueta="Celular" icono={Phone} name="telefono" type="tel" autoComplete="tel" required />
-      <CampoTexto etiqueta="Cédula" icono={CreditCard} name="cedula" inputMode="numeric" required />
       <CampoTexto
         etiqueta="Contraseña"
         icono={Lock}

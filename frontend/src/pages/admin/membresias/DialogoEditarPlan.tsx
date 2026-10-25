@@ -1,13 +1,28 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { actualizarPlan } from '../../../membresias/membresias'
 import type { Plan } from '../../../types'
 
 export function DialogoEditarPlan({ plan, onListo }: { plan: Plan; onListo: () => void }) {
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
     const numero = (campo: string) => Math.max(0, Number(datos.get(campo)) || 0)
-    actualizarPlan({
+    setError('')
+    setEnviando(true)
+    try {
+      await guardar(datos, numero)
+      onListo()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar el plan.')
+      setEnviando(false)
+    }
+  }
+
+  function guardar(datos: FormData, numero: (campo: string) => number) {
+    return actualizarPlan({
       ...plan,
       precioMensual: numero('precioMensual'),
       descuentoMesa: Math.min(100, numero('descuentoMesa')),
@@ -19,7 +34,6 @@ export function DialogoEditarPlan({ plan, onListo }: { plan: Plan; onListo: () =
         .map((l) => l.trim())
         .filter(Boolean),
     })
-    onListo()
   }
 
   return (
@@ -52,12 +66,17 @@ export function DialogoEditarPlan({ plan, onListo }: { plan: Plan; onListo: () =
         Otros beneficios (uno por línea)
         <textarea name="extras" rows={5} defaultValue={plan.extras.join('\n')} />
       </label>
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
       <div className="dialogo-acciones">
         <button type="button" className="boton boton-secundario" onClick={onListo}>
           Cancelar
         </button>
-        <button type="submit" className="boton">
-          Guardar cambios
+        <button type="submit" className="boton" disabled={enviando}>
+          {enviando ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </div>
     </form>

@@ -21,20 +21,23 @@ export function DialogoAsignar({ renovar, solicitud, onListo }: DialogoAsignarPr
   const [clienteId, setClienteId] = useState(String(base?.clienteId ?? clientes[0]?.id ?? ''))
   const [planId, setPlanId] = useState<PlanId>(base?.planId ?? 'basica')
   const [resultado, setResultado] = useState<Membresia | null>(null)
+  const [error, setError] = useState('')
 
   const plan = planes[planId]
   const cliente = clientes.find((c) => String(c.id) === clienteId)
 
-  function pagar(datos: DatosPago) {
+  // Primero se activa en el servidor y, solo si sale bien, se registra el pago en la caja (que sigue
+  // en el navegador hasta el paso 4). Así nunca queda un pago sin su membresía.
+  async function pagar(datos: DatosPago) {
     if (!cliente) return
-    const registrado = registrarPago({
-      ...datos,
-      concepto: `Membresía ${plan.nombre}`,
-      cliente: cliente.nombre,
-      monto: plan.precioMensual,
-    })
-    if (!registrado) return
-    setResultado(asignarMembresia(cliente, planId))
+    setError('')
+    try {
+      const membresia = await asignarMembresia(cliente, planId)
+      registrarPago({ ...datos, concepto: `Membresía ${plan.nombre}`, cliente: cliente.nombre, monto: plan.precioMensual })
+      setResultado(membresia)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo activar la membresía.')
+    }
   }
 
   if (resultado) {
@@ -81,6 +84,12 @@ export function DialogoAsignar({ renovar, solicitud, onListo }: DialogoAsignarPr
           </button>
         ))}
       </fieldset>
+
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
 
       {cliente && (
         <FormularioPago

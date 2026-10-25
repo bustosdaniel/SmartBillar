@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Search, UserPlus, X } from 'lucide-react'
-import { buscarPorCedula } from '../auth/usuarios'
+import { buscarPorEmail } from '../auth/usuarios'
 import { useAhora } from '../hooks/useAhora'
 import { planVigente, useMembresias, usePlanes } from '../membresias/membresias'
 import { DialogoRegistrarCliente } from '../pages/admin/usuarios/DialogoRegistrarCliente'
@@ -12,12 +12,12 @@ type BuscarClienteProps = {
   mensajeEncontrado?: string
 }
 
-// Flujo del diagrama: "Ingrese número de cédula" → encontrado, o "intente de nuevo" / registrarlo ahí mismo.
+// El cliente se identifica por su correo: encontrado, o "intente de nuevo" / registrarlo ahí mismo.
 export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente encontrado, buen juego.' }: BuscarClienteProps) {
   const membresias = useMembresias()
   const planes = usePlanes()
   const ahora = useAhora()
-  const [cedula, setCedula] = useState('')
+  const [email, setEmail] = useState('')
   const [noEncontrado, setNoEncontrado] = useState(false)
   const [error, setError] = useState('')
   const [buscando, setBuscando] = useState(false)
@@ -28,7 +28,7 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
     setBuscando(true)
     setError('')
     try {
-      const encontrado = await buscarPorCedula(cedula)
+      const encontrado = await buscarPorEmail(email)
       setNoEncontrado(!encontrado)
       onCambio(encontrado)
     } catch (err) {
@@ -43,7 +43,7 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
       <div className="buscar-cliente">
         <h3 className="titulo-bloque">Registrar nuevo cliente</h3>
         <DialogoRegistrarCliente
-          cedulaInicial={cedula}
+          emailInicial={email}
           onListo={() => setRegistrando(false)}
           onRegistrado={(nuevo) => {
             setRegistrando(false)
@@ -65,7 +65,8 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
             {plan && <span className={`insignia-plan insignia-${plan.id} insignia-chica`}>{plan.nombre}</span>}
           </strong>
           <span className="texto-suave">
-            C.C. {cliente.cedula} · {cliente.email}
+            {cliente.email}
+            {cliente.telefono && ` · ${cliente.telefono}`}
           </span>
           <span className="cliente-encontrado-mensaje">{mensajeEncontrado}</span>
         </div>
@@ -75,7 +76,7 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
           aria-label="Buscar otro cliente"
           onClick={() => {
             onCambio(null)
-            setCedula('')
+            setEmail('')
           }}
         >
           <X size={16} />
@@ -88,16 +89,17 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
     <div className="buscar-cliente">
       <form className="buscar-cliente-fila" onSubmit={buscar}>
         <label>
-          Cédula del cliente
+          Correo del cliente
           <input
-            value={cedula}
+            type="email"
+            value={email}
             onChange={(e) => {
-              setCedula(e.target.value)
+              setEmail(e.target.value)
               setNoEncontrado(false)
               setError('')
             }}
-            inputMode="numeric"
-            placeholder="Ej. 1098765432"
+            autoComplete="off"
+            placeholder="Ej. cliente@correo.com"
             autoFocus
             required
           />

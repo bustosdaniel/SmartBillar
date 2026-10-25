@@ -6,7 +6,6 @@ export type DatosRegistro = {
   nombre: string
   email: string
   telefono: string
-  cedula: string
   password: string
 }
 

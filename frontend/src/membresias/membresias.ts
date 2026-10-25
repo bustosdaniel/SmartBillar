@@ -1,17 +1,18 @@
+import { pedir } from '../api/cliente'
 import { registrarMovimiento } from '../actividad/movimientos'
 import { notificar, notificarAdministradores } from '../notificaciones/notificaciones'
 import { formatearFecha } from '../utils/formato'
-import type { EstadoMembresia, Membresia, Plan, PlanId, SolicitudMembresia } from '../types'
-
-import { crearStoreLocal } from '../utils/storeLocal'
+import type { EstadoMembresia, Membresia, Plan, PlanId, SolicitudMembresia, Usuario } from '../types'
+import { crearStoreMemoria } from '../utils/storeMemoria'
 
 const DIA = 24 * 60 * 60 * 1000
-const DURACION = 30 * DIA
 const AVISO_VENCIMIENTO = 7 * DIA
+// Cada cuánto se vuelven a pedir al backend (para ver las solicitudes nuevas sin recargar).
+const REFRESCO_MS = 10_000
 
 export const PLAN_IDS: PlanId[] = ['basica', 'premium', 'gold']
 
-// Propuesta inicial: el admin puede editar precios y beneficios.
+// Valores con los que arranca la pantalla mientras llegan los del backend (iguales a los seeds).
 const planesIniciales: Record<PlanId, Plan> = {
   basica: {
     id: 'basica',
@@ -21,7 +22,7 @@ const planesIniciales: Record<PlanId, Plan> = {
     horasGratisMes: 0,
     descuentoBar: 0,
     descuentoTorneo: 0,
-    extras: ['1 punto por hora jugada', 'Bono de cumpleaños: 1 hora gratis'],
+    extras: [],
   },
   premium: {
     id: 'premium',
@@ -31,12 +32,7 @@ const planesIniciales: Record<PlanId, Plan> = {
     horasGratisMes: 2,
     descuentoBar: 5,
     descuentoTorneo: 50,
-    extras: [
-      'Préstamo de taco profesional',
-      '1 invitado gratis al mes',
-      '2 puntos por hora jugada',
-      'Bono de cumpleaños: 1 hora gratis',
-    ],
+    extras: [],
   },
   gold: {
     id: 'gold',
@@ -46,55 +42,87 @@ const planesIniciales: Record<PlanId, Plan> = {
     horasGratisMes: 5,
     descuentoBar: 10,
     descuentoTorneo: 100,
-    extras: [
-      'Elegir mesa preferida o VIP',
-      'Préstamo de taco profesional',
-      '2 invitados gratis al mes',
-      '1 clase de entrenamiento al mes',
-      '3 puntos por hora jugada',
-      'Bono de cumpleaños: 1 hora gratis',
-    ],
+    extras: [],
   },
 }
 
-// Miembros de prueba mientras el backend no está listo.
-const hoy = Date.now()
-const membresiasIniciales: Partial<Record<number, Membresia>> = {
-  3: { clienteId: 3, clienteNombre: 'Juan Pérez', planId: 'premium', inicio: hoy - 10 * DIA, vence: hoy + 20 * DIA },
-  4: { clienteId: 4, clienteNombre: 'Laura Gómez', planId: 'gold', inicio: hoy - 25 * DIA, vence: hoy + 5 * DIA },
-}
+type PorCliente<T> = Partial<Record<number, T>>
 
-const planes = crearStoreLocal('billar.planes', planesIniciales)
-const membresias = crearStoreLocal('billar.membresias', membresiasIniciales)
+// Antes vivían en el navegador; ahora están en MySQL. Se limpian una vez.
+for (const clave of ['billar.planes', 'billar.membresias', 'billar.solicitudes-membresia']) localStorage.removeItem(clave)
 
-const solicitudes = crearStoreLocal<Partial<Record<number, SolicitudMembresia>>>('billar.solicitudes-membresia', {})
+// Planes, membresías y solicitudes viven en MySQL. El personal recibe todas; un cliente, solo las suyas.
+const planes = crearStoreMemoria<Record<PlanId, Plan>>(planesIniciales)
+const membresias = crearStoreMemoria<PorCliente<Membresia>>({})
+const solicitudes = crearStoreMemoria<PorCliente<SolicitudMembresia>>({})
 
 export const usePlanes = planes.useValor
 export const useMembresias = membresias.useValor
 export const useSolicitudes = solicitudes.useValor
 
-export function solicitarPlan(cliente: { id: number; nombre: string }, planId: PlanId) {
-  solicitudes.guardar({
-    ...solicitudes.obtener(),
-    [cliente.id]: { clienteId: cliente.id, clienteNombre: cliente.nombre, planId, fecha: Date.now() },
-  })
-  registrarMovimiento({
-    tipo: 'caja',
-    titulo: 'Solicitud de membresía',
-    detalle: `${cliente.nombre} · ${planes.obtener()[planId].nombre}`,
-  })
+const porCliente = <T extends { clienteId: number }>(lista: T[]): PorCliente<T> =>
+  Object.fromEntries(lista.map((x) => [x.clienteId, x]))
+
+let yo: Usuario | null = null
+let refresco: number | undefined
+
+async function recargar() {
+  if (!yo) return
+  const lista = await pedir<Plan[]>('/membresias/planes')
+  planes.guardar(Object.fromEntries(lista.map((p) => [p.id, p])) as Record<PlanId, Plan>)
+  if (yo.rol === 'admin') {
+    const [todas, pendientes] = await Promise.all([
+      pedir<Membresia[]>('/membresias'),
+      pedir<SolicitudMembresia[]>('/membresias/solicitudes'),
+    ])
+    membresias.guardar(porCliente(todas))
+    solicitudes.guardar(porCliente(pendientes))
+  } else {
+    const mia = await pedir<{ membresia: Membresia | null; solicitud: SolicitudMembresia | null }>('/membresias/mia')
+    membresias.guardar(mia.membresia ? { [mia.membresia.clienteId]: mia.membresia } : {})
+    solicitudes.guardar(mia.solicitud ? { [mia.solicitud.clienteId]: mia.solicitud } : {})
+  }
+}
+
+// Lo llama AuthContext al iniciar sesión; se refresca solo mientras la sesión siga abierta.
+export function cargarMembresias(usuario: Usuario) {
+  yo = usuario
+  window.clearInterval(refresco)
+  refresco = window.setInterval(() => recargar().catch(() => {}), REFRESCO_MS)
+  return recargar()
+}
+
+export function vaciarMembresias() {
+  yo = null
+  window.clearInterval(refresco)
+  planes.guardar(planesIniciales)
+  membresias.guardar({})
+  solicitudes.guardar({})
+}
+
+// Los avisos se guardan en MySQL (backend) y, hasta conectar las notificaciones (paso 7), también en la
+// bandeja local del navegador, que es la que muestran las pantallas.
+
+export async function solicitarPlan(cliente: { id: number; nombre: string }, planId: PlanId) {
+  await pedir('/membresias/mia/solicitud', { cuerpo: { planId } })
+  await recargar()
+  const plan = planes.obtener()[planId].nombre
+  registrarMovimiento({ tipo: 'caja', titulo: 'Solicitud de membresía', detalle: `${cliente.nombre} · ${plan}` })
   notificarAdministradores(
     'membresia',
     'Nueva solicitud de membresía',
-    `${cliente.nombre} solicitó el plan ${planes.obtener()[planId].nombre}. Revisa la solicitud en Membresías y actívala al recibir el pago en caja.`,
+    `${cliente.nombre} solicitó el plan ${plan}. Revisa la solicitud en Membresías y actívala al recibir el pago en caja.`,
     '/admin/membresias',
   )
 }
 
-// Sin `origen` (al activar la membresía) no se avisa a nadie: ya llega el aviso de la activación.
-export function cancelarSolicitud(clienteId: number, origen?: 'cliente' | 'admin') {
-  const { [clienteId]: solicitud, ...resto } = solicitudes.obtener()
-  solicitudes.guardar(resto)
+// El cliente cancela su solicitud, o el personal (administrador o cajero) la rechaza.
+export async function cancelarSolicitud(clienteId: number, origen: 'cliente' | 'admin') {
+  const solicitud = solicitudes.obtener()[clienteId]
+  await pedir(origen === 'cliente' ? '/membresias/mia/solicitud' : `/membresias/solicitudes/${clienteId}`, {
+    metodo: 'DELETE',
+  })
+  await recargar()
   if (!solicitud) return
   const plan = planes.obtener()[solicitud.planId].nombre
   if (origen === 'cliente') {
@@ -104,8 +132,7 @@ export function cancelarSolicitud(clienteId: number, origen?: 'cliente' | 'admin
       `${solicitud.clienteNombre} canceló su solicitud del plan ${plan}.`,
       '/admin/membresias',
     )
-  }
-  if (origen === 'admin') {
+  } else {
     notificar(
       clienteId,
       'membresia',
@@ -116,24 +143,18 @@ export function cancelarSolicitud(clienteId: number, origen?: 'cliente' | 'admin
   }
 }
 
-export function actualizarPlan(plan: Plan) {
-  planes.guardar({ ...planes.obtener(), [plan.id]: plan })
+// Solo el administrador (el backend lo verifica).
+export async function actualizarPlan(plan: Plan) {
+  const { id, nombre: _nombre, ...datos } = plan
+  await pedir(`/membresias/planes/${id}`, { metodo: 'PUT', cuerpo: datos })
+  await recargar()
 }
 
-// Si renueva el mismo plan antes de vencer, los 30 días se suman al vencimiento actual.
-export function asignarMembresia(cliente: { id: number; nombre: string }, planId: PlanId) {
-  const ahora = Date.now()
-  const actual = membresias.obtener()[cliente.id]
-  const extiende = actual && actual.planId === planId && actual.vence > ahora
-  const nueva: Membresia = {
-    clienteId: cliente.id,
-    clienteNombre: cliente.nombre,
-    planId,
-    inicio: extiende ? actual.inicio : ahora,
-    vence: (extiende ? actual.vence : ahora) + DURACION,
-  }
-  membresias.guardar({ ...membresias.obtener(), [cliente.id]: nueva })
-  cancelarSolicitud(cliente.id)
+// Administrador o cajero, después de cobrar en caja. Si renueva el mismo plan antes de vencer, el
+// backend suma los 30 días al vencimiento actual.
+export async function asignarMembresia(cliente: { id: number; nombre: string }, planId: PlanId) {
+  const nueva = await pedir<Membresia>('/membresias', { cuerpo: { clienteId: cliente.id, planId } })
+  await recargar()
   const plan = planes.obtener()[planId]
   notificar(
     cliente.id,
@@ -166,7 +187,7 @@ export function beneficiosDe(plan: Plan): string[] {
 
 // Plan con el que el cliente tiene beneficios ahora mismo (null si no tiene o venció).
 export function planVigente(
-  membresias: Partial<Record<number, Membresia>>,
+  membresias: PorCliente<Membresia>,
   planes: Record<PlanId, Plan>,
   clienteId: number | null,
   ahora: number,

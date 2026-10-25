@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Clock, Percent, PiggyBank } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
@@ -35,6 +36,20 @@ export function Membresia() {
   const solicitud = usuario ? solicitudes[usuario.id] : undefined
   const finalizadas = useSesionesFinalizadas()
   const ahora = useAhora()
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  async function intentar(accion: () => Promise<unknown>) {
+    setError('')
+    setEnviando(true)
+    try {
+      await accion()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar la acción.')
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   const membresia = usuario ? membresias[usuario.id] : undefined
   const plan = membresia ? planes[membresia.planId] : null
@@ -43,13 +58,23 @@ export function Membresia() {
   const comparativa = (
     <>
       <h2 className="titulo-bloque">{membresia ? 'Cambia o renueva tu plan' : 'Elige tu plan'}</h2>
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
       {solicitud && (
         <div className="aviso-claro aviso-ambar aviso-con-accion">
           <span>
             Solicitaste el plan <strong>{planes[solicitud.planId].nombre}</strong>. Acércate a la caja para pagarlo (
             {formatearPesos(planes[solicitud.planId].precioMensual)}) y quedará activo.
           </span>
-          <button type="button" className="boton boton-secundario boton-chico" onClick={() => cancelarSolicitud(solicitud.clienteId, 'cliente')}>
+          <button
+            type="button"
+            className="boton boton-secundario boton-chico"
+            disabled={enviando}
+            onClick={() => intentar(() => cancelarSolicitud(solicitud.clienteId, 'cliente'))}
+          >
             Cancelar solicitud
           </button>
         </div>
@@ -72,7 +97,8 @@ export function Membresia() {
                   <button
                     type="button"
                     className={`boton ${esMiPlan ? 'boton-secundario' : ''}`}
-                    onClick={() => solicitarPlan(usuario, id)}
+                    disabled={enviando}
+                    onClick={() => intentar(() => solicitarPlan(usuario, id))}
                   >
                     {esMiPlan ? 'Renovar' : membresia ? `Cambiar a ${planes[id].nombre}` : `Quiero ${planes[id].nombre}`}
                   </button>

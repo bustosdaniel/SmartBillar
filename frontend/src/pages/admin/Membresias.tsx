@@ -37,6 +37,16 @@ export function Membresias() {
   const solicitudes = Object.values(useSolicitudes()).filter((s) => s !== undefined)
   const ahora = useAhora()
   const [dialogo, setDialogo] = useState<Dialogo>(null)
+  const [error, setError] = useState('')
+
+  async function rechazar(clienteId: number) {
+    setError('')
+    try {
+      await cancelarSolicitud(clienteId, 'admin')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo rechazar la solicitud.')
+    }
+  }
 
   const lista = Object.values(membresias)
     .filter((m) => m !== undefined)
@@ -69,6 +79,11 @@ export function Membresias() {
             <h2>Solicitudes pendientes de pago</h2>
             <span className="texto-suave">El cliente las pidió desde la app</span>
           </header>
+          {error && (
+            <p role="alert" className="alerta-clara">
+              {error}
+            </p>
+          )}
           <ul className="movimientos">
             {solicitudes.map((s) => (
               <li key={s.clienteId}>
@@ -81,7 +96,7 @@ export function Membresias() {
                   </span>
                 </span>
                 <div className="acciones-fila">
-                  <button type="button" className="boton boton-secundario boton-chico" onClick={() => cancelarSolicitud(s.clienteId, 'admin')}>
+                  <button type="button" className="boton boton-secundario boton-chico" onClick={() => rechazar(s.clienteId)}>
                     Rechazar
                   </button>
                   <button type="button" className="boton boton-chico" onClick={() => setDialogo({ tipo: 'asignar', solicitud: s })}>

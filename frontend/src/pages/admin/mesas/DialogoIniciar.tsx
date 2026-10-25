@@ -7,7 +7,7 @@ import { preciosAl, textoAjuste, useTarifas } from '../../../mesas/tarifas'
 import type { Mesa, Usuario } from '../../../types'
 import { formatearPesos } from '../../../utils/formato'
 
-// No es un <form>: la búsqueda por cédula y el registro rápido llevan sus propios formularios.
+// No es un <form>: la búsqueda del cliente y el registro rápido llevan sus propios formularios.
 export function DialogoIniciar({ mesa, onListo }: { mesa: Mesa; onListo: () => void }) {
   const [cliente, setCliente] = useState<Usuario | null>(null)
   const config = useTarifas()

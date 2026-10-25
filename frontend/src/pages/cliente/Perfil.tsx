@@ -41,7 +41,6 @@ export function Perfil() {
         nombre: String(datos.get('nombre')).trim(),
         email: String(datos.get('email')).trim(),
         telefono: String(datos.get('telefono')).trim(),
-        cedula: String(datos.get('cedula')).trim(),
       })
       setMensajeDatos({ tipo: 'ok', texto: 'Tus datos se guardaron.' })
     } catch (error) {
@@ -127,10 +126,6 @@ export function Perfil() {
           <label>
             Celular
             <input name="telefono" type="tel" defaultValue={usuario.telefono ?? ''} required autoComplete="tel" />
-          </label>
-          <label>
-            Cédula
-            <input name="cedula" defaultValue={usuario.cedula ?? ''} required inputMode="numeric" />
           </label>
           {mensajeDatos && (
             <p role={mensajeDatos.tipo === 'error' ? 'alert' : 'status'} className={mensajeDatos.tipo === 'error' ? 'alerta-clara' : 'aviso-claro'}>

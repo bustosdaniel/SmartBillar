@@ -10,7 +10,7 @@ export const NOMBRES_CARGO: Record<Cargo, string> = {
   cajero: 'Cajero / Operador',
 }
 
-export type DatosPerfil = Pick<Usuario, 'nombre' | 'email'> & { telefono: string; cedula: string }
+export type DatosPerfil = Pick<Usuario, 'nombre' | 'email'> & { telefono: string }
 
 // Los usuarios del prototipo vivían en el navegador; ahora están en MySQL. Se limpian una vez.
 for (const clave of ['billar.registrados', 'billar.cargos', 'billar.perfiles']) localStorage.removeItem(clave)
@@ -40,16 +40,12 @@ export function listarClientes(): Usuario[] {
   return store.obtener().filter((u) => u.rol === 'cliente')
 }
 
-// Solo los dígitos: "1.098.765.432" y "1098765432" son la misma cédula (igual que en el backend).
-export function normalizarCedula(cedula: string) {
-  return cedula.replace(/\D/g, '')
-}
-
-export async function buscarPorCedula(cedula: string): Promise<Usuario | null> {
-  const buscada = normalizarCedula(cedula)
-  if (!buscada) return null
+// El personal busca al cliente por su correo (sin distinguir mayúsculas).
+export async function buscarPorEmail(email: string): Promise<Usuario | null> {
+  const buscado = email.trim()
+  if (!buscado) return null
   try {
-    const cliente = await pedir<Usuario>(`/usuarios/cedula/${buscada}`)
+    const cliente = await pedir<Usuario>(`/usuarios/cliente?email=${encodeURIComponent(buscado)}`)
     recordarUsuario(cliente)
     return cliente
   } catch (error) {

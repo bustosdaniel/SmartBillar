@@ -35,7 +35,7 @@ export function Usuarios() {
 
   const clientes = usuarios
     .filter((u) => u.rol === 'cliente')
-    .filter((u) => !termino || [u.nombre, u.email, u.telefono ?? '', u.cedula ?? ''].some((c) => normalizar(c).includes(termino)))
+    .filter((u) => !termino || [u.nombre, u.email, u.telefono ?? ''].some((c) => normalizar(c).includes(termino)))
     .map((u) => {
       const partidas = finalizadas.filter((s) => s.clienteId === u.id)
       const ultima = partidas.reduce((max, s) => Math.max(max, s.fin), 0)
@@ -95,7 +95,7 @@ export function Usuarios() {
             <span className="sr-only">Buscar cliente</span>
             <input
               type="search"
-              placeholder="Buscar por nombre, correo, celular o cédula"
+              placeholder="Buscar por nombre, correo o celular"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
@@ -108,7 +108,6 @@ export function Usuarios() {
                 <thead>
                   <tr>
                     <th>Cliente</th>
-                    <th>Cédula</th>
                     <th>Celular</th>
                     <th>Membresía</th>
                     <th className="numero">Visitas</th>
@@ -132,7 +131,6 @@ export function Usuarios() {
                             </span>
                           </button>
                         </td>
-                        <td>{usuario.cedula ?? '—'}</td>
                         <td>{usuario.telefono ?? '—'}</td>
                         <td>
                           {membresia && vigente ? (

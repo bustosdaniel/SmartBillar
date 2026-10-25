@@ -9,7 +9,6 @@ export type Usuario = {
   email: string
   rol: Rol
   telefono?: string
-  cedula?: string
   cargo?: Cargo
   creado?: number
 }

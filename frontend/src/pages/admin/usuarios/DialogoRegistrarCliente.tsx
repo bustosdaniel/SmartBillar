@@ -4,16 +4,16 @@ import type { Usuario } from '../../../types'
 
 type DialogoRegistrarClienteProps = {
   onListo: () => void
-  // Desde la búsqueda por cédula: llega la cédula ya escrita y se devuelve el cliente creado.
-  cedulaInicial?: string
+  // Desde la búsqueda por correo: llega el correo ya escrito y se devuelve el cliente creado.
+  emailInicial?: string
   onRegistrado?: (cliente: Usuario) => void
 }
 
-export function DialogoRegistrarCliente({ onListo, cedulaInicial = '', onRegistrado }: DialogoRegistrarClienteProps) {
+export function DialogoRegistrarCliente({ onListo, emailInicial = '', onRegistrado }: DialogoRegistrarClienteProps) {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  // El backend valida correo y cédula repetidos, y asigna la contraseña temporal.
+  // El backend valida que el correo no esté repetido y asigna la contraseña temporal.
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
@@ -24,7 +24,6 @@ export function DialogoRegistrarCliente({ onListo, cedulaInicial = '', onRegistr
         nombre: String(datos.get('nombre')).trim(),
         email: String(datos.get('email')).trim(),
         telefono: String(datos.get('telefono')).trim(),
-        cedula: String(datos.get('cedula')).trim(),
       })
       if (onRegistrado) onRegistrado(nuevo)
       else onListo()
@@ -41,16 +40,12 @@ export function DialogoRegistrarCliente({ onListo, cedulaInicial = '', onRegistr
         <input name="nombre" required autoFocus />
       </label>
       <label>
-        Cédula
-        <input name="cedula" inputMode="numeric" defaultValue={cedulaInicial} required />
-      </label>
-      <label>
         Celular
         <input name="telefono" type="tel" inputMode="tel" autoComplete="tel" required />
       </label>
       <label>
         Correo
-        <input name="email" type="email" required />
+        <input name="email" defaultValue={emailInicial} type="email" required />
       </label>
       {error && (
         <p role="alert" className="alerta-clara">
