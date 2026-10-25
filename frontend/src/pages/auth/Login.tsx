@@ -9,16 +9,20 @@ export function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
-    const u = login(String(datos.get('email')), String(datos.get('password')), datos.get('recordar') === 'on')
-    if (!u) {
-      setError('Correo o contraseña incorrectos')
-      return
+    setError('')
+    setEnviando(true)
+    try {
+      const u = await login(String(datos.get('email')), String(datos.get('password')), datos.get('recordar') === 'on')
+      navigate(rutaInicio(u.rol), { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión.')
+      setEnviando(false)
     }
-    navigate(rutaInicio(u.rol), { replace: true })
   }
 
   return (
@@ -45,8 +49,8 @@ export function Login() {
           {error}
         </p>
       )}
-      <button type="submit" className="boton">
-        Ingresar
+      <button type="submit" className="boton" disabled={enviando}>
+        {enviando ? 'Ingresando…' : 'Ingresar'}
       </button>
       <div className="formulario-enlaces">
         <Link to="/recuperar">¿Olvidaste tu contraseña?</Link>
