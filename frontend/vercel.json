@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:ruta*", "destination": "https://smartbillar-api.vercel.app/api/:ruta*" },
+    { "source": "/api/:ruta*", "destination": "https://smart-billar.vercel.app/api/:ruta*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
