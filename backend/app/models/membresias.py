@@ -1,0 +1,60 @@
+from datetime import datetime
+
+from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db import Base
+from app.models.usuarios import Usuario
+
+
+class Plan(Base):
+    """Básica, Premium y Gold: el admin edita precios y beneficios."""
+
+    __tablename__ = "planes"
+    __table_args__ = tuple(
+        CheckConstraint(f"{campo} BETWEEN 0 AND 100", name=f"{campo}_porcentaje")
+        for campo in ("descuento_mesa", "descuento_bar", "descuento_torneo")
+    )
+
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(40))
+    precio_mensual: Mapped[int] = mapped_column(Integer)
+    descuento_mesa: Mapped[int] = mapped_column(Integer, default=0)
+    horas_gratis_mes: Mapped[int] = mapped_column(Integer, default=0)
+    descuento_bar: Mapped[int] = mapped_column(Integer, default=0)
+    descuento_torneo: Mapped[int] = mapped_column(Integer, default=0)
+    # Lista JSON de beneficios extra (texto libre).
+    extras: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+
+class Membresia(Base):
+    """Membresía vigente o vencida de cada cliente (una por cliente; al renovar se actualiza)."""
+
+    __tablename__ = "membresias"
+
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    plan_id: Mapped[str] = mapped_column(ForeignKey("planes.id"))
+    inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    vence: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    cliente: Mapped[Usuario] = relationship(lazy="joined")
+
+    @property
+    def cliente_nombre(self) -> str:
+        return self.cliente.nombre
+
+
+class SolicitudMembresia(Base):
+    """El cliente elige plan en la app y lo paga en caja (una solicitud abierta por cliente)."""
+
+    __tablename__ = "solicitudes_membresia"
+
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    plan_id: Mapped[str] = mapped_column(ForeignKey("planes.id"))
+    fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    cliente: Mapped[Usuario] = relationship(lazy="joined")
+
+    @property
+    def cliente_nombre(self) -> str:
+        return self.cliente.nombre
