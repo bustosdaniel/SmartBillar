@@ -20,7 +20,8 @@ from app.db import Base
 
 target_metadata = Base.metadata
 # La URL sale de backend/.env, no de alembic.ini, para no repetirla.
-config.set_main_option("sqlalchemy.url", configuracion.database_url)
+# configparser trata "%" como interpolación: se duplica (contraseñas o rutas codificadas, ej. %40, %2F).
+config.set_main_option("sqlalchemy.url", configuracion.database_url.replace("%", "%%"))
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
