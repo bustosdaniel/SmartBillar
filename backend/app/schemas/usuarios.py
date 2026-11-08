@@ -24,8 +24,11 @@ def _validar_password_nueva(valor: str) -> str:
         or not any(c.isupper() for c in valor)
         or not any(c.islower() for c in valor)
         or not any(c in digits for c in valor)
+        or not any(not c.isalnum() and not c.isspace() for c in valor)
     ):
-        raise ValueError("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.")
+        raise ValueError(
+            "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial."
+        )
     return valor
 
 
