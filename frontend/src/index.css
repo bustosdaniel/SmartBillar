@@ -884,6 +884,30 @@ a { color: inherit; }
 .dato-texto { font-size: 1.1rem !important; }
 .alerta-clara { padding: 0.6rem 0.8rem; border-radius: 8px; background: #fee2e2; color: #b91c1c; font-size: 0.9rem; }
 
+.campo-error,
+.campo-ayuda { display: block; font-size: 0.82rem; font-weight: 400; }
+.formulario .campo-error,
+.formulario .campo-ayuda { margin-top: 0.3rem; }
+.formulario .campo-error { color: #fecaca; }
+.formulario .campo-ayuda { color: rgb(255 255 255 / 0.65); }
+.formulario-claro .campo-error { color: #b91c1c; }
+.formulario-claro .campo-ayuda { color: var(--texto-suave); }
+.campo input[aria-invalid='true'],
+.formulario-claro input[aria-invalid='true'] { border-color: var(--error); }
+
+.campo-claro { position: relative; display: flex; align-items: center; }
+.campo-claro input { width: 100%; }
+.campo-claro input:has(+ .campo-ojo) { padding-right: 2.75rem; }
+.formulario-claro .campo-ojo { color: var(--texto-suave); }
+
+.requisitos-password { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.15rem 0.75rem; margin-top: 0.4rem; font-size: 0.82rem; font-weight: 400; }
+.requisito { display: flex; align-items: center; gap: 0.3rem; }
+.requisito svg { flex-shrink: 0; }
+.formulario .requisito { color: rgb(255 255 255 / 0.65); }
+.formulario .requisito-ok { color: #86efac; }
+.formulario-claro .requisito { color: var(--texto-suave); }
+.formulario-claro .requisito-ok { color: #15803d; }
+
 .grid-torneos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1rem; }
 .torneo { display: flex; flex-direction: column; gap: 0.75rem; border-top: 4px solid var(--verde-vivo); }
 .torneo-tres-bandas { border-top-color: #2563eb; }

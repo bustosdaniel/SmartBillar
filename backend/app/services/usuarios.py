@@ -87,6 +87,8 @@ def actualizar_perfil(db: Session, usuario: Usuario, *, nombre: str, email: str,
 def cambiar_password(usuario: Usuario, actual: str, nueva: str) -> None:
     if not verificar_password(actual, usuario.password_hash):
         raise ErrorDeDatos("La contraseña actual no es correcta.")
+    if nueva == actual:
+        raise ErrorDeDatos("La contraseña nueva debe ser distinta de la actual.")
     usuario.password_hash = encriptar_password(nueva)
 
 

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 
-from app.schemas.usuarios import ClienteNuevo, UsuarioSalida
+from app.schemas.usuarios import ClienteNuevo, PasswordNueva, UsuarioSalida
 
 
 class LoginEntrada(BaseModel):
@@ -11,7 +11,7 @@ class LoginEntrada(BaseModel):
 class RegistroEntrada(ClienteNuevo):
     """El cliente crea su propia cuenta desde la app."""
 
-    password: str = Field(min_length=6, description="Mínimo 6 caracteres.")
+    password: PasswordNueva
 
 
 class SesionSalida(BaseModel):
