@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { PASSWORD_TEMPORAL, registrarCliente } from '../../../auth/usuarios'
+import { AYUDA_CELULAR, filtrarCelular, LARGO_MAXIMO_CELULAR, leerDatosPersonales, validarDatosPersonales } from '../../../auth/validaciones'
+import { CampoClaro } from '../../../components/CampoClaro'
+import { useValidacion } from '../../../hooks/useValidacion'
 import type { Usuario } from '../../../types'
 
 type DialogoRegistrarClienteProps = {
@@ -12,19 +15,17 @@ type DialogoRegistrarClienteProps = {
 export function DialogoRegistrarCliente({ onListo, emailInicial = '', onRegistrado }: DialogoRegistrarClienteProps) {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const { errores, eventos, validarTodo } = useValidacion(validarDatosPersonales)
 
   // El backend valida que el correo no esté repetido y asigna la contraseña temporal.
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const datos = new FormData(e.currentTarget)
     setError('')
+    if (!validarTodo(e.currentTarget)) return
+    const datos = new FormData(e.currentTarget)
     setEnviando(true)
     try {
-      const nuevo = await registrarCliente({
-        nombre: String(datos.get('nombre')).trim(),
-        email: String(datos.get('email')).trim(),
-        telefono: String(datos.get('telefono')).trim(),
-      })
+      const nuevo = await registrarCliente(leerDatosPersonales(datos))
       if (onRegistrado) onRegistrado(nuevo)
       else onListo()
     } catch (err) {
@@ -34,19 +35,21 @@ export function DialogoRegistrarCliente({ onListo, emailInicial = '', onRegistra
   }
 
   return (
-    <form className="formulario-claro" onSubmit={handleSubmit}>
-      <label>
-        Nombre completo
-        <input name="nombre" required autoFocus />
-      </label>
-      <label>
-        Celular
-        <input name="telefono" type="tel" inputMode="tel" autoComplete="tel" required />
-      </label>
-      <label>
-        Correo
-        <input name="email" defaultValue={emailInicial} type="email" required />
-      </label>
+    <form className="formulario-claro" onSubmit={handleSubmit} {...eventos} noValidate>
+      <CampoClaro etiqueta="Nombre completo" name="nombre" required autoFocus error={errores.nombre} />
+      <CampoClaro
+        etiqueta="Celular"
+        name="telefono"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        required
+        maxLength={LARGO_MAXIMO_CELULAR}
+        onInput={filtrarCelular}
+        error={errores.telefono}
+        ayuda={AYUDA_CELULAR}
+      />
+      <CampoClaro etiqueta="Correo" name="email" defaultValue={emailInicial} type="email" required error={errores.email} />
       {error && (
         <p role="alert" className="alerta-clara">
           {error}

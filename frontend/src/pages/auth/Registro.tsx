@@ -3,35 +3,25 @@ import { Link, useNavigate } from 'react-router'
 import { Lock, Mail, Phone, User } from 'lucide-react'
 import { rutaInicio } from '../../auth/rutas'
 import { useAuth } from '../../auth/useAuth'
+import { AYUDA_CELULAR, filtrarCelular, LARGO_MAXIMO_CELULAR, leerDatosPersonales, validarRegistro } from '../../auth/validaciones'
 import { CampoTexto } from '../../components/CampoTexto'
+import { useValidacion } from '../../hooks/useValidacion'
 
 export function Registro() {
   const { registrar } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const { errores, eventos, validarTodo } = useValidacion(validarRegistro)
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const datos = new FormData(e.currentTarget)
-    const password = String(datos.get('password'))
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
-    if (password !== datos.get('confirmar')) {
-      setError('Las contraseñas no coinciden')
-      return
-    }
     setError('')
+    if (!validarTodo(e.currentTarget)) return
+    const datos = new FormData(e.currentTarget)
     setEnviando(true)
     try {
-      const usuario = await registrar({
-        nombre: String(datos.get('nombre')).trim(),
-        email: String(datos.get('email')).trim(),
-        telefono: String(datos.get('telefono')).trim(),
-        password,
-      })
+      const usuario = await registrar({ ...leerDatosPersonales(datos), password: String(datos.get('password')) })
       navigate(rutaInicio(usuario.rol), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.')
@@ -40,14 +30,34 @@ export function Registro() {
   }
 
   return (
-    <form className="formulario" onSubmit={handleSubmit}>
+    <form className="formulario" onSubmit={handleSubmit} {...eventos} noValidate>
       <header>
         <h1>Crear cuenta</h1>
         <p>Regístrate para reservar mesas e inscribirte en torneos</p>
       </header>
-      <CampoTexto etiqueta="Nombre completo" icono={User} name="nombre" autoComplete="name" required />
-      <CampoTexto etiqueta="Correo electrónico" icono={Mail} name="email" type="email" autoComplete="email" required />
-      <CampoTexto etiqueta="Celular" icono={Phone} name="telefono" type="tel" autoComplete="tel" required />
+      <CampoTexto etiqueta="Nombre completo" icono={User} name="nombre" autoComplete="name" required error={errores.nombre} />
+      <CampoTexto
+        etiqueta="Correo electrónico"
+        icono={Mail}
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        error={errores.email}
+      />
+      <CampoTexto
+        etiqueta="Celular"
+        icono={Phone}
+        name="telefono"
+        type="tel"
+        autoComplete="tel"
+        required
+        inputMode="tel"
+        maxLength={LARGO_MAXIMO_CELULAR}
+        onInput={filtrarCelular}
+        error={errores.telefono}
+        ayuda={AYUDA_CELULAR}
+      />
       <CampoTexto
         etiqueta="Contraseña"
         icono={Lock}
@@ -55,6 +65,8 @@ export function Registro() {
         type="password"
         autoComplete="new-password"
         required
+        error={errores.password}
+        conReglas
       />
       <CampoTexto
         etiqueta="Confirmar contraseña"
@@ -63,6 +75,7 @@ export function Registro() {
         type="password"
         autoComplete="new-password"
         required
+        error={errores.confirmar}
       />
       {error && (
         <p role="alert" className="alerta">

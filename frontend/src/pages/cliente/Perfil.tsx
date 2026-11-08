@@ -3,9 +3,19 @@ import { Link } from 'react-router'
 import { CalendarDays, CreditCard, History, Lock, PiggyBank, Trophy } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { cambiarPassword } from '../../auth/usuarios'
+import {
+  AYUDA_CELULAR,
+  filtrarCelular,
+  LARGO_MAXIMO_CELULAR,
+  leerDatosPersonales,
+  validarCambioPassword,
+  validarDatosPersonales,
+} from '../../auth/validaciones'
+import { CampoClaro } from '../../components/CampoClaro'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { useAhora } from '../../hooks/useAhora'
+import { useValidacion } from '../../hooks/useValidacion'
 import { useSesionesFinalizadas } from '../../mesas/sesiones'
 import { estadoMembresia, useMembresias, usePlanes } from '../../membresias/membresias'
 import { useTorneos } from '../../torneos/torneos'
@@ -23,6 +33,8 @@ export function Perfil() {
   const [mensajeDatos, setMensajeDatos] = useState<Mensaje>(null)
   const [mensajeClave, setMensajeClave] = useState<Mensaje>(null)
   const [cambioClaveAbierto, setCambioClaveAbierto] = useState(false)
+  const validacionDatos = useValidacion(validarDatosPersonales)
+  const validacionClave = useValidacion(validarCambioPassword)
 
   if (!usuario) return null
 
@@ -35,13 +47,10 @@ export function Perfil() {
 
   async function guardarDatos(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const datos = new FormData(e.currentTarget)
+    setMensajeDatos(null)
+    if (!validacionDatos.validarTodo(e.currentTarget)) return
     try {
-      await actualizarPerfil({
-        nombre: String(datos.get('nombre')).trim(),
-        email: String(datos.get('email')).trim(),
-        telefono: String(datos.get('telefono')).trim(),
-      })
+      await actualizarPerfil(leerDatosPersonales(new FormData(e.currentTarget)))
       setMensajeDatos({ tipo: 'ok', texto: 'Tus datos se guardaron.' })
     } catch (error) {
       setMensajeDatos({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudieron guardar tus datos.' })
@@ -51,14 +60,11 @@ export function Perfil() {
   async function guardarClave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formulario = e.currentTarget
+    setMensajeClave(null)
+    if (!validacionClave.validarTodo(formulario)) return
     const datos = new FormData(formulario)
-    const nueva = String(datos.get('nueva'))
-    if (nueva !== datos.get('confirmar')) {
-      setMensajeClave({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' })
-      return
-    }
     try {
-      await cambiarPassword(String(datos.get('actual')), nueva)
+      await cambiarPassword(String(datos.get('actual')), String(datos.get('nueva')))
     } catch (error) {
       setMensajeClave({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.' })
       return
@@ -113,20 +119,38 @@ export function Perfil() {
       </div>
 
       <div className="perfil-contenido">
-        <form className="tarjeta panel-bloque formulario-claro" onSubmit={guardarDatos}>
+        <form className="tarjeta panel-bloque formulario-claro" onSubmit={guardarDatos} {...validacionDatos.eventos} noValidate>
           <h2 className="titulo-bloque">Datos personales</h2>
-          <label>
-            Nombre completo
-            <input name="nombre" defaultValue={usuario.nombre} required autoComplete="name" />
-          </label>
-          <label>
-            Correo
-            <input name="email" type="email" defaultValue={usuario.email} required autoComplete="email" />
-          </label>
-          <label>
-            Celular
-            <input name="telefono" type="tel" defaultValue={usuario.telefono ?? ''} required autoComplete="tel" />
-          </label>
+          <CampoClaro
+            etiqueta="Nombre completo"
+            name="nombre"
+            defaultValue={usuario.nombre}
+            required
+            autoComplete="name"
+            error={validacionDatos.errores.nombre}
+          />
+          <CampoClaro
+            etiqueta="Correo"
+            name="email"
+            type="email"
+            defaultValue={usuario.email}
+            required
+            autoComplete="email"
+            error={validacionDatos.errores.email}
+          />
+          <CampoClaro
+            etiqueta="Celular"
+            name="telefono"
+            type="tel"
+            defaultValue={usuario.telefono ?? ''}
+            required
+            autoComplete="tel"
+            inputMode="tel"
+            maxLength={LARGO_MAXIMO_CELULAR}
+            onInput={filtrarCelular}
+            error={validacionDatos.errores.telefono}
+            ayuda={AYUDA_CELULAR}
+          />
           {mensajeDatos && (
             <p role={mensajeDatos.tipo === 'error' ? 'alert' : 'status'} className={mensajeDatos.tipo === 'error' ? 'alerta-clara' : 'aviso-claro'}>
               {mensajeDatos.texto}
@@ -158,6 +182,7 @@ export function Perfil() {
           className="boton boton-secundario"
           onClick={() => {
             setMensajeClave(null)
+            validacionClave.reiniciar()
             setCambioClaveAbierto(true)
           }}
         >
@@ -167,19 +192,32 @@ export function Perfil() {
       </div>
 
       <Modal abierto={cambioClaveAbierto} titulo="Actualizar contraseña" onCerrar={() => setCambioClaveAbierto(false)}>
-        <form className="formulario-claro" onSubmit={guardarClave}>
-          <label>
-            Contraseña actual
-            <input name="actual" type="password" required autoComplete="current-password" />
-          </label>
-          <label>
-            Nueva contraseña
-            <input name="nueva" type="password" required minLength={6} autoComplete="new-password" />
-          </label>
-          <label>
-            Confirmar nueva contraseña
-            <input name="confirmar" type="password" required minLength={6} autoComplete="new-password" />
-          </label>
+        <form className="formulario-claro" onSubmit={guardarClave} {...validacionClave.eventos} noValidate>
+          <CampoClaro
+            etiqueta="Contraseña actual"
+            name="actual"
+            type="password"
+            required
+            autoComplete="current-password"
+            error={validacionClave.errores.actual}
+          />
+          <CampoClaro
+            etiqueta="Nueva contraseña"
+            name="nueva"
+            type="password"
+            required
+            autoComplete="new-password"
+            error={validacionClave.errores.nueva}
+            conReglas
+          />
+          <CampoClaro
+            etiqueta="Confirmar nueva contraseña"
+            name="confirmar"
+            type="password"
+            required
+            autoComplete="new-password"
+            error={validacionClave.errores.confirmar}
+          />
           {mensajeClave?.tipo === 'error' && <p role="alert" className="alerta-clara">{mensajeClave.texto}</p>}
           <button type="submit" className="boton">Cambiar contraseña</button>
         </form>
