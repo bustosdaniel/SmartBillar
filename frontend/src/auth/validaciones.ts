@@ -22,6 +22,7 @@ export const REGLAS_PASSWORD = [
   { texto: 'Una mayúscula', cumple: (password: string) => /\p{Lu}/u.test(password) },
   { texto: 'Una minúscula', cumple: (password: string) => /\p{Ll}/u.test(password) },
   { texto: 'Un número', cumple: (password: string) => /[0-9]/.test(password) },
+  { texto: 'Un carácter especial', cumple: (password: string) => /[^\p{L}\p{N}\s]/u.test(password) },
 ]
 
 // En el celular no se pueden escribir letras ni símbolos que nunca serían válidos.
