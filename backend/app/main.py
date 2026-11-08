@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import configuracion
 from app.db import obtener_db
 from app.errores import errores_de_validacion
-from app.routers import auth, caja, membresias, usuarios
+from app.routers import auth, caja, membresias, movimientos, notificaciones, torneos, usuarios
 
 app = FastAPI(
     title="SmartBillar API",
@@ -38,3 +38,6 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
 app.include_router(membresias.router, prefix="/api")
 app.include_router(caja.router, prefix="/api")
+app.include_router(notificaciones.router, prefix="/api")
+app.include_router(movimientos.router, prefix="/api")
+app.include_router(torneos.router, prefix="/api")

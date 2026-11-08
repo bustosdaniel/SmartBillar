@@ -4,7 +4,7 @@ membresías) entra aquí; los egresos salen en efectivo del cajón. Misma lógic
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Caja, Egreso, Movimiento, Pago
+from app.models import Caja, Egreso, Jugador, Movimiento, Pago
 from app.models.enums import MetodoPago, TipoMovimiento
 from app.services.usuarios import ErrorDeDatos
 from app.tiempo import ahora_utc
@@ -123,6 +123,9 @@ def anular_pago(db: Session, pago_id: int) -> Pago:
     if pago.anulado_en is not None:
         raise ErrorDeDatos("Ese cobro ya estaba anulado.")
     pago.anulado_en = ahora_utc()
+    # Si era una inscripción, el cupo vuelve a quedar pendiente de pago.
+    if pago.jugador_id is not None:
+        db.get(Jugador, pago.jugador_id).pagado = False
     db.add(
         Movimiento(
             tipo=TipoMovimiento.PAGO,
