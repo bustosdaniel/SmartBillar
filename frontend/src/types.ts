@@ -138,7 +138,7 @@ export type CajaCerrada = Caja & {
 export type TipoMovimiento = 'inicio' | 'pausa' | 'reanudar' | 'detener' | 'fin' | 'pago' | 'caja' | 'torneo' | 'consumo'
 
 export type Movimiento = {
-  id: string
+  id: number
   tipo: TipoMovimiento
   titulo: string
   detalle: string
@@ -149,10 +149,9 @@ export type EstadoTorneo = 'inscripciones' | 'en-curso' | 'finalizado'
 
 export type CategoriaTorneo = 'abierta' | 'principiante' | 'avanzado'
 
-// Un inscrito puede ser un cliente con cuenta o un invitado (clienteId null).
 export type Jugador = {
-  id: string
-  clienteId: number | null
+  id: number
+  clienteId: number
   nombre: string
   pagado: boolean
   monto: number
@@ -161,13 +160,13 @@ export type Jugador = {
 // Partido de eliminación directa. En la primera ronda, un lado vacío es un pase directo;
 // en las siguientes, significa que ese ganador aún no se conoce.
 export type Partido = {
-  id: string
+  id: number
   ronda: number
   posicion: number
-  a: string | null
-  b: string | null
+  a: number | null
+  b: number | null
   mesaId: number | null
-  ganador: string | null
+  ganador: number | null
 }
 
 export type Torneo = {
@@ -220,7 +219,7 @@ export type TipoNotificacion = 'factura' | 'membresia' | 'torneo' | 'cuenta' | '
 
 // En esta fase el correo es simulado: queda registrado lo que el backend enviaría.
 export type Notificacion = {
-  id: string
+  id: number
   usuarioId: number
   nombre: string
   email: string
@@ -229,6 +228,6 @@ export type Notificacion = {
   mensaje: string
   fecha: number
   leida: boolean
-  // Vista a la que lleva al abrirla (las guardadas antes no la traen).
-  ruta?: string
+  // Vista a la que lleva al abrirla, si la tiene.
+  ruta: string | null
 }

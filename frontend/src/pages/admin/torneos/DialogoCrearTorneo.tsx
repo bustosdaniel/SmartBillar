@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { MODOS, NOMBRES_MODO } from '../../../mesas/datos'
 import { crearTorneo, NOMBRES_CATEGORIA } from '../../../torneos/torneos'
 import type { CategoriaTorneo, ModoJuego } from '../../../types'
@@ -6,20 +6,30 @@ import type { CategoriaTorneo, ModoJuego } from '../../../types'
 const CATEGORIAS: CategoriaTorneo[] = ['abierta', 'principiante', 'avanzado']
 
 export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void }) {
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const datos = new FormData(e.currentTarget)
-    const id = crearTorneo({
-      nombre: String(datos.get('nombre')).trim(),
-      modo: datos.get('modo') as ModoJuego,
-      categoria: datos.get('categoria') as CategoriaTorneo,
-      fecha: String(datos.get('fecha')),
-      hora: String(datos.get('hora')),
-      cupos: Number(datos.get('cupos')),
-      inscripcion: Math.max(0, Number(datos.get('inscripcion')) || 0),
-      premio: String(datos.get('premio')).trim(),
-    })
-    onListo(id)
+    setError('')
+    setEnviando(true)
+    try {
+      const id = await crearTorneo({
+        nombre: String(datos.get('nombre')).trim(),
+        modo: datos.get('modo') as ModoJuego,
+        categoria: datos.get('categoria') as CategoriaTorneo,
+        fecha: String(datos.get('fecha')),
+        hora: String(datos.get('hora')),
+        cupos: Number(datos.get('cupos')),
+        inscripcion: Math.max(0, Number(datos.get('inscripcion')) || 0),
+        premio: String(datos.get('premio')).trim(),
+      })
+      onListo(id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear el torneo.')
+      setEnviando(false)
+    }
   }
 
   return (
@@ -80,8 +90,13 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
         Premio
         <input name="premio" required placeholder="Ej: $300.000 + trofeo" />
       </label>
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
       <div className="dialogo-acciones">
-        <button type="submit" className="boton">
+        <button type="submit" className="boton" disabled={enviando}>
           Crear torneo
         </button>
       </div>

@@ -6,7 +6,7 @@ import { TarjetaTorneo } from '../../components/TarjetaTorneo'
 import { useAhora } from '../../hooks/useAhora'
 import { MODOS, NOMBRES_MODO } from '../../mesas/datos'
 import { planVigente, useMembresias, usePlanes } from '../../membresias/membresias'
-import { cuposLibres, inscribir, precioInscripcion, useTorneos } from '../../torneos/torneos'
+import { cuposLibres, inscribirme, precioInscripcion, useTorneos } from '../../torneos/torneos'
 import type { ModoJuego } from '../../types'
 import { formatearPesos } from '../../utils/formato'
 import { Retirarse } from './torneos/Retirarse'
@@ -21,6 +21,15 @@ export function Torneos() {
   const ahora = useAhora()
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [error, setError] = useState('')
+
+  async function inscribirse(torneoId: number) {
+    setError('')
+    try {
+      await inscribirme(torneoId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar la inscripción.')
+    }
+  }
 
   const plan = planVigente(membresias, planes, usuario?.id ?? null, ahora)
   const orden = { inscripciones: 0, 'en-curso': 1, finalizado: 2 }
@@ -82,16 +91,7 @@ export function Torneos() {
                       type="button"
                       className="boton boton-chico"
                       disabled={cuposLibres(t) <= 0}
-                      onClick={() =>
-                        setError(
-                          inscribir(t.id, {
-                            clienteId: usuario.id,
-                            nombre: usuario.nombre,
-                            pagado: precio === 0,
-                            monto: precio,
-                          }, 'cliente') ?? '',
-                        )
-                      }
+                      onClick={() => inscribirse(t.id)}
                     >
                       {cuposLibres(t) <= 0 ? 'Sin cupos' : 'Inscribirme'}
                     </button>

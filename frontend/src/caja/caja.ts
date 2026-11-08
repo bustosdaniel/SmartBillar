@@ -1,5 +1,4 @@
 import { pedir } from '../api/cliente'
-import { registrarMovimiento } from '../actividad/movimientos'
 import type { Caja, CajaCerrada, Egreso, MetodoPago, Pago, Usuario } from '../types'
 import { formatearPesos } from '../utils/formato'
 import { crearStoreLocal } from '../utils/storeLocal'
@@ -64,26 +63,17 @@ export function vaciarCaja() {
   cerradas.guardar([])
 }
 
-// Los movimientos también se guardan en MySQL; la lista local alimenta "Últimos movimientos" hasta el
-// paso 7.
+// El backend registra los movimientos de caja en la misma transacción de cada operación.
 
 export async function abrirCaja(base: number) {
   await pedir('/caja/abrir', { cuerpo: { base } })
   await recargar()
-  registrarMovimiento({ tipo: 'caja', titulo: 'Caja abierta', detalle: `Base ${formatearPesos(base)}` })
 }
 
 // Si el arqueo no cuadra, el backend exige la observación.
 export async function cerrarCaja(contado: number, nota: string) {
-  const caja = abierta.obtener()
-  const diferencia = caja ? contado - efectivoEsperado(caja) : 0
   await pedir('/caja/cerrar', { cuerpo: { contado, nota } })
   await recargar()
-  registrarMovimiento({
-    tipo: 'caja',
-    titulo: 'Caja cerrada',
-    detalle: diferencia === 0 ? 'Arqueo cuadrado' : `${diferencia > 0 ? 'Sobrante' : 'Faltante'} de ${formatearPesos(Math.abs(diferencia))}`,
-  })
 }
 
 export function textoDiferencia(diferencia: number) {
@@ -98,11 +88,6 @@ export async function registrarPago({ mesa, ...pago }: NuevoPago): Promise<Pago>
   const nuevo = await pedir<Pago>('/caja/pagos', { cuerpo: pago })
   if (mesa) pagosDeMesa.guardar({ ...pagosDeMesa.obtener(), [nuevo.id]: mesa })
   await recargar()
-  registrarMovimiento({
-    tipo: 'pago',
-    titulo: `Cobro · ${pago.concepto}`,
-    detalle: `${NOMBRES_METODO[pago.metodo]} · ${formatearPesos(pago.monto)}`,
-  })
   return { ...nuevo, mesa }
 }
 
@@ -110,7 +95,6 @@ export async function registrarPago({ mesa, ...pago }: NuevoPago): Promise<Pago>
 export async function registrarEgreso(concepto: string, monto: number): Promise<Egreso> {
   const nuevo = await pedir<Egreso>('/caja/egresos', { cuerpo: { concepto, monto } })
   await recargar()
-  registrarMovimiento({ tipo: 'caja', titulo: 'Egreso', detalle: `${concepto} · ${formatearPesos(monto)}` })
   return nuevo
 }
 
@@ -123,11 +107,6 @@ export function puedeAnularse(pago: Pago) {
 export async function anularPago(pago: Pago) {
   await pedir(`/caja/pagos/${pago.id}/anular`, { metodo: 'POST' })
   await recargar()
-  registrarMovimiento({
-    tipo: 'pago',
-    titulo: `Cobro anulado · ${pago.concepto}`,
-    detalle: `${NOMBRES_METODO[pago.metodo]} rechazada · ${formatearPesos(pago.monto)}`,
-  })
 }
 
 export function totalEgresos(caja: Caja) {

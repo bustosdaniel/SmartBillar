@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { registrarEgreso, useCaja } from '../../../caja/caja'
+import { useCaja } from '../../../caja/caja'
 import { AbrirCaja } from '../../../components/AbrirCaja'
 import { quitarJugador } from '../../../torneos/torneos'
 import type { Jugador, Torneo } from '../../../types'
@@ -13,16 +13,12 @@ export function DialogoQuitar({ torneo, jugador, onListo }: { torneo: Torneo; ju
 
   async function confirmar() {
     setError('')
-    if (devolver) {
-      try {
-        await registrarEgreso(`Devolución inscripción ${torneo.nombre} · ${jugador.nombre}`, jugador.monto)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'No se pudo registrar la devolución.')
-        return
-      }
+    try {
+      await quitarJugador(torneo.id, jugador.id, devolver)
+      onListo()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo quitar al jugador.')
     }
-    quitarJugador(torneo.id, jugador.id)
-    onListo()
   }
 
   return (

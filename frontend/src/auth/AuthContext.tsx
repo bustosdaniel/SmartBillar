@@ -3,6 +3,9 @@ import { ErrorApi, fijarToken, pedir } from '../api/cliente'
 import type { Usuario } from '../types'
 import { cargarCaja, vaciarCaja } from '../caja/caja'
 import { cargarMembresias, vaciarMembresias } from '../membresias/membresias'
+import { cargarMovimientos, vaciarMovimientos } from '../actividad/movimientos'
+import { cargarNotificaciones, vaciarNotificaciones } from '../notificaciones/notificaciones'
+import { cargarTorneos, vaciarTorneos } from '../torneos/torneos'
 import { leer } from '../utils/almacen'
 import { AuthContext, type DatosRegistro } from './useAuth'
 import { actualizarMiPerfil, cargarUsuarios, vaciarUsuarios, type DatosPerfil } from './usuarios'
@@ -48,6 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cargarUsuarios(nueva.usuario).catch(() => {})
     cargarMembresias(nueva.usuario).catch(() => {})
     cargarCaja(nueva.usuario).catch(() => {})
+    cargarNotificaciones(nueva.usuario).catch(() => {})
+    cargarMovimientos(nueva.usuario).catch(() => {})
+    cargarTorneos(nueva.usuario).catch(() => {})
   }
 
   function logout() {
@@ -56,6 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     vaciarUsuarios()
     vaciarMembresias()
     vaciarCaja()
+    vaciarNotificaciones()
+    vaciarMovimientos()
+    vaciarTorneos()
     setSesion(null)
   }
 

@@ -1,8 +1,5 @@
 import { pedir } from '../api/cliente'
 import { refrescarCaja } from '../caja/caja'
-import { registrarMovimiento } from '../actividad/movimientos'
-import { notificar, notificarAdministradores } from '../notificaciones/notificaciones'
-import { formatearFecha } from '../utils/formato'
 import type { EstadoMembresia, Membresia, MetodoPago, Plan, PlanId, SolicitudMembresia, Usuario } from '../types'
 import { crearStoreMemoria } from '../utils/storeMemoria'
 
@@ -101,47 +98,19 @@ export function vaciarMembresias() {
   solicitudes.guardar({})
 }
 
-// Los avisos se guardan en MySQL (backend) y, hasta conectar las notificaciones (paso 7), también en la
-// bandeja local del navegador, que es la que muestran las pantallas.
+// El backend genera los avisos de membresías en la misma transacción de cada operación.
 
-export async function solicitarPlan(cliente: { id: number; nombre: string }, planId: PlanId) {
+export async function solicitarPlan(planId: PlanId) {
   await pedir('/membresias/mia/solicitud', { cuerpo: { planId } })
   await recargar()
-  const plan = planes.obtener()[planId].nombre
-  registrarMovimiento({ tipo: 'caja', titulo: 'Solicitud de membresía', detalle: `${cliente.nombre} · ${plan}` })
-  notificarAdministradores(
-    'membresia',
-    'Nueva solicitud de membresía',
-    `${cliente.nombre} solicitó el plan ${plan}. Revisa la solicitud en Membresías y actívala al recibir el pago en caja.`,
-    '/admin/membresias',
-  )
 }
 
 // El cliente cancela su solicitud, o el personal (administrador o cajero) la rechaza.
 export async function cancelarSolicitud(clienteId: number, origen: 'cliente' | 'admin') {
-  const solicitud = solicitudes.obtener()[clienteId]
   await pedir(origen === 'cliente' ? '/membresias/mia/solicitud' : `/membresias/solicitudes/${clienteId}`, {
     metodo: 'DELETE',
   })
   await recargar()
-  if (!solicitud) return
-  const plan = planes.obtener()[solicitud.planId].nombre
-  if (origen === 'cliente') {
-    notificarAdministradores(
-      'membresia',
-      'Solicitud de membresía cancelada',
-      `${solicitud.clienteNombre} canceló su solicitud del plan ${plan}.`,
-      '/admin/membresias',
-    )
-  } else {
-    notificar(
-      clienteId,
-      'membresia',
-      `Solicitud del plan ${plan} rechazada`,
-      'El club no aprobó tu solicitud. Si tienes dudas, acércate a la caja o elige otro plan.',
-      '/cliente/membresia',
-    )
-  }
 }
 
 // Solo el administrador (el backend lo verifica).
@@ -154,21 +123,12 @@ export async function actualizarPlan(plan: Plan) {
 // Administrador o cajero: el backend cobra en caja y activa en la misma transacción (si el cobro falla,
 // no se activa nada). Si renueva el mismo plan antes de vencer, suma los 30 días al vencimiento actual.
 export async function asignarMembresia(
-  cliente: { id: number; nombre: string },
+  cliente: { id: number },
   planId: PlanId,
   pago: { metodo: MetodoPago; recibido: number | null },
 ) {
   const nueva = await pedir<Membresia>('/membresias', { cuerpo: { clienteId: cliente.id, planId, pago } })
   await Promise.all([recargar(), refrescarCaja()])
-  const plan = planes.obtener()[planId]
-  notificar(
-    cliente.id,
-    'membresia',
-    `Tu membresía ${plan.nombre} está activa`,
-    `Disfruta tus beneficios hasta el ${formatearFecha(nueva.vence)}: ${plan.descuentoMesa}% en mesa` +
-      `${plan.horasGratisMes > 0 ? ` y ${plan.horasGratisMes} h gratis al mes` : ''}.`,
-    '/cliente/membresia',
-  )
   return nueva
 }
 

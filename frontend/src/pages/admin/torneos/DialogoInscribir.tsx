@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { registrarPago } from '../../../caja/caja'
 import { BuscarCliente } from '../../../components/BuscarCliente'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
 import { useAhora } from '../../../hooks/useAhora'
 import { planVigente, useMembresias, usePlanes } from '../../../membresias/membresias'
-import { inscribir, marcarPagado, precioInscripcion, validarInscripcion } from '../../../torneos/torneos'
+import { cobrarPendiente, inscribirCliente, precioInscripcion, validarInscripcion } from '../../../torneos/torneos'
 import type { Jugador, Torneo, Usuario } from '../../../types'
 import { formatearPesos } from '../../../utils/formato'
 
@@ -23,33 +22,22 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
   const [error, setError] = useState('')
 
   const clienteId = pendiente ? pendiente.clienteId : (cliente?.id ?? null)
-  const nombre = pendiente ? pendiente.nombre : (cliente?.nombre ?? '')
   const plan = planVigente(membresias, planes, clienteId, ahora)
   const precio = pendiente ? pendiente.monto : precioInscripcion(torneo, plan)
-  // Sin cliente aún no se valida (validarInscripcion acepta null para los invitados antiguos).
+  // Sin cliente elegido todavía no hay nada que validar.
   const errorPrevio = pendiente || !cliente ? null : validarInscripcion(torneo, clienteId)
   const listo = !!pendiente || !!cliente
 
   async function completar(datos: DatosPago | null) {
     if (!listo || errorPrevio) return
-    if (datos && precio > 0) {
-      try {
-        await registrarPago({ ...datos, concepto: `Inscripción ${torneo.nombre}`, cliente: nombre, clienteId, monto: precio })
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'No se pudo registrar el pago.')
-        return
-      }
+    setError('')
+    try {
+      if (pendiente) await cobrarPendiente(torneo.id, pendiente.id, datos)
+      else if (cliente) await inscribirCliente(torneo.id, cliente.id, datos)
+      onListo()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar la inscripción.')
     }
-    if (pendiente) {
-      marcarPagado(torneo.id, pendiente.id)
-    } else {
-      const fallo = inscribir(torneo.id, { clienteId, nombre, pagado: true, monto: precio })
-      if (fallo) {
-        setError(fallo)
-        return
-      }
-    }
-    onListo()
   }
 
   return (
@@ -106,7 +94,7 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
             </button>
           </div>
         ) : (
-          <FormularioPago key={clienteId ?? 'invitado'} total={precio} onCancelar={onListo} onPagar={completar} />
+          <FormularioPago key={clienteId} total={precio} onCancelar={onListo} onPagar={completar} />
         ))}
     </div>
   )

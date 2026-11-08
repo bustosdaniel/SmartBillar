@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Mail } from 'lucide-react'
 import { CampoTexto } from '../../components/CampoTexto'
-import { notificarPorEmail } from '../../notificaciones/notificaciones'
 
 // TODO: el backend debe enviar el correo real con el enlace seguro.
 export function RecuperarPassword() {
@@ -11,12 +10,6 @@ export function RecuperarPassword() {
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     // Si el correo no existe no se dice nada, para no revelar qué cuentas están registradas.
-    notificarPorEmail(
-      String(new FormData(e.currentTarget).get('email')),
-      'cuenta',
-      'Recupera tu contraseña',
-      'Usa el enlace seguro de este correo para crear una nueva contraseña. Vence en 30 minutos.',
-    )
     setEnviado(true)
   }
 

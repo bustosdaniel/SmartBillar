@@ -98,7 +98,7 @@ export function Membresia() {
                     type="button"
                     className={`boton ${esMiPlan ? 'boton-secundario' : ''}`}
                     disabled={enviando}
-                    onClick={() => intentar(() => solicitarPlan(usuario, id))}
+                    onClick={() => intentar(() => solicitarPlan(id))}
                   >
                     {esMiPlan ? 'Renovar' : membresia ? `Cambiar a ${planes[id].nombre}` : `Quiero ${planes[id].nombre}`}
                   </button>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Modal } from '../../../components/Modal'
-import { puedeRetirarse, quitarJugador } from '../../../torneos/torneos'
+import { puedeRetirarse, retirarme } from '../../../torneos/torneos'
 import type { Jugador, Torneo } from '../../../types'
 
 type RetirarseProps = {
@@ -12,6 +12,17 @@ type RetirarseProps = {
 
 export function Retirarse({ torneo, jugador, conAviso = false }: RetirarseProps) {
   const [confirmando, setConfirmando] = useState(false)
+  const [error, setError] = useState('')
+
+  async function confirmar() {
+    setError('')
+    try {
+      await retirarme(torneo.id)
+      setConfirmando(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar el retiro.')
+    }
+  }
 
   if (torneo.estado !== 'inscripciones') return null
   if (!puedeRetirarse(torneo, jugador)) {
@@ -30,18 +41,16 @@ export function Retirarse({ torneo, jugador, conAviso = false }: RetirarseProps)
           <p>
             ¿Seguro que ya no vas a jugar <strong>{torneo.nombre}</strong>? Tu cupo quedará libre para otro jugador.
           </p>
+          {error && (
+            <p role="alert" className="alerta-clara">
+              {error}
+            </p>
+          )}
           <div className="dialogo-acciones">
             <button type="button" className="boton boton-secundario" onClick={() => setConfirmando(false)}>
               Seguir inscrito
             </button>
-            <button
-              type="button"
-              className="boton boton-peligro"
-              onClick={() => {
-                quitarJugador(torneo.id, jugador.id, 'retiro')
-                setConfirmando(false)
-              }}
-            >
+            <button type="button" className="boton boton-peligro" onClick={confirmar}>
               Sí, me retiro
             </button>
           </div>

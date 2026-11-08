@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Check, Trophy } from 'lucide-react'
 import { mesasMock } from '../mesas/datos'
 import { campeon, nombreRonda, puedeDefinirse, totalRondas } from '../torneos/llaves'
@@ -8,7 +9,7 @@ type LlavesProps = {
   torneo: Torneo
   editable?: boolean
   // Jugador a resaltar (el cliente que está mirando).
-  resaltar?: string | null
+  resaltar?: number | null
 }
 
 type LadoProps = {
@@ -16,10 +17,11 @@ type LadoProps = {
   partido: Partido
   lado: 'a' | 'b'
   editable: boolean
-  resaltar: string | null
+  resaltar: number | null
+  onGanador: (jugadorId: number) => void
 }
 
-function Lado({ torneo, partido, lado, editable, resaltar }: LadoProps) {
+function Lado({ torneo, partido, lado, editable, resaltar, onGanador }: LadoProps) {
   const jugadorId = partido[lado]
   const nombre = nombreJugador(torneo, jugadorId)
   const gano = partido.ganador !== null && partido.ganador === jugadorId
@@ -32,7 +34,7 @@ function Lado({ torneo, partido, lado, editable, resaltar }: LadoProps) {
       <span className={nombre ? '' : 'texto-suave'}>{nombre ?? vacio}</span>
       {gano && <Check size={15} aria-label="Ganador" />}
       {definible && !gano && (
-        <button type="button" className="boton-ganador" onClick={() => registrarGanador(torneo.id, partido.id, jugadorId)}>
+        <button type="button" className="boton-ganador" onClick={() => onGanador(jugadorId)}>
           Ganó
         </button>
       )}
@@ -44,8 +46,21 @@ export function Llaves({ torneo, editable = false, resaltar = null }: LlavesProp
   const rondas = totalRondas(torneo.partidos)
   const mesas = mesasMock.filter((m) => m.modo === torneo.modo)
   const ganadorTorneo = campeon(torneo.partidos)
+  const [error, setError] = useState('')
+
+  // El backend valida cada cambio (por ejemplo, una mesa ocupada) y aquí se muestra el motivo.
+  function intentar(accion: Promise<unknown>) {
+    setError('')
+    accion.catch((err) => setError(err instanceof Error ? err.message : 'No se pudo guardar el cambio.'))
+  }
 
   return (
+    <>
+    {error && (
+      <p role="alert" className="alerta-clara">
+        {error}
+      </p>
+    )}
     <div className="llaves">
       {Array.from({ length: rondas }, (_, ronda) => (
         <div key={ronda} className="llaves-ronda">
@@ -58,14 +73,23 @@ export function Llaves({ torneo, editable = false, resaltar = null }: LlavesProp
                 const pendiente = !partido.ganador && partido.a !== null && partido.b !== null
                 return (
                   <div key={partido.id} className={`llave ${pase ? 'llave-pase' : ''}`}>
-                    <Lado torneo={torneo} partido={partido} lado="a" editable={editable} resaltar={resaltar} />
-                    <Lado torneo={torneo} partido={partido} lado="b" editable={editable} resaltar={resaltar} />
+                    {(['a', 'b'] as const).map((lado) => (
+                      <Lado
+                        key={lado}
+                        torneo={torneo}
+                        partido={partido}
+                        lado={lado}
+                        editable={editable}
+                        resaltar={resaltar}
+                        onGanador={(jugadorId) => intentar(registrarGanador(torneo.id, partido.id, jugadorId))}
+                      />
+                    ))}
                     {!pase && (editable && pendiente ? (
                       <label className="llave-mesa">
                         <span>Mesa</span>
                         <select
                           value={partido.mesaId ?? ''}
-                          onChange={(e) => asignarMesa(torneo.id, partido.id, e.target.value ? Number(e.target.value) : null)}
+                          onChange={(e) => intentar(asignarMesa(torneo.id, partido.id, e.target.value ? Number(e.target.value) : null))}
                         >
                           <option value="">Sin asignar</option>
                           {mesas.map((m) => (
@@ -92,5 +116,6 @@ export function Llaves({ torneo, editable = false, resaltar = null }: LlavesProp
         </div>
       </div>
     </div>
+    </>
   )
 }

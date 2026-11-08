@@ -25,6 +25,16 @@ export function TorneoDetalleAdmin() {
   const { id } = useParams()
   const torneo = useTorneos().find((t) => String(t.id) === id)
   const [dialogo, setDialogo] = useState<Dialogo>(null)
+  const [error, setError] = useState('')
+
+  async function iniciar(torneoId: number) {
+    setError('')
+    try {
+      await iniciarTorneo(torneoId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar el torneo.')
+    }
+  }
 
   if (!torneo) {
     return (
@@ -88,12 +98,17 @@ export function TorneoDetalleAdmin() {
                 <UserPlus size={15} aria-hidden="true" /> Inscribir jugador
               </button>
               {esAdministrador && (
-                <button type="button" className="boton boton-chico" onClick={() => iniciarTorneo(torneo.id)} disabled={!puedeIniciar}>
+                <button type="button" className="boton boton-chico" onClick={() => iniciar(torneo.id)} disabled={!puedeIniciar}>
                   <Play size={15} aria-hidden="true" /> Iniciar torneo
                 </button>
               )}
             </div>
           </header>
+          {error && (
+            <p role="alert" className="alerta-clara">
+              {error}
+            </p>
+          )}
           {!puedeIniciar && (
             <p className="nota">
               {torneo.jugadores.length < 2
@@ -109,7 +124,6 @@ export function TorneoDetalleAdmin() {
                 <thead>
                   <tr>
                     <th>Jugador</th>
-                    <th>Tipo</th>
                     <th className="numero">Valor</th>
                     <th>Pago</th>
                     <th />
@@ -119,7 +133,6 @@ export function TorneoDetalleAdmin() {
                   {torneo.jugadores.map((j) => (
                     <tr key={j.id}>
                       <td>{j.nombre}</td>
-                      <td className="texto-suave">{j.clienteId === null ? 'Invitado' : 'Cliente'}</td>
                       <td className="numero">{formatearPesos(j.monto)}</td>
                       <td>
                         <span className={`estado ${j.pagado ? 'membresia-activa' : 'membresia-por-vencer'}`}>
