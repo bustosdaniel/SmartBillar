@@ -104,6 +104,10 @@ def registrar_pago(
 
 def registrar_egreso(db: Session, concepto: str, monto: int) -> Egreso:
     caja = _exigir_abierta(db)
+    # Sale en efectivo del cajón: no puede ser más de lo que hay.
+    disponible = efectivo_esperado(caja)
+    if monto > disponible:
+        raise ErrorDeDatos(f"No hay tanto efectivo en caja: hay {pesos(max(0, disponible))}.")
     egreso = Egreso(caja_id=caja.id, concepto=concepto, monto=monto)
     db.add(egreso)
     db.add(Movimiento(tipo=TipoMovimiento.CAJA, titulo="Egreso", detalle=f"{concepto} · {pesos(monto)}"))

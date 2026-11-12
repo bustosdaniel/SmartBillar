@@ -40,6 +40,12 @@ def buscar_cliente(db: BaseDeDatos, _empleado: Empleado, email: str = Query(min_
     return cliente
 
 
+@router.get("/clientes/sugerencias", response_model=list[UsuarioSalida])
+def sugerencias(db: BaseDeDatos, _empleado: Empleado, q: str = Query(min_length=2, max_length=160)):
+    """Hasta 8 clientes cuyo correo o nombre contiene `q`, para elegir mientras se escribe en caja."""
+    return servicio.sugerir_clientes(db, q)
+
+
 @router.post("/clientes", response_model=UsuarioSalida, status_code=status.HTTP_201_CREATED)
 def registrar_cliente(datos: ClienteNuevo, db: BaseDeDatos, _empleado: Empleado):
     """El personal registra un cliente en caja. Queda con la contraseña temporal 123456."""

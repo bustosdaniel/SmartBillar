@@ -112,9 +112,17 @@ def rechazar_solicitud(db: Session, cliente_id: int) -> None:
 def asignar(db: Session, cliente_id: int, plan_id: str, metodo, recibido: int | None) -> Membresia:
     """Cobra el plan en la caja abierta y activa o renueva por 30 días, todo en la misma transacción: si
     el cobro falla, no se activa nada. Si renueva el mismo plan antes de vencer, se suman al vencimiento
-    actual. Atiende (borra) la solicitud del cliente si tenía una."""
+    actual. Atiende (borra) la solicitud del cliente si tenía una: si la tiene, se cobra el plan que pidió
+    y no otro; para cambiarlo, el cliente cambia su solicitud o el personal la rechaza."""
     cliente = _cliente(db, cliente_id)
     plan = _plan(db, plan_id)
+    solicitud = db.get(SolicitudMembresia, cliente.id)
+    if solicitud is not None and solicitud.plan_id != plan.id:
+        pedido = _plan(db, solicitud.plan_id)
+        raise ErrorDeDatos(
+            f"{cliente.nombre} solicitó el plan {pedido.nombre}: se cobra ese plan. "
+            "Si quiere otro, debe cambiar su solicitud o hay que rechazarla primero."
+        )
     caja.registrar_pago(
         db,
         concepto=f"Membresía {plan.nombre}",
@@ -133,7 +141,6 @@ def asignar(db: Session, cliente_id: int, plan_id: str, metodo, recibido: int | 
     else:
         membresia = Membresia(cliente_id=cliente.id, plan_id=plan.id, inicio=ahora, vence=ahora + DURACION)
         db.add(membresia)
-    solicitud = db.get(SolicitudMembresia, cliente.id)
     if solicitud is not None:
         db.delete(solicitud)
     horas = f" y {plan.horas_gratis_mes} h gratis al mes" if plan.horas_gratis_mes > 0 else ""

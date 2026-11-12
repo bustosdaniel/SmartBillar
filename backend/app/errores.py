@@ -26,7 +26,15 @@ NOMBRES_CAMPO = {
     "recibido": ("El efectivo recibido", "o"),
     "metodo": ("El método de pago", "o"),
     "cliente": ("El cliente", "o"),
+    "inscripcion": ("El valor de la inscripción", "o"),
 }
+
+
+def _numero(valor) -> str:
+    """Los topes de dinero se leen mejor con puntos de miles: $10.000.000."""
+    if isinstance(valor, int) and valor >= 1000:
+        return "$" + f"{valor:,}".replace(",", ".")
+    return str(valor)
 
 
 def _mensaje(error: dict) -> str:
@@ -41,10 +49,12 @@ def _mensaje(error: dict) -> str:
         return f"{nombre} es obligatori{o}." if minimo == 1 else f"{nombre} debe tener al menos {minimo} caracteres."
     if tipo == "string_too_long":
         return f"{nombre} no puede tener más de {contexto.get('max_length')} caracteres."
+    # Plural ("Las horas gratis") concuerda con "pueden".
+    puede = "pueden" if o.endswith("s") else "puede"
     if tipo == "less_than_equal":
-        return f"{nombre} no puede ser mayor que {contexto.get('le')}."
+        return f"{nombre} no {puede} ser mayor que {_numero(contexto.get('le'))}."
     if tipo == "greater_than_equal":
-        return f"{nombre} no puede ser menor que {contexto.get('ge')}."
+        return f"{nombre} no {puede} ser menor que {contexto.get('ge')}."
     if tipo == "value_error" and campo == "email":
         return "El correo no es válido."
     if tipo == "value_error":

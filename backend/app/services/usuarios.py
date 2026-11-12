@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Usuario
@@ -22,6 +22,26 @@ def buscar_cliente_por_email(db: Session, email: str) -> Usuario | None:
     """Sin distinguir mayúsculas ni espacios alrededor, como en el login."""
     usuario = buscar_por_email(db, email)
     return usuario if usuario is not None and usuario.rol == Rol.CLIENTE else None
+
+
+def sugerir_clientes(db: Session, texto: str, limite: int = 8) -> list[Usuario]:
+    """Clientes cuyo correo o nombre contiene el texto (sin distinguir mayúsculas), para elegir mientras se
+    escribe. Primero los correos que empiezan por el texto, después el resto, por correo."""
+    buscado = texto.strip().lower()
+    # %, _ y \ se buscan literalmente, no como comodines de LIKE.
+    seguro = buscado.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    correo, nombre = func.lower(Usuario.email), func.lower(Usuario.nombre)
+    return list(
+        db.scalars(
+            select(Usuario)
+            .where(
+                Usuario.rol == Rol.CLIENTE,
+                or_(correo.like(f"%{seguro}%", escape="\\"), nombre.like(f"%{seguro}%", escape="\\")),
+            )
+            .order_by(case((correo.like(f"{seguro}%", escape="\\"), 0), else_=1), Usuario.email)
+            .limit(limite)
+        )
+    )
 
 
 def listar_usuarios(db: Session) -> list[Usuario]:

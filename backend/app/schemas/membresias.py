@@ -1,7 +1,7 @@
 from pydantic import Field, field_validator
 
 from app.schemas.caja import DatosPago
-from app.schemas.comun import EsquemaCamel, Milisegundos
+from app.schemas.comun import HORAS_GRATIS_MAXIMAS, PRECIO_PLAN_MAXIMO, EsquemaCamel, Milisegundos
 
 
 class PlanSalida(EsquemaCamel):
@@ -18,9 +18,9 @@ class PlanSalida(EsquemaCamel):
 class PlanEntrada(EsquemaCamel):
     """Lo que el administrador edita de un plan (el id y el nombre no cambian)."""
 
-    precio_mensual: int = Field(ge=0)
+    precio_mensual: int = Field(ge=0, le=PRECIO_PLAN_MAXIMO)
     descuento_mesa: int = Field(ge=0, le=100)
-    horas_gratis_mes: int = Field(ge=0, le=744)
+    horas_gratis_mes: int = Field(ge=0, le=HORAS_GRATIS_MAXIMAS)
     descuento_bar: int = Field(ge=0, le=100)
     descuento_torneo: int = Field(ge=0, le=100)
     extras: list[str] = []

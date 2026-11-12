@@ -1,7 +1,7 @@
 from pydantic import Field
 
 from app.models.enums import MetodoPago
-from app.schemas.comun import EsquemaCamel, Milisegundos
+from app.schemas.comun import MONTO_MAXIMO, EsquemaCamel, Milisegundos
 
 
 class PagoSalida(EsquemaCamel):
@@ -43,11 +43,11 @@ class CajaSalida(EsquemaCamel):
 
 
 class AbrirEntrada(EsquemaCamel):
-    base: int = Field(ge=0)
+    base: int = Field(ge=0, le=MONTO_MAXIMO)
 
 
 class CerrarEntrada(EsquemaCamel):
-    contado: int = Field(ge=0)
+    contado: int = Field(ge=0, le=MONTO_MAXIMO)
     nota: str = ""
 
 
@@ -55,16 +55,16 @@ class DatosPago(EsquemaCamel):
     """Cómo pagó el cliente. En efectivo, lo que entregó: el cambio lo calcula el backend."""
 
     metodo: MetodoPago
-    recibido: int | None = Field(default=None, ge=0)
+    recibido: int | None = Field(default=None, ge=0, le=MONTO_MAXIMO)
 
 
 class PagoEntrada(DatosPago):
     concepto: str = Field(min_length=1, max_length=120)
     cliente: str = Field(min_length=1, max_length=120)
     cliente_id: int | None = None
-    monto: int = Field(ge=0)
+    monto: int = Field(ge=0, le=MONTO_MAXIMO)
 
 
 class EgresoEntrada(EsquemaCamel):
     concepto: str = Field(min_length=1, max_length=120)
-    monto: int = Field(gt=0)
+    monto: int = Field(gt=0, le=MONTO_MAXIMO)

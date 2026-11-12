@@ -5,7 +5,7 @@ from pydantic import Field, StringConstraints
 
 from app.models.enums import CategoriaTorneo, EstadoTorneo, ModoJuego
 from app.schemas.caja import DatosPago
-from app.schemas.comun import EsquemaCamel
+from app.schemas.comun import INSCRIPCION_MAXIMA, EsquemaCamel
 
 
 class JugadorSalida(EsquemaCamel):
@@ -48,7 +48,7 @@ class TorneoEntrada(EsquemaCamel):
     fecha: date
     hora: time
     cupos: int = Field(ge=2, le=64)
-    inscripcion: int = Field(ge=0)
+    inscripcion: int = Field(ge=0, le=INSCRIPCION_MAXIMA)
     premio: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 
 
