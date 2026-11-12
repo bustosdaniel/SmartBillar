@@ -1,0 +1,16 @@
+{
+  "name": "SmartBillar",
+  "short_name": "SmartBillar",
+  "description": "Gestión del club de billar: mesas, caja, membresías y torneos.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F3D2E",
+  "theme_color": "#0F3D2E",
+  "icons": [
+    { "src": "/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
