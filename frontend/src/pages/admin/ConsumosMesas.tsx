@@ -7,7 +7,7 @@ import { ListaConsumos } from '../../components/ListaConsumos'
 import { Modal } from '../../components/Modal'
 import { TarjetaProducto } from '../../components/TarjetaProducto'
 import { useAhora } from '../../hooks/useAhora'
-import { mesasMock, NOMBRES_MODO } from '../../mesas/datos'
+import { useMesas, NOMBRES_MODO } from '../../mesas/datos'
 import { estadoMesa, useSesiones, useSesionesFinalizadas } from '../../mesas/sesiones'
 import type { Mesa } from '../../types'
 import { esMismoDia, formatearPesos } from '../../utils/formato'
@@ -17,6 +17,7 @@ import { DialogoPrecios } from './consumos/DialogoPrecios'
 type Dialogo = { tipo: 'consumo'; mesa: Mesa } | { tipo: 'precios' } | null
 
 export function ConsumosMesas() {
+  const mesas = useMesas()
   const esAdministrador = useEsAdministrador()
   const sesiones = useSesiones()
   const finalizadas = useSesionesFinalizadas()
@@ -24,7 +25,7 @@ export function ConsumosMesas() {
   const ahora = useAhora()
   const [dialogo, setDialogo] = useState<Dialogo>(null)
 
-  const enJuego = mesasMock.flatMap((mesa) => {
+  const enJuego = mesas.flatMap((mesa) => {
     const sesion = sesiones[mesa.id]
     return sesion ? [{ mesa, sesion }] : []
   })

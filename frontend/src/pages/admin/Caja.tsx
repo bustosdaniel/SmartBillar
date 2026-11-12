@@ -129,7 +129,7 @@ export function Caja() {
                       <strong>{formatearPesos(p.monto)}</strong>
                     </td>
                     <td>
-                      {esAdministrador && p.mesa && puedeAnularse(p) && (
+                      {esAdministrador && puedeAnularse(p) && (
                         <button
                           type="button"
                           className="boton-icono boton-icono-claro"

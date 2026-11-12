@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Trophy } from 'lucide-react'
-import { mesasMock } from '../mesas/datos'
+import { useMesas } from '../mesas/datos'
 import { campeon, nombreRonda, puedeDefinirse, totalRondas } from '../torneos/llaves'
 import { asignarMesa, nombreJugador, registrarGanador } from '../torneos/torneos'
 import type { Partido, Torneo } from '../types'
@@ -43,8 +43,9 @@ function Lado({ torneo, partido, lado, editable, resaltar, onGanador }: LadoProp
 }
 
 export function Llaves({ torneo, editable = false, resaltar = null }: LlavesProps) {
+  const todas = useMesas()
   const rondas = totalRondas(torneo.partidos)
-  const mesas = mesasMock.filter((m) => m.modo === torneo.modo)
+  const mesas = todas.filter((m) => m.modo === torneo.modo)
   const ganadorTorneo = campeon(torneo.partidos)
   const [error, setError] = useState('')
 

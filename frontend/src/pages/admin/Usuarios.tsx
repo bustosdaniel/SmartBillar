@@ -203,6 +203,7 @@ export function Usuarios() {
             plan={planVigente(membresias, planes, fichaDatos.usuario.id, ahora) ?? (fichaDatos.membresia ? planes[fichaDatos.membresia.planId] : null)}
             torneos={torneos.filter((t) => t.jugadores.some((j) => j.clienteId === fichaDatos.usuario.id))}
             ahora={ahora}
+            onEliminado={() => setFicha(null)}
           />
         )}
       </Modal>

@@ -23,6 +23,8 @@ function erroresDeRegla(r: ReglaHorario): ErroresRegla {
 export function DialogoTarifas({ onListo }: { onListo: () => void }) {
   // Se edita una copia y solo se guarda al confirmar.
   const [config, setConfig] = useState<ConfigTarifas>(obtenerTarifas)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
 
   function cambiarPrecio(modo: ModoJuego, valor: string) {
     setConfig((c) => ({
@@ -31,12 +33,12 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
     }))
   }
 
-  function cambiarRegla(id: string, cambio: Partial<ReglaHorario>) {
+  function cambiarRegla(id: ReglaHorario['id'], cambio: Partial<ReglaHorario>) {
     setConfig((c) => ({ ...c, reglas: c.reglas.map((r) => (r.id === id ? { ...r, ...cambio } : r)) }))
   }
 
   // Se calcula sobre el estado más reciente para no perder clics seguidos.
-  function alternarDia(reglaId: string, dia: number) {
+  function alternarDia(reglaId: ReglaHorario['id'], dia: number) {
     setConfig((c) => ({
       ...c,
       reglas: c.reglas.map((r) =>
@@ -99,7 +101,7 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
       <h3 className="titulo-bloque">Tarifas por horario</h3>
       <p className="nota">
         Ajustan el precio base según el día y la hora en que se inicia la mesa. Negativo es descuento (ej. −20) y positivo,
-        recargo (ej. 15).
+        recargo (ej. 15), entre −100% y +100%.
       </p>
       {config.reglas.map((r) => {
         const errores = erroresReglas[r.id]
@@ -168,6 +170,11 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
       </button>
 
       <p className="nota">Los cambios aplican a las mesas que se inicien desde ahora; las que ya están en juego conservan su precio.</p>
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
       <div className="dialogo-acciones">
         <button type="button" className="boton boton-secundario" onClick={onListo}>
           Cancelar
@@ -175,15 +182,22 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
         <button
           type="button"
           className="boton"
-          disabled={hayErrores}
+          disabled={hayErrores || guardando}
           title={hayErrores ? 'Corrige los campos marcados para guardar.' : undefined}
-          onClick={() => {
-            if (hayErrores) return
-            guardarTarifas({ ...config, reglas: config.reglas.map((r) => ({ ...r, nombre: r.nombre.trim() })) })
-            onListo()
+          onClick={async () => {
+            if (hayErrores || guardando) return
+            setGuardando(true)
+            setError('')
+            try {
+              await guardarTarifas({ ...config, reglas: config.reglas.map((r) => ({ ...r, nombre: r.nombre.trim() })) })
+              onListo()
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'No se pudieron guardar las tarifas.')
+              setGuardando(false)
+            }
           }}
         >
-          Guardar tarifas
+          {guardando ? 'Guardando…' : 'Guardar tarifas'}
         </button>
       </div>
     </div>

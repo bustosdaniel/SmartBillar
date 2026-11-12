@@ -3,7 +3,7 @@ import { History } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { NOMBRES_METODO } from '../../caja/caja'
 import { Encabezado } from '../../components/Encabezado'
-import { mesasMock, NOMBRES_MODO } from '../../mesas/datos'
+import { useTodasLasMesas, NOMBRES_MODO } from '../../mesas/datos'
 import { useSesionesFinalizadas } from '../../mesas/sesiones'
 import { usePlanes } from '../../membresias/membresias'
 import type { ModoJuego } from '../../types'
@@ -13,6 +13,7 @@ type Filtro = ModoJuego | 'todos'
 const FILTROS: Filtro[] = ['todos', 'pool', 'tres-bandas', 'libre']
 
 export function Historial() {
+  const mesas = useTodasLasMesas()
   const { usuario } = useAuth()
   const finalizadas = useSesionesFinalizadas()
   const planes = usePlanes()
@@ -20,7 +21,7 @@ export function Historial() {
 
   const partidas = finalizadas
     .filter((s) => s.clienteId === usuario?.id)
-    .map((s) => ({ ...s, mesa: mesasMock.find((m) => m.id === s.mesaId) }))
+    .map((s) => ({ ...s, mesa: mesas.find((m) => m.id === s.mesaId) }))
     .filter((s) => filtro === 'todos' || s.mesa?.modo === filtro)
     .toSorted((a, b) => b.fin - a.fin)
 
@@ -102,7 +103,7 @@ export function Historial() {
                       <td>{s.mesa ? NOMBRES_MODO[s.mesa.modo] : '—'}</td>
                       <td className="numero">{formatearDuracion(s.tiempoMs)}</td>
                       <td>
-                        {NOMBRES_METODO[s.metodoPago]}
+                        {s.metodoPago ? NOMBRES_METODO[s.metodoPago] : 'Cobro anulado'}
                         {s.planId && (
                           <span className={`insignia-plan insignia-${s.planId} insignia-chica`}>
                             {planes[s.planId].nombre}

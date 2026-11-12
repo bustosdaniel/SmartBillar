@@ -9,6 +9,8 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
     Object.fromEntries(productos.map((p) => [p.id, p.precio])),
   )
 
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
   const errores = Object.fromEntries(productos.map((p) => [p.id, errorNumero(precios[p.id], LIMITES_PRODUCTO[p.categoria])]))
   const hayErrores = Object.values(errores).some(Boolean)
 
@@ -52,6 +54,11 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
         </table>
       ))}
       <p className="nota">Los productos ya pedidos en una mesa conservan el precio con el que se pidieron.</p>
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
       <div className="dialogo-acciones">
         <button type="button" className="boton boton-secundario" onClick={onListo}>
           Cancelar
@@ -59,15 +66,22 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
         <button
           type="button"
           className="boton"
-          disabled={hayErrores}
+          disabled={hayErrores || guardando}
           title={hayErrores ? 'Corrige los precios marcados para guardar.' : undefined}
-          onClick={() => {
-            if (hayErrores) return
-            guardarPrecios(precios)
-            onListo()
+          onClick={async () => {
+            if (hayErrores || guardando) return
+            setGuardando(true)
+            setError('')
+            try {
+              await guardarPrecios(precios)
+              onListo()
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'No se pudieron guardar los precios.')
+              setGuardando(false)
+            }
           }}
         >
-          Guardar precios
+          {guardando ? 'Guardando…' : 'Guardar precios'}
         </button>
       </div>
     </div>

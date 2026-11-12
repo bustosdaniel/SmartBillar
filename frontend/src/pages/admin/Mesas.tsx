@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Tags } from 'lucide-react'
+import { Plus, Tags } from 'lucide-react'
 import { useEsAdministrador } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { useAhora } from '../../hooks/useAhora'
-import { mesasMock, NOMBRES_MODO } from '../../mesas/datos'
+import { NOMBRES_MODO, useMesas } from '../../mesas/datos'
 import { useCalculadoraCuenta } from '../../mesas/cuenta'
 import { detenerSesion, estadoMesa, useSesiones } from '../../mesas/sesiones'
 import type { Mesa, ModoJuego, Sesion } from '../../types'
@@ -12,6 +12,7 @@ import { formatearPesos } from '../../utils/formato'
 import { DialogoConsumo } from './consumos/DialogoConsumo'
 import { DialogoCobrar } from './mesas/DialogoCobrar'
 import { DialogoIniciar } from './mesas/DialogoIniciar'
+import { DialogoNuevaMesa } from './mesas/DialogoNuevaMesa'
 import { DialogoTarifas } from './mesas/DialogoTarifas'
 import { TarjetaMesa } from './mesas/TarjetaMesa'
 
@@ -21,6 +22,7 @@ type Dialogo =
   | { tipo: 'cobrar'; mesa: Mesa; sesion: Sesion }
   | { tipo: 'consumo'; mesa: Mesa }
   | { tipo: 'tarifas' }
+  | { tipo: 'nueva' }
   | null
 
 const TITULOS = {
@@ -28,6 +30,7 @@ const TITULOS = {
   cobrar: 'Finalizar y cobrar',
   consumo: 'Agregar consumo',
   tarifas: 'Tarifas',
+  nueva: 'Nueva mesa',
 }
 
 const filtros: Filtro[] = ['todas', 'pool', 'tres-bandas', 'libre']
@@ -38,18 +41,20 @@ export function Mesas() {
   const ahora = useAhora()
   const [filtro, setFiltro] = useState<Filtro>('todas')
   const [dialogo, setDialogo] = useState<Dialogo>(null)
+  const [error, setError] = useState('')
+  const mesas = useMesas()
 
   const calcular = useCalculadoraCuenta()
 
-  const estados = mesasMock.map((m) => estadoMesa(sesiones[m.id]))
+  const estados = mesas.map((m) => estadoMesa(sesiones[m.id]))
   const cuentas = new Map(
-    mesasMock.flatMap((m) => {
+    mesas.flatMap((m) => {
       const sesion = sesiones[m.id]
-      return sesion ? [[m.id, calcular(sesion, m, ahora)] as const] : []
+      return sesion ? [[m.id, calcular(sesion, ahora)] as const] : []
     }),
   )
   const enCurso = [...cuentas.values()].reduce((total, c) => total + c.total, 0)
-  const visibles = filtro === 'todas' ? mesasMock : mesasMock.filter((m) => m.modo === filtro)
+  const visibles = filtro === 'todas' ? mesas : mesas.filter((m) => m.modo === filtro)
 
   const cerrar = () => setDialogo(null)
 
@@ -58,9 +63,14 @@ export function Mesas() {
       <header className="panel-cabecera">
         <Encabezado titulo="Mesas" subtitulo="Control de mesas en tiempo real" />
         {esAdministrador && (
-          <button type="button" className="boton boton-secundario" onClick={() => setDialogo({ tipo: 'tarifas' })}>
-            <Tags size={16} aria-hidden="true" /> Tarifas
-          </button>
+          <div className="acciones-cabecera">
+            <button type="button" className="boton boton-secundario" onClick={() => setDialogo({ tipo: 'tarifas' })}>
+              <Tags size={16} aria-hidden="true" /> Tarifas
+            </button>
+            <button type="button" className="boton" onClick={() => setDialogo({ tipo: 'nueva' })}>
+              <Plus size={16} aria-hidden="true" /> Nueva mesa
+            </button>
+          </div>
         )}
       </header>
 
@@ -97,6 +107,18 @@ export function Mesas() {
         ))}
       </div>
 
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
+
+      {mesas.length === 0 && (
+        <p className="texto-suave">
+          {esAdministrador ? 'El club todavía no tiene mesas. Agrega la primera con «Nueva mesa».' : 'El club todavía no tiene mesas.'}
+        </p>
+      )}
+
       <div className="grid-mesas">
         {visibles.map((mesa) => (
           <TarjetaMesa
@@ -107,9 +129,13 @@ export function Mesas() {
             cuenta={cuentas.get(mesa.id) ?? null}
             onIniciar={() => setDialogo({ tipo: 'iniciar', mesa })}
             onConsumo={() => setDialogo({ tipo: 'consumo', mesa })}
-            onFinalizar={() => {
-              const sesion = detenerSesion(mesa.id)
-              if (sesion) setDialogo({ tipo: 'cobrar', mesa, sesion })
+            onFinalizar={async () => {
+              setError('')
+              try {
+                setDialogo({ tipo: 'cobrar', mesa, sesion: await detenerSesion(mesa.id) })
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'No se pudo finalizar la mesa.')
+              }
             }}
           />
         ))}
@@ -122,6 +148,7 @@ export function Mesas() {
       >
         {dialogo?.tipo === 'iniciar' && <DialogoIniciar mesa={dialogo.mesa} onListo={cerrar} />}
         {dialogo?.tipo === 'tarifas' && <DialogoTarifas onListo={cerrar} />}
+        {dialogo?.tipo === 'nueva' && <DialogoNuevaMesa onListo={cerrar} />}
         {dialogo?.tipo === 'consumo' && <DialogoConsumo mesa={dialogo.mesa} onListo={cerrar} />}
         {dialogo?.tipo === 'cobrar' && (
           <DialogoCobrar mesa={dialogo.mesa} sesion={dialogo.sesion} onListo={cerrar} />

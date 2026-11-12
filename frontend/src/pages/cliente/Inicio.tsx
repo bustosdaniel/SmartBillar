@@ -3,7 +3,7 @@ import { ChevronRight, Sparkles, Timer, Trophy } from 'lucide-react'
 import banner from '../../assets/images/image-principal.png'
 import { useAuth } from '../../auth/useAuth'
 import { useAhora } from '../../hooks/useAhora'
-import { EQUIPO_MODO, MODOS, mesasMock, NOMBRES_MODO } from '../../mesas/datos'
+import { EQUIPO_MODO, MODOS, useMesas, NOMBRES_MODO } from '../../mesas/datos'
 import { IMAGEN_MODO } from '../../mesas/imagenes'
 import { estadoMesa, sesionDelCliente, tiempoJugado, useSesiones } from '../../mesas/sesiones'
 import { reglaVigente, textoAjuste, textoDias, useTarifas } from '../../mesas/tarifas'
@@ -97,9 +97,10 @@ export function Inicio() {
 
 // Aviso en el inicio cuando el cliente tiene una mesa corriendo.
 function MesaActiva({ clienteId }: { clienteId: number | undefined }) {
+  const mesas = useMesas()
   const sesion = sesionDelCliente(useSesiones(), clienteId)
   const ahora = useAhora()
-  const mesa = sesion && mesasMock.find((m) => m.id === sesion.mesaId)
+  const mesa = sesion && mesas.find((m) => m.id === sesion.mesaId)
   if (!sesion || !mesa) return null
 
   return (

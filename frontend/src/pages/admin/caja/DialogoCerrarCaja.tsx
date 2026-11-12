@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { cerrarCaja, efectivoEsperado, textoDiferencia, totalEgresos } from '../../../caja/caja'
+import { useMesas } from '../../../mesas/datos'
+import { useSesiones } from '../../../mesas/sesiones'
 import type { Caja } from '../../../types'
 import { formatearPesos } from '../../../utils/formato'
 import { limitarTextoMonto, MONTO_MAXIMO } from '../../../utils/montos'
@@ -9,6 +11,10 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
   const [nota, setNota] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const sesiones = useSesiones()
+  const mesas = useMesas()
+  // Mesas en juego o por cobrar: con la caja cerrada no se pueden cobrar.
+  const abiertas = mesas.filter((m) => sesiones[m.id])
 
   async function cerrar() {
     setError('')
@@ -29,6 +35,14 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
 
   return (
     <div className="formulario-claro">
+      {abiertas.length > 0 && (
+        <p role="alert" className="aviso-claro aviso-cambio-plan">
+          <strong>
+            {abiertas.length === 1 ? 'Hay 1 mesa sin cobrar' : `Hay ${abiertas.length} mesas sin cobrar`}:
+          </strong>{' '}
+          {abiertas.map((m) => m.nombre).join(', ')}. Cóbralas antes de cerrar: con la caja cerrada no se pueden cobrar.
+        </p>
+      )}
       <dl className="resumen">
         <div>
           <dt>Pagos registrados</dt>

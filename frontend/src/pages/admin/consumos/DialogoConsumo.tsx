@@ -17,6 +17,8 @@ export function DialogoConsumo({ mesa, onListo }: { mesa: Mesa; onListo: () => v
   const [elegidoId, setElegidoId] = useState<string | null>(null)
   const [cantidad, setCantidad] = useState(1)
   const [aviso, setAviso] = useState('')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
   if (!sesion) {
     return (
@@ -40,11 +42,29 @@ export function DialogoConsumo({ mesa, onListo }: { mesa: Mesa; onListo: () => v
     setAviso('')
   }
 
-  function agregar() {
-    if (!elegido || !agregarConsumo(mesa.id, elegido, cantidad)) return
-    setAviso(`${cantidad} × ${elegido.nombre}: ${mensajeAgregado(elegido).toLowerCase()}.`)
-    setElegidoId(null)
-    setCantidad(1)
+  async function agregar() {
+    if (!elegido || enviando) return
+    setEnviando(true)
+    setError('')
+    try {
+      await agregarConsumo(mesa.id, elegido.id, cantidad)
+      setAviso(`${cantidad} × ${elegido.nombre}: ${mensajeAgregado(elegido).toLowerCase()}.`)
+      setElegidoId(null)
+      setCantidad(1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo agregar el pedido.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  async function quitar(consumoId: number) {
+    setError('')
+    try {
+      await quitarConsumo(mesa.id, consumoId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo quitar el pedido.')
+    }
   }
 
   return (
@@ -108,8 +128,8 @@ export function DialogoConsumo({ mesa, onListo }: { mesa: Mesa; onListo: () => v
               <Plus size={15} />
             </button>
           </div>
-          <button type="button" className="boton" onClick={agregar}>
-            Agregar {formatearPesos(elegido.precio * cantidad)}
+          <button type="button" className="boton" onClick={agregar} disabled={enviando}>
+            {enviando ? 'Agregando…' : `Agregar ${formatearPesos(elegido.precio * cantidad)}`}
           </button>
         </div>
       )}
@@ -119,9 +139,14 @@ export function DialogoConsumo({ mesa, onListo }: { mesa: Mesa; onListo: () => v
           {aviso}
         </p>
       )}
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
+      )}
 
       <h3 className="titulo-bloque">Cuenta de consumos · {formatearPesos(totalConsumos(sesion.consumos))}</h3>
-      <ListaConsumos consumos={sesion.consumos} onQuitar={(id) => quitarConsumo(mesa.id, id)} />
+      <ListaConsumos consumos={sesion.consumos} onQuitar={quitar} />
 
       <div className="dialogo-acciones">
         <button type="button" className="boton" onClick={onListo}>

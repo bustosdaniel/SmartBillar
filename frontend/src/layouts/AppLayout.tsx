@@ -4,6 +4,7 @@ import { LogOut, Menu, X, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
 import { NOMBRES_CARGO } from '../auth/usuarios'
 import { Logo } from '../components/Logo'
+import { PantallaCarga } from '../components/PantallaCarga'
 
 export type ItemMenu = {
   ruta: string
@@ -15,7 +16,7 @@ export type ItemMenu = {
 
 export function AppLayout({ items }: { items: ItemMenu[] }) {
   const location = useLocation()
-  const { usuario, logout } = useAuth()
+  const { usuario, cargando, logout } = useAuth()
   const cargo = usuario?.cargo ?? 'administrador'
   const [menuAbierto, setMenuAbierto] = useState(false)
 
@@ -61,9 +62,14 @@ export function AppLayout({ items }: { items: ItemMenu[] }) {
         </div>
       </aside>
       <main className="contenido">
-        <div key={location.key} className="transicion-ruta">
-          <Outlet />
-        </div>
+        {/* El menú ya se ve; solo el contenido espera a que lleguen los datos del backend. */}
+        {cargando ? (
+          <PantallaCarga />
+        ) : (
+          <div key={location.key} className="transicion-ruta">
+            <Outlet />
+          </div>
+        )}
       </main>
     </div>
   )

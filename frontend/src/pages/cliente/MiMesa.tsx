@@ -3,7 +3,7 @@ import { Banknote, CirclePause, Info, Timer } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
 import { useAhora } from '../../hooks/useAhora'
-import { mesasMock, NOMBRES_MODO } from '../../mesas/datos'
+import { useTodasLasMesas, NOMBRES_MODO } from '../../mesas/datos'
 import { IMAGEN_MODO } from '../../mesas/imagenes'
 import { useCalculadoraCuenta } from '../../mesas/cuenta'
 import {
@@ -25,6 +25,7 @@ const TEXTO_ESTADO_CLIENTE = {
 }
 
 export function MiMesa() {
+  const mesas = useTodasLasMesas()
   const { usuario } = useAuth()
   const sesiones = useSesiones()
   const finalizadas = useSesionesFinalizadas()
@@ -32,11 +33,11 @@ export function MiMesa() {
   const calcular = useCalculadoraCuenta()
 
   const sesion = sesionDelCliente(sesiones, usuario?.id)
-  const mesa = sesion && mesasMock.find((m) => m.id === sesion.mesaId)
+  const mesa = sesion && mesas.find((m) => m.id === sesion.mesaId)
 
   if (!sesion || !mesa) {
     const ultima = finalizadas.findLast((s) => s.clienteId === usuario?.id)
-    const mesaUltima = ultima && mesasMock.find((m) => m.id === ultima.mesaId)
+    const mesaUltima = ultima && mesas.find((m) => m.id === ultima.mesaId)
     return (
       <section className="pagina">
         <Encabezado titulo="Mi mesa" subtitulo="Tu sesión de juego en vivo" />
@@ -83,9 +84,9 @@ export function MiMesa() {
   const pausada = estado === 'pausada'
   const porCobrar = estado === 'por-cobrar'
   const tiempo = tiempoJugado(sesion, ahora)
-  const cuenta = calcular(sesion, mesa, ahora)
+  const cuenta = calcular(sesion, ahora)
   // Cuánto pagaría si juega media hora más.
-  const siSigue = calcular({ ...sesion, inicio: sesion.inicio - MEDIA_HORA }, mesa, ahora)
+  const siSigue = calcular({ ...sesion, inicio: sesion.inicio - MEDIA_HORA }, ahora)
 
   return (
     <section className="pagina">

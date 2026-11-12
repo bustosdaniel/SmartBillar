@@ -1,11 +1,12 @@
 import { Link } from 'react-router'
 import { Clock } from 'lucide-react'
-import { mesasMock, TEXTO_ESTADO_MESA } from '../../../mesas/datos'
+import { useMesas, TEXTO_ESTADO_MESA } from '../../../mesas/datos'
 import { IMAGEN_MODO } from '../../../mesas/imagenes'
 import { estadoMesa, tiempoJugado, useSesiones } from '../../../mesas/sesiones'
 import { formatearDuracion } from '../../../utils/formato'
 
 export function EstadoMesas({ ahora }: { ahora: number }) {
+  const mesas = useMesas()
   const sesiones = useSesiones()
 
   return (
@@ -15,7 +16,7 @@ export function EstadoMesas({ ahora }: { ahora: number }) {
         <Link to="/admin/mesas">Ver todas</Link>
       </header>
       <div className="grid-mini-mesas">
-        {mesasMock.map((mesa) => {
+        {mesas.map((mesa) => {
           const sesion = sesiones[mesa.id]
           const estado = estadoMesa(sesion)
           return (

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { ErrorApi, fijarToken, pedir } from '../api/cliente'
 import type { Usuario } from '../types'
 import { cargarCaja, vaciarCaja } from '../caja/caja'
+import { cargarMesas, vaciarMesas } from '../mesas/sesiones'
 import { cargarMembresias, vaciarMembresias } from '../membresias/membresias'
 import { cargarMovimientos, vaciarMovimientos } from '../actividad/movimientos'
 import { cargarNotificaciones, vaciarNotificaciones } from '../notificaciones/notificaciones'
@@ -14,6 +15,8 @@ import { actualizarMiPerfil, cargarUsuarios, vaciarUsuarios, type DatosPerfil } 
 const SESION_KEY = 'billar.sesion'
 // Clave de las sesiones del prototipo (sin token): se descartan y hay que volver a iniciar sesión.
 const SESION_ANTIGUA = 'billar.usuario'
+// Si el backend tarda más que esto, se muestra la app igual (cada pantalla se completa al llegar sus datos).
+const ESPERA_MAXIMA_MS = 12_000
 
 type Sesion = { token: string; usuario: Usuario }
 
@@ -41,19 +44,28 @@ function iniciar() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<Sesion | null>(iniciar)
+  // Con una sesión guardada se empieza cargando: primero se confirma con el backend.
+  const [cargando, setCargando] = useState(() => sesion !== null)
   const usuario = sesion?.usuario ?? null
 
-  function abrir(nueva: Sesion, recordar: boolean) {
+  // Pide todos los datos y espera a que lleguen (o fallen) antes de mostrar las pantallas. Si algo falla,
+  // las pantallas siguen funcionando y esos datos se vuelven a pedir en el siguiente refresco.
+  async function abrir(nueva: Sesion, recordar: boolean) {
     fijarToken(nueva.token)
     guardarSesion(nueva, recordar)
     setSesion(nueva)
-    // Si falla, las pantallas siguen funcionando y los datos se vuelven a pedir al recargar.
-    cargarUsuarios(nueva.usuario).catch(() => {})
-    cargarMembresias(nueva.usuario).catch(() => {})
-    cargarCaja(nueva.usuario).catch(() => {})
-    cargarNotificaciones(nueva.usuario).catch(() => {})
-    cargarMovimientos(nueva.usuario).catch(() => {})
-    cargarTorneos(nueva.usuario).catch(() => {})
+    setCargando(true)
+    const cargas = Promise.allSettled([
+      cargarUsuarios(nueva.usuario),
+      cargarMembresias(nueva.usuario),
+      cargarCaja(nueva.usuario),
+      cargarNotificaciones(nueva.usuario),
+      cargarMovimientos(nueva.usuario),
+      cargarTorneos(nueva.usuario),
+      cargarMesas(nueva.usuario),
+    ])
+    await Promise.race([cargas, new Promise((listo) => setTimeout(listo, ESPERA_MAXIMA_MS))])
+    setCargando(false)
   }
 
   function logout() {
@@ -65,7 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     vaciarNotificaciones()
     vaciarMovimientos()
     vaciarTorneos()
+    vaciarMesas()
     setSesion(null)
+    setCargando(false)
   }
 
   // Al abrir la app se confirma con el backend que el token sigue vigente (y se refrescan los datos).
@@ -76,18 +90,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((actual) => abrir({ ...guardada, usuario: actual }, localStorage.getItem(SESION_KEY) !== null))
       .catch((error) => {
         if (error instanceof ErrorApi && error.estado === 401) logout()
+        // Backend apagado: se muestra la app con el aviso de "sin conexión" de cada pantalla.
+        else setCargando(false)
       })
   }, [])
 
   async function login(email: string, password: string, recordar: boolean) {
     const nueva = await pedir<Sesion>('/auth/login', { cuerpo: { email, password } })
-    abrir(nueva, recordar)
+    void abrir(nueva, recordar)
     return nueva.usuario
   }
 
   async function registrar(datos: DatosRegistro) {
     const nueva = await pedir<Sesion>('/auth/registro', { cuerpo: datos })
-    abrir(nueva, true)
+    void abrir(nueva, true)
     return nueva.usuario
   }
 
@@ -99,5 +115,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return actualizada.usuario
   }
 
-  return <AuthContext value={{ usuario, login, registrar, actualizarPerfil, logout }}>{children}</AuthContext>
+  return <AuthContext value={{ usuario, cargando, login, registrar, actualizarPerfil, logout }}>{children}</AuthContext>
 }

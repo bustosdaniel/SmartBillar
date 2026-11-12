@@ -4,7 +4,7 @@ import { formatearHora, formatearPesos } from '../utils/formato'
 
 type ListaConsumosProps = {
   consumos: Consumo[] | undefined
-  onQuitar?: (id: string) => void
+  onQuitar?: (id: number) => void
 }
 
 // Productos pedidos en una mesa, en el orden en que se pidieron.

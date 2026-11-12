@@ -3,7 +3,7 @@ import { Banknote, Bell, CircleDot, Trophy, Users, type LucideIcon } from 'lucid
 import { esAdministrador, useAuth } from '../../auth/useAuth'
 import { useCaja, useCajasCerradas } from '../../caja/caja'
 import { useAhora } from '../../hooks/useAhora'
-import { mesasMock } from '../../mesas/datos'
+import { useMesas } from '../../mesas/datos'
 import { useSesiones, useSesionesFinalizadas } from '../../mesas/sesiones'
 import { useNotificaciones } from '../../notificaciones/notificaciones'
 import { useTorneos } from '../../torneos/torneos'
@@ -17,6 +17,7 @@ import { UltimosMovimientos } from './panel/UltimosMovimientos'
 type Dato = { titulo: string; valor: string; icono: LucideIcon; color: string }
 
 export function Panel() {
+  const mesas = useMesas()
   const { usuario } = useAuth()
   const sinLeer = useNotificaciones().filter((n) => n.usuarioId === usuario?.id && !n.leida).length
   const ahora = useAhora()
@@ -35,7 +36,7 @@ export function Panel() {
   const torneosActivos = useTorneos().filter((t) => t.estado === 'en-curso').length
 
   const datos: Dato[] = [
-    { titulo: 'Mesas en uso', valor: `${activas.length} / ${mesasMock.length}`, icono: CircleDot, color: 'verde' },
+    { titulo: 'Mesas en uso', valor: `${activas.length} / ${mesas.length}`, icono: CircleDot, color: 'verde' },
     { titulo: 'Clientes hoy', valor: String(clientesHoy), icono: Users, color: 'azul' },
     { titulo: 'Ingresos hoy', valor: formatearPesos(ingresosHoy), icono: Banknote, color: 'naranja' },
     { titulo: 'Torneos activos', valor: String(torneosActivos), icono: Trophy, color: 'morado' },

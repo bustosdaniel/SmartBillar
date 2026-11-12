@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Printer, Undo2 } from 'lucide-react'
 import { useEsAdministrador } from '../../../auth/useAuth'
-import { NOMBRES_METODO, puedeAnularse, registrarPago } from '../../../caja/caja'
+import { NOMBRES_METODO, puedeAnularse } from '../../../caja/caja'
 import { DetalleCuenta } from '../../../components/DetalleCuenta'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
 import { ListaConsumos } from '../../../components/ListaConsumos'
-import { useCalculadoraCuenta, type CuentaMesa } from '../../../mesas/cuenta'
+import { cuentaDeCobro, useCalculadoraCuenta, type CuentaMesa } from '../../../mesas/cuenta'
 import { NOMBRES_MODO } from '../../../mesas/datos'
-import { anularCobroMesa, finalizarSesion } from '../../../mesas/sesiones'
-import type { Mesa, Pago, Sesion } from '../../../types'
+import { usePlanes } from '../../../membresias/membresias'
+import { anularCobroMesa, cobrarMesa, useSesiones } from '../../../mesas/sesiones'
+import type { Consumo, Mesa, Pago, Sesion } from '../../../types'
 import { formatearDuracion, formatearHora, formatearPesos } from '../../../utils/formato'
 
 type DialogoCobrarProps = {
@@ -17,35 +18,29 @@ type DialogoCobrarProps = {
   onListo: () => void
 }
 
-export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
+export function DialogoCobrar({ mesa, sesion: inicial, onListo }: DialogoCobrarProps) {
   const esAdministrador = useEsAdministrador()
+  const planes = usePlanes()
+  // La sesión al día (por si se agregó o quitó un consumo); al cobrarla sale de la lista.
+  const sesion = useSesiones()[mesa.id] ?? inicial
   const fin = sesion.detenidaEn ?? sesion.inicio
   const calcular = useCalculadoraCuenta()
-  // Al cobrar se guarda la cuenta usada, para que el recibo no cambie si se recalcula.
-  const [cobrado, setCobrado] = useState<{ pago: Pago; cuenta: CuentaMesa } | null>(null)
+  // El recibo muestra lo que cobró el backend, no la vista previa.
+  const [cobrado, setCobrado] = useState<{ pago: Pago; cuenta: CuentaMesa; consumos: Consumo[] } | null>(null)
   const [confirmarAnular, setConfirmarAnular] = useState(false)
   const [aviso, setAviso] = useState('')
 
-  const cuenta = cobrado?.cuenta ?? calcular(sesion, mesa, fin)
+  const cuenta = cobrado?.cuenta ?? calcular(sesion, fin)
 
+  // Solo se envía cómo pagó: el total lo calcula el backend con la misma fórmula de la vista previa.
   async function cobrar(datos: DatosPago) {
-    let registrado: Pago
     try {
-      registrado = await registrarPago({
-        ...datos,
-        concepto: mesa.nombre,
-        cliente: sesion.clienteNombre,
-        clienteId: sesion.clienteId,
-        monto: cuenta.total,
-        mesa: { mesaId: mesa.id, inicio: sesion.inicio },
-      })
+      const cobro = await cobrarMesa(mesa.id, { metodo: datos.metodo, recibido: datos.recibido })
+      setAviso('')
+      setCobrado({ pago: cobro.pago, cuenta: cuentaDeCobro(cobro.cuenta, planes), consumos: cobro.sesion.consumos })
     } catch (err) {
       setAviso(err instanceof Error ? err.message : 'No se pudo registrar el cobro.')
-      return
     }
-    finalizarSesion(mesa.id, cuenta, datos.metodo)
-    setAviso('')
-    setCobrado({ pago: registrado, cuenta })
   }
 
   // El datáfono o el banco lo rechazó después de cobrar: se vuelve al cobro con la mesa Por cobrar.
@@ -69,7 +64,7 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
           <p className="texto-suave">
             {mesa.nombre} · {NOMBRES_MODO[mesa.modo]} · {formatearHora(pago.fecha)}
           </p>
-          {sesion.consumos?.length ? <ListaConsumos consumos={sesion.consumos} /> : null}
+          {cobrado.consumos.length ? <ListaConsumos consumos={cobrado.consumos} /> : null}
           <dl className="resumen">
             <div>
               <dt>Cliente</dt>
@@ -146,7 +141,7 @@ export function DialogoCobrar({ mesa, sesion, onListo }: DialogoCobrarProps) {
           {aviso}
         </p>
       )}
-      {sesion.consumos?.length ? <ListaConsumos consumos={sesion.consumos} /> : null}
+      {sesion.consumos.length ? <ListaConsumos consumos={sesion.consumos} /> : null}
       <dl className="resumen">
         <div>
           <dt>Cliente</dt>

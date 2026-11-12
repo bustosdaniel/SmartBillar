@@ -7,11 +7,12 @@ import { ListaConsumos } from '../../components/ListaConsumos'
 import { TarjetaProducto } from '../../components/TarjetaProducto'
 import { useAhora } from '../../hooks/useAhora'
 import { useCalculadoraCuenta } from '../../mesas/cuenta'
-import { mesasMock, NOMBRES_MODO } from '../../mesas/datos'
+import { useTodasLasMesas, NOMBRES_MODO } from '../../mesas/datos'
 import { sesionDelCliente, useSesiones, useSesionesFinalizadas } from '../../mesas/sesiones'
 import { formatearFecha, formatearHora, formatearPesos } from '../../utils/formato'
 
 export function Consumos() {
+  const mesas = useTodasLasMesas()
   const { usuario } = useAuth()
   const sesiones = useSesiones()
   const finalizadas = useSesionesFinalizadas()
@@ -20,8 +21,8 @@ export function Consumos() {
   const calcular = useCalculadoraCuenta()
 
   const sesion = sesionDelCliente(sesiones, usuario?.id)
-  const mesa = sesion && mesasMock.find((m) => m.id === sesion.mesaId)
-  const cuenta = sesion && mesa ? calcular(sesion, mesa, ahora) : null
+  const mesa = sesion && mesas.find((m) => m.id === sesion.mesaId)
+  const cuenta = sesion && mesa ? calcular(sesion, ahora) : null
   const anteriores = finalizadas
     .filter((s) => s.clienteId === usuario?.id && s.consumos?.length)
     .toSorted((a, b) => b.fin - a.fin)
@@ -82,7 +83,7 @@ export function Consumos() {
                 {anteriores.map((s) => (
                   <tr key={`${s.mesaId}-${s.inicio}`}>
                     <td>{formatearFecha(s.fin)}</td>
-                    <td>{mesasMock.find((m) => m.id === s.mesaId)?.nombre}</td>
+                    <td>{mesas.find((m) => m.id === s.mesaId)?.nombre}</td>
                     <td className="celda-asunto">{s.consumos?.map((c) => `${c.cantidad} × ${c.nombre}`).join(', ')}</td>
                     <td className="numero">{formatearPesos(totalConsumos(s.consumos))}</td>
                   </tr>

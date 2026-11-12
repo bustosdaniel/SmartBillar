@@ -1,6 +1,9 @@
-import { Mail, Phone } from 'lucide-react'
+import { useState } from 'react'
+import { Mail, Phone, Trash2 } from 'lucide-react'
+import { useEsAdministrador } from '../../../auth/useAuth'
+import { eliminarCliente } from '../../../auth/usuarios'
 import { NOMBRES_METODO } from '../../../caja/caja'
-import { mesasMock, NOMBRES_MODO } from '../../../mesas/datos'
+import { useTodasLasMesas, NOMBRES_MODO } from '../../../mesas/datos'
 import { estadoMembresia } from '../../../membresias/membresias'
 import type { Membresia, Plan, SesionFinalizada, Torneo, Usuario } from '../../../types'
 import { formatearDuracion, formatearFecha, formatearPesos } from '../../../utils/formato'
@@ -12,9 +15,29 @@ type FichaClienteProps = {
   plan: Plan | null
   torneos: Torneo[]
   ahora: number
+  // Se llama después de eliminar al cliente (para cerrar la ficha).
+  onEliminado: () => void
 }
 
-export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahora }: FichaClienteProps) {
+export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahora, onEliminado }: FichaClienteProps) {
+  const mesas = useTodasLasMesas()
+  const esAdministrador = useEsAdministrador()
+  const [confirmar, setConfirmar] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
+  const [error, setError] = useState('')
+
+  async function eliminar() {
+    setEliminando(true)
+    setError('')
+    try {
+      await eliminarCliente(cliente.id)
+      onEliminado()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar al cliente.')
+      setEliminando(false)
+      setConfirmar(false)
+    }
+  }
   const gastado = partidas.reduce((t, s) => t + s.total, 0)
   const recientes = partidas.toSorted((a, b) => b.fin - a.fin).slice(0, 5)
 
@@ -60,7 +83,7 @@ export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahor
       ) : (
         <ul className="movimientos">
           {recientes.map((s) => {
-            const mesa = mesasMock.find((m) => m.id === s.mesaId)
+            const mesa = mesas.find((m) => m.id === s.mesaId)
             return (
               <li key={`${s.mesaId}-${s.inicio}`}>
                 <span className="movimiento-texto">
@@ -68,7 +91,7 @@ export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahor
                     {mesa?.nombre ?? `Mesa ${s.mesaId}`} · {mesa ? NOMBRES_MODO[mesa.modo] : ''}
                   </strong>
                   <span>
-                    {formatearFecha(s.fin)} · {formatearDuracion(s.tiempoMs)} · {NOMBRES_METODO[s.metodoPago]}
+                    {formatearFecha(s.fin)} · {formatearDuracion(s.tiempoMs)} · {s.metodoPago ? NOMBRES_METODO[s.metodoPago] : 'Cobro anulado'}
                   </span>
                 </span>
                 <strong>{formatearPesos(s.total)}</strong>
@@ -76,6 +99,34 @@ export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahor
             )
           })}
         </ul>
+      )}
+
+      {esAdministrador &&
+        (confirmar ? (
+          <div className="confirmar-anular" role="alertdialog" aria-label="Eliminar cliente">
+            <p>
+              ¿Eliminar a <strong>{cliente.nombre}</strong>? Ya no podrá iniciar sesión ni aparecerá en la app, y su correo
+              quedará libre para registrarse de nuevo. Sus cobros, partidas y torneos se conservan en caja y reportes. No se
+              puede deshacer.
+            </p>
+            <div className="dialogo-acciones">
+              <button type="button" className="boton boton-secundario" onClick={() => setConfirmar(false)} disabled={eliminando}>
+                Cancelar
+              </button>
+              <button type="button" className="boton boton-peligro" onClick={eliminar} disabled={eliminando}>
+                {eliminando ? 'Eliminando…' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" className="boton-enlace" onClick={() => setConfirmar(true)}>
+            <Trash2 size={15} aria-hidden="true" /> Eliminar cliente
+          </button>
+        ))}
+      {error && (
+        <p role="alert" className="alerta-clara">
+          {error}
+        </p>
       )}
     </div>
   )
