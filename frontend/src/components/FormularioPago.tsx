@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Banknote, CreditCard, Smartphone, type LucideIcon } from 'lucide-react'
 import { NOMBRES_METODO, useCaja } from '../caja/caja'
 import type { MetodoPago } from '../types'
 import { formatearPesos } from '../utils/formato'
+import { limitarTextoMonto, MONTO_MAXIMO } from '../utils/montos'
 import { AbrirCaja } from './AbrirCaja'
 
 const METODOS: { metodo: MetodoPago; icono: LucideIcon }[] = [
@@ -23,7 +24,8 @@ type FormularioPagoProps = {
   total: number
   nota?: string
   onCancelar: () => void
-  onPagar: (datos: DatosPago) => void
+  // Si devuelve una promesa, el botón queda bloqueado hasta que termine.
+  onPagar: (datos: DatosPago) => void | Promise<void>
 }
 
 // Método de pago + cálculo de vueltas en efectivo. Exige la caja abierta.
@@ -31,6 +33,9 @@ export function FormularioPago({ total, nota, onCancelar, onPagar }: FormularioP
   const caja = useCaja()
   const [metodo, setMetodo] = useState<MetodoPago>('efectivo')
   const [recibido, setRecibido] = useState('')
+  const [cobrando, setCobrando] = useState(false)
+  // Candado síncrono: el estado tarda un render, y dos clics seguidos llegarían antes.
+  const enCurso = useRef(false)
 
   const montoRecibido = Number(recibido) || 0
   const cambio = montoRecibido - total
@@ -47,10 +52,17 @@ export function FormularioPago({ total, nota, onCancelar, onPagar }: FormularioP
     )
   }
 
-  function pagar() {
-    if (faltaDinero) return
+  async function pagar() {
+    if (faltaDinero || enCurso.current) return
+    enCurso.current = true
+    setCobrando(true)
     const efectivo = metodo === 'efectivo'
-    onPagar({ metodo, recibido: efectivo ? montoRecibido : null, cambio: efectivo ? cambio : null })
+    try {
+      await onPagar({ metodo, recibido: efectivo ? montoRecibido : null, cambio: efectivo ? cambio : null })
+    } finally {
+      enCurso.current = false
+      setCobrando(false)
+    }
   }
 
   return (
@@ -78,10 +90,11 @@ export function FormularioPago({ total, nota, onCancelar, onPagar }: FormularioP
             <input
               type="number"
               min={0}
+              max={MONTO_MAXIMO}
               step={100}
               inputMode="numeric"
               value={recibido}
-              onChange={(e) => setRecibido(e.target.value)}
+              onChange={(e) => setRecibido(limitarTextoMonto(e.target.value))}
               placeholder="0"
               autoFocus
             />
@@ -107,11 +120,11 @@ export function FormularioPago({ total, nota, onCancelar, onPagar }: FormularioP
 
       {nota && <p className="nota">{nota}</p>}
       <div className="dialogo-acciones">
-        <button type="button" className="boton boton-secundario" onClick={onCancelar}>
+        <button type="button" className="boton boton-secundario" onClick={onCancelar} disabled={cobrando}>
           Cancelar
         </button>
-        <button type="button" className="boton" onClick={pagar} disabled={faltaDinero}>
-          Cobrar {formatearPesos(total)}
+        <button type="button" className="boton" onClick={pagar} disabled={faltaDinero || cobrando} aria-busy={cobrando}>
+          {cobrando ? 'Cobrando…' : `Cobrar ${formatearPesos(total)}`}
         </button>
       </div>
     </>

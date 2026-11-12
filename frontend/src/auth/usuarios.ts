@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ErrorApi, pedir } from '../api/cliente'
 import type { Cargo, Usuario } from '../types'
 import { crearStoreMemoria } from '../utils/storeMemoria'
@@ -27,6 +28,28 @@ export async function cargarUsuarios(yo: Usuario) {
   store.guardar(lista)
 }
 
+// Para pantallas del personal que listan clientes: vuelve a pedir la lista al abrirse. La carga del
+// inicio de sesión puede haber fallado (backend reiniciándose) o quedado vieja (clientes registrados
+// después), y entonces el selector mostraría solo a los que se buscaron a mano.
+export function useRecargarUsuarios() {
+  const [estado, setEstado] = useState<'cargando' | 'listo' | 'error'>('cargando')
+  useEffect(() => {
+    let vigente = true
+    pedir<Usuario[]>('/usuarios')
+      .then((lista) => {
+        store.guardar(lista)
+        if (vigente) setEstado('listo')
+      })
+      .catch(() => {
+        if (vigente) setEstado('error')
+      })
+    return () => {
+      vigente = false
+    }
+  }, [])
+  return estado
+}
+
 export function vaciarUsuarios() {
   store.guardar([])
 }
@@ -52,6 +75,11 @@ export async function buscarPorEmail(email: string): Promise<Usuario | null> {
     if (error instanceof ErrorApi && error.estado === 404) return null
     throw error
   }
+}
+
+// Clientes cuyo correo o nombre contiene el texto, para elegir mientras se escribe (mínimo 2 letras).
+export async function sugerirClientes(texto: string): Promise<Usuario[]> {
+  return pedir<Usuario[]>(`/usuarios/clientes/sugerencias?q=${encodeURIComponent(texto)}`)
 }
 
 // El personal registra un cliente en caja; queda con PASSWORD_TEMPORAL.

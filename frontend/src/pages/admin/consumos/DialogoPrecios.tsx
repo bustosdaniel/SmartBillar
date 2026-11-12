@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CATEGORIAS, guardarPrecios, NOMBRES_CATEGORIA, obtenerProductos } from '../../../consumos/productos'
+import { errorNumero, leerNumero, LIMITES_PRODUCTO, mostrarNumero } from '../../../utils/montos'
 
 export function DialogoPrecios({ onListo }: { onListo: () => void }) {
   const [productos] = useState(obtenerProductos)
@@ -7,6 +8,9 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
   const [precios, setPrecios] = useState<Record<string, number>>(() =>
     Object.fromEntries(productos.map((p) => [p.id, p.precio])),
   )
+
+  const errores = Object.fromEntries(productos.map((p) => [p.id, errorNumero(precios[p.id], LIMITES_PRODUCTO[p.categoria])]))
+  const hayErrores = Object.values(errores).some(Boolean)
 
   return (
     <div className="formulario-claro tarifas">
@@ -27,13 +31,20 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
                   <td>
                     <input
                       type="number"
-                      min={0}
+                      min={LIMITES_PRODUCTO[p.categoria].min}
+                      max={LIMITES_PRODUCTO[p.categoria].max}
                       step={100}
+                      aria-invalid={errores[p.id] ? true : undefined}
                       inputMode="numeric"
                       aria-label={`Precio de ${p.nombre}`}
-                      value={precios[p.id]}
-                      onChange={(e) => setPrecios((x) => ({ ...x, [p.id]: Math.max(0, Number(e.target.value) || 0) }))}
+                      value={mostrarNumero(precios[p.id])}
+                      onChange={(e) => setPrecios((x) => ({ ...x, [p.id]: leerNumero(e.target.value) }))}
                     />
+                    {errores[p.id] && (
+                      <span role="alert" className="campo-error">
+                        {errores[p.id]}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -48,7 +59,10 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
         <button
           type="button"
           className="boton"
+          disabled={hayErrores}
+          title={hayErrores ? 'Corrige los precios marcados para guardar.' : undefined}
           onClick={() => {
+            if (hayErrores) return
             guardarPrecios(precios)
             onListo()
           }}

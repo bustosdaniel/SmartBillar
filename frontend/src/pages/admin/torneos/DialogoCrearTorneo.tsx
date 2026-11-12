@@ -2,15 +2,19 @@ import { useState, type FormEvent } from 'react'
 import { MODOS, NOMBRES_MODO } from '../../../mesas/datos'
 import { crearTorneo, NOMBRES_CATEGORIA } from '../../../torneos/torneos'
 import type { CategoriaTorneo, ModoJuego } from '../../../types'
+import { errorNumero, LIMITES } from '../../../utils/montos'
 
 const CATEGORIAS: CategoriaTorneo[] = ['abierta', 'principiante', 'avanzado']
 
 export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void }) {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [inscripcion, setInscripcion] = useState('20000')
+  const errorInscripcion = errorNumero(inscripcion, LIMITES.inscripcion)
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (errorInscripcion) return
     const datos = new FormData(e.currentTarget)
     setError('')
     setEnviando(true)
@@ -22,7 +26,7 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
         fecha: String(datos.get('fecha')),
         hora: String(datos.get('hora')),
         cupos: Number(datos.get('cupos')),
-        inscripcion: Math.max(0, Number(datos.get('inscripcion')) || 0),
+        inscripcion: Number(inscripcion),
         premio: String(datos.get('premio')).trim(),
       })
       onListo(id)
@@ -83,7 +87,23 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
         </label>
         <label>
           Valor inscripción
-          <input name="inscripcion" type="number" min={0} step={1000} defaultValue={20000} required />
+          <input
+            name="inscripcion"
+            type="number"
+            inputMode="numeric"
+            min={LIMITES.inscripcion.min}
+            max={LIMITES.inscripcion.max}
+            step={1000}
+            value={inscripcion}
+            onChange={(e) => setInscripcion(e.target.value)}
+            aria-invalid={errorInscripcion ? true : undefined}
+            required
+          />
+          {errorInscripcion && (
+            <span role="alert" className="campo-error">
+              {errorInscripcion}
+            </span>
+          )}
         </label>
       </div>
       <label>
@@ -96,7 +116,7 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
         </p>
       )}
       <div className="dialogo-acciones">
-        <button type="submit" className="boton" disabled={enviando}>
+        <button type="submit" className="boton" disabled={enviando || errorInscripcion !== null}>
           Crear torneo
         </button>
       </div>

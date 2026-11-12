@@ -1,17 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { abrirCaja } from '../caja/caja'
+import { errorNumero, LIMITES } from '../utils/montos'
 
 export function AbrirCaja() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [base, setBase] = useState('100000')
+  const errorBase = errorNumero(base, LIMITES.baseCaja)
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const base = Number(new FormData(e.currentTarget).get('base')) || 0
+    if (errorBase) return
     setError('')
     setEnviando(true)
     try {
-      await abrirCaja(base)
+      await abrirCaja(Number(base))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo abrir la caja.')
     } finally {
@@ -23,9 +26,25 @@ export function AbrirCaja() {
     <form className="abrir-caja" onSubmit={handleSubmit}>
       <label>
         Base inicial (efectivo en el cajón)
-        <input name="base" type="number" min={0} step={1000} defaultValue={100000} required />
+        <input
+          name="base"
+          type="number"
+          inputMode="numeric"
+          min={LIMITES.baseCaja.min}
+          max={LIMITES.baseCaja.max}
+          step={1000}
+          value={base}
+          onChange={(e) => setBase(e.target.value)}
+          aria-invalid={errorBase ? true : undefined}
+          required
+        />
+        {errorBase && (
+          <span role="alert" className="campo-error">
+            {errorBase}
+          </span>
+        )}
       </label>
-      <button type="submit" className="boton" disabled={enviando}>
+      <button type="submit" className="boton" disabled={enviando || errorBase !== null}>
         {enviando ? 'Abriendo…' : 'Abrir caja'}
       </button>
       {error && (

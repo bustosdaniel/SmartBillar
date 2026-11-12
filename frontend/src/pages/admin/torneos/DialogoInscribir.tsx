@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { BuscarCliente } from '../../../components/BuscarCliente'
 import { FormularioPago, type DatosPago } from '../../../components/FormularioPago'
 import { useAhora } from '../../../hooks/useAhora'
@@ -20,6 +20,8 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
   const ahora = useAhora()
   const [cliente, setCliente] = useState<Usuario | null>(null)
   const [error, setError] = useState('')
+  const [inscribiendo, setInscribiendo] = useState(false)
+  const enCurso = useRef(false)
 
   const clienteId = pendiente ? pendiente.clienteId : (cliente?.id ?? null)
   const plan = planVigente(membresias, planes, clienteId, ahora)
@@ -29,7 +31,9 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
   const listo = !!pendiente || !!cliente
 
   async function completar(datos: DatosPago | null) {
-    if (!listo || errorPrevio) return
+    if (!listo || errorPrevio || enCurso.current) return
+    enCurso.current = true
+    setInscribiendo(true)
     setError('')
     try {
       if (pendiente) await cobrarPendiente(torneo.id, pendiente.id, datos)
@@ -37,6 +41,9 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
       onListo()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo completar la inscripción.')
+    } finally {
+      enCurso.current = false
+      setInscribiendo(false)
     }
   }
 
@@ -86,11 +93,11 @@ export function DialogoInscribir({ torneo, pendiente, onListo }: DialogoInscribi
         !errorPrevio &&
         (precio === 0 ? (
           <div className="dialogo-acciones">
-            <button type="button" className="boton boton-secundario" onClick={onListo}>
+            <button type="button" className="boton boton-secundario" onClick={onListo} disabled={inscribiendo}>
               Cancelar
             </button>
-            <button type="button" className="boton" onClick={() => completar(null)}>
-              Inscribir sin costo
+            <button type="button" className="boton" onClick={() => completar(null)} disabled={inscribiendo}>
+              {inscribiendo ? 'Inscribiendo…' : 'Inscribir sin costo'}
             </button>
           </div>
         ) : (

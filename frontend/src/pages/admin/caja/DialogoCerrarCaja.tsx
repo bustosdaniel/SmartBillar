@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { cerrarCaja, efectivoEsperado, textoDiferencia, totalEgresos } from '../../../caja/caja'
 import type { Caja } from '../../../types'
 import { formatearPesos } from '../../../utils/formato'
+import { limitarTextoMonto, MONTO_MAXIMO } from '../../../utils/montos'
 
 export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () => void }) {
   const [contado, setContado] = useState('')
@@ -52,10 +53,11 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
         <input
           type="number"
           min={0}
+          max={MONTO_MAXIMO}
           step={100}
           inputMode="numeric"
           value={contado}
-          onChange={(e) => setContado(e.target.value)}
+          onChange={(e) => setContado(limitarTextoMonto(e.target.value))}
           placeholder="Cuenta billetes y monedas"
           autoFocus
         />

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Search, UserPlus } from 'lucide-react'
 import { useEsAdministrador } from '../../auth/useAuth'
-import { cambiarCargo, NOMBRES_CARGO, normalizar, useUsuarios } from '../../auth/usuarios'
+import { cambiarCargo, NOMBRES_CARGO, normalizar, useRecargarUsuarios, useUsuarios } from '../../auth/usuarios'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { useAhora } from '../../hooks/useAhora'
@@ -30,6 +30,7 @@ export function Usuarios() {
   const [errorCargo, setErrorCargo] = useState('')
 
   const usuarios = useUsuarios()
+  useRecargarUsuarios()
   const empleados = usuarios.filter((u) => u.rol === 'admin')
   const termino = normalizar(busqueda.trim())
 
