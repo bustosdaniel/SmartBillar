@@ -15,7 +15,7 @@ def notificar(
 
 
 def _notificar_rol(db: Session, rol: Rol, tipo: TipoNotificacion, asunto: str, mensaje: str, ruta: str | None) -> None:
-    for usuario_id in db.scalars(select(Usuario.id).where(Usuario.rol == rol)):
+    for usuario_id in db.scalars(select(Usuario.id).where(Usuario.rol == rol, Usuario.eliminado_en.is_(None))):
         notificar(db, usuario_id, tipo, asunto, mensaje, ruta)
 
 

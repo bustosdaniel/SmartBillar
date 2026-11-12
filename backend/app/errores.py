@@ -27,6 +27,10 @@ NOMBRES_CAMPO = {
     "metodo": ("El método de pago", "o"),
     "cliente": ("El cliente", "o"),
     "inscripcion": ("El valor de la inscripción", "o"),
+    "hora": ("La tarifa por hora", "a"),
+    "ajuste": ("El ajuste de la tarifa", "o"),
+    "dias": ("Los días de la tarifa", "os"),
+    "cantidad": ("La cantidad", "a"),
 }
 
 

@@ -77,6 +77,18 @@ def cambiar_password(datos: CambioPassword, db: BaseDeDatos, usuario: UsuarioAct
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.delete("/clientes/{cliente_id}")
+def eliminar_cliente(cliente_id: int, db: BaseDeDatos, _admin: Administrador) -> dict[str, str]:
+    """Solo el administrador. Responde {"modo": "borrado"} si no tenía historial, o {"modo": "eliminado"}
+    si se conservó su historial de cobros (ya no puede entrar ni aparece en la app)."""
+    try:
+        modo = servicio.eliminar_cliente(db, cliente_id)
+    except ErrorDeDatos as error:
+        raise _conflicto(error) from error
+    db.commit()
+    return {"modo": modo}
+
+
 @router.patch("/{usuario_id}/cargo", response_model=UsuarioSalida)
 def cambiar_cargo(usuario_id: int, datos: CambioCargo, db: BaseDeDatos, _admin: Administrador):
     """Administrador o cajero (solo un administrador puede cambiarlo)."""

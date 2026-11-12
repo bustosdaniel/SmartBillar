@@ -25,3 +25,6 @@ class Usuario(Base):
     # bcrypt: nunca se guarda la contraseña en texto plano (RNF de seguridad).
     password_hash: Mapped[str] = mapped_column(String(255))
     creado: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Cliente eliminado por un administrador que tenía historial (cobros, mesas, torneos): se conserva
+    # la fila para que la caja y los reportes sigan cuadrando, pero no puede entrar ni aparece en listas.
+    eliminado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -121,6 +121,9 @@ def crear(db: Session, **datos) -> Torneo:
     torneo = Torneo(**datos, estado=EstadoTorneo.INSCRIPCIONES)
     if _momento(torneo) <= datetime.now(ZONA_CLUB):
         raise ErrorDeDatos("La fecha y la hora del torneo deben ser futuras.")
+    # Eliminación directa: con menos mesas que partidos se juega por tandas, pero hace falta al menos una.
+    if db.scalar(select(Mesa.id).where(Mesa.modo == torneo.modo, Mesa.retirada_en.is_(None)).limit(1)) is None:
+        raise ErrorDeDatos(f"El club no tiene mesas de {NOMBRES_MODO[torneo.modo]}. Agrega una en Mesas primero.")
     db.add(torneo)
     db.flush()
     modo = NOMBRES_MODO[torneo.modo]
@@ -192,7 +195,7 @@ def inscribir(db: Session, torneo_id: int, cliente_id: int, metodo: MetodoPago |
     """El personal inscribe y cobra a la vez: si el cobro falla, no queda inscrito."""
     torneo = _torneo(db, torneo_id)
     cliente = db.get(Usuario, cliente_id)
-    if cliente is None or cliente.rol != Rol.CLIENTE:
+    if cliente is None or cliente.rol != Rol.CLIENTE or cliente.eliminado_en is not None:
         raise ErrorDeDatos("Ese cliente no existe.")
     jugador = _agregar_jugador(db, torneo, cliente, True, _precio(db, torneo, cliente.id))
     _cobrar(db, torneo, jugador, metodo, recibido)
@@ -317,7 +320,7 @@ def asignar_mesa(db: Session, torneo_id: int, partido_id: int, mesa_id: int | No
         raise ErrorDeDatos("Ese partido ya se jugó.")
     if mesa_id is not None:
         mesa = db.get(Mesa, mesa_id)
-        if mesa is None or mesa.modo != torneo.modo:
+        if mesa is None or mesa.retirada_en is not None or mesa.modo != torneo.modo:
             raise ErrorDeDatos("Esa mesa no sirve para este torneo.")
         en_sesion = db.scalar(select(SesionMesa.id).where(SesionMesa.mesa_id == mesa_id, SesionMesa.fin.is_(None)))
         en_partido = db.scalar(
@@ -331,7 +334,7 @@ def asignar_mesa(db: Session, torneo_id: int, partido_id: int, mesa_id: int | No
             )
         )
         if en_sesion is not None or en_partido is not None:
-            raise ErrorDeDatos(f"La Mesa {mesa_id} está ocupada. Elige otra.")
+            raise ErrorDeDatos(f"La {mesa.nombre} está ocupada. Elige otra.")
     partido.mesa_id = mesa_id
 
 

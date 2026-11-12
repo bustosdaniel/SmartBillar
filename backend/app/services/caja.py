@@ -127,6 +127,11 @@ def anular_pago(db: Session, pago_id: int) -> Pago:
     if pago.anulado_en is not None:
         raise ErrorDeDatos("Ese cobro ya estaba anulado.")
     pago.anulado_en = ahora_utc()
+    # Si era una mesa, vuelve a quedar Por cobrar. (Import local: mesas usa este módulo para cobrar.)
+    if pago.sesion_id is not None:
+        from app.services.mesas import reabrir_por_anulacion
+
+        reabrir_por_anulacion(db, pago)
     # Si era una inscripción, el cupo vuelve a quedar pendiente de pago.
     if pago.jugador_id is not None:
         db.get(Jugador, pago.jugador_id).pagado = False

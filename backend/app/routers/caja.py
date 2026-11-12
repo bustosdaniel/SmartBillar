@@ -7,7 +7,6 @@ from app.schemas.caja import (
     CerrarEntrada,
     EgresoEntrada,
     EgresoSalida,
-    PagoEntrada,
     PagoSalida,
 )
 from app.services import caja as servicio
@@ -50,16 +49,6 @@ def cerrar(datos: CerrarEntrada, db: BaseDeDatos, _empleado: Empleado):
         raise _conflicto(error) from error
     db.commit()
     return _salida(caja)
-
-
-@router.post("/pagos", response_model=PagoSalida, status_code=status.HTTP_201_CREATED)
-def registrar_pago(datos: PagoEntrada, db: BaseDeDatos, _empleado: Empleado):
-    try:
-        pago = servicio.registrar_pago(db, **datos.model_dump())
-    except ErrorDeDatos as error:
-        raise _conflicto(error) from error
-    db.commit()
-    return pago
 
 
 @router.post("/pagos/{pago_id}/anular", response_model=PagoSalida)

@@ -21,7 +21,7 @@ def usuario_actual(
 ) -> Usuario:
     usuario_id = leer_token(credenciales.credentials) if credenciales else None
     usuario = db.get(Usuario, usuario_id) if usuario_id is not None else None
-    if usuario is None:
+    if usuario is None or usuario.eliminado_en is not None:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Tu sesión no es válida o venció. Inicia sesión de nuevo.",

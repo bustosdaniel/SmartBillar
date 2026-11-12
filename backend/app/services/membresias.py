@@ -29,7 +29,7 @@ def _plan(db: Session, plan_id: str) -> Plan:
 
 def _cliente(db: Session, cliente_id: int) -> Usuario:
     cliente = db.get(Usuario, cliente_id)
-    if cliente is None or cliente.rol != Rol.CLIENTE:
+    if cliente is None or cliente.rol != Rol.CLIENTE or cliente.eliminado_en is not None:
         raise ErrorDeDatos("Ese cliente no existe.")
     return cliente
 

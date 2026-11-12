@@ -14,6 +14,8 @@ class PagoSalida(EsquemaCamel):
     metodo: MetodoPago
     recibido: int | None
     cambio: int | None
+    # Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
+    sesion_id: int | None = None
 
 
 class PagoAnuladoSalida(PagoSalida):
@@ -56,13 +58,6 @@ class DatosPago(EsquemaCamel):
 
     metodo: MetodoPago
     recibido: int | None = Field(default=None, ge=0, le=MONTO_MAXIMO)
-
-
-class PagoEntrada(DatosPago):
-    concepto: str = Field(min_length=1, max_length=120)
-    cliente: str = Field(min_length=1, max_length=120)
-    cliente_id: int | None = None
-    monto: int = Field(ge=0, le=MONTO_MAXIMO)
 
 
 class EgresoEntrada(EsquemaCamel):

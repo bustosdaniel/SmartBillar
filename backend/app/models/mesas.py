@@ -1,4 +1,5 @@
 from datetime import datetime, time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, BigInteger, CheckConstraint, Computed, DateTime, ForeignKey, Integer, String, Time, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -6,13 +7,20 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 from app.models.enums import CategoriaProducto, ModoJuego, columna_enum
 
+if TYPE_CHECKING:
+    from app.models.usuarios import Usuario
+
 
 class Mesa(Base):
     __tablename__ = "mesas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(40), unique=True)
+    # Único entre las mesas activas (lo valida el servicio): una retirada puede compartir nombre con una nueva.
+    nombre: Mapped[str] = mapped_column(String(40))
     modo: Mapped[ModoJuego] = mapped_column(columna_enum(ModoJuego, "modo_juego"))
+    # Mesa eliminada que tenía historial (partidas cobradas o partidos de torneo): se conserva para los
+    # reportes y el historial, pero ya no aparece ni se puede usar.
+    retirada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class TarifaModo(Base):
@@ -81,7 +89,12 @@ class SesionMesa(Base):
         Integer, Computed("(CASE WHEN fin IS NULL THEN mesa_id END)", persisted=True), unique=True
     )
 
-    consumos: Mapped[list["Consumo"]] = relationship(back_populates="sesion", cascade="all, delete-orphan")
+    consumos: Mapped[list["Consumo"]] = relationship(
+        back_populates="sesion", cascade="all, delete-orphan", order_by="Consumo.fecha", lazy="selectin"
+    )
+    # Solo lectura, para mostrar el nombre del cliente y de la mesa.
+    cliente: Mapped["Usuario"] = relationship(lazy="joined", viewonly=True)
+    mesa: Mapped[Mesa] = relationship(lazy="joined", viewonly=True)
 
 
 class Producto(Base):
@@ -111,3 +124,5 @@ class Consumo(Base):
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     sesion: Mapped[SesionMesa] = relationship(back_populates="consumos")
+    # Solo lectura, para la categoría (bebida o paquete) del producto pedido.
+    producto: Mapped[Producto] = relationship(lazy="joined", viewonly=True)
