@@ -19,12 +19,15 @@ export type Mesa = {
   id: number
   nombre: string
   modo: ModoJuego
+  // Eliminada con historial: solo sirve para mostrar su nombre en partidas y reportes viejos.
+  retirada: boolean
 }
 
 // Ajuste de precio para ciertos días y horas (negativo = descuento). Si `desde` es mayor
 // que `hasta`, la franja cruza la medianoche (ej. 20:00 a 02:00).
 export type ReglaHorario = {
-  id: string
+  // Número si viene del backend; texto temporal si se acaba de agregar en el diálogo de tarifas.
+  id: number | string
   nombre: string
   dias: number[]
   desde: string
@@ -42,6 +45,7 @@ export type EstadoMesa = 'libre' | 'en-uso' | 'pausada' | 'por-cobrar'
 // Sesión de juego activa en una mesa. El tiempo se calcula a partir de `inicio`,
 // así el admin y el cliente ven el mismo cronómetro sin enviarlo cada segundo.
 export type Sesion = {
+  id: number
   mesaId: number
   clienteId: number | null
   clienteNombre: string
@@ -51,24 +55,23 @@ export type Sesion = {
   // Momento en que el admin pulsó Finalizar: el tiempo queda congelado hasta cobrar.
   detenidaEn?: number | null
   // Tarifa congelada al iniciar: si cambian las tarifas, no afecta a quien ya está jugando.
-  // Las sesiones guardadas antes de M2 no la traen y se cobran con la tarifa base.
-  tarifaHora?: number
-  regla?: string | null
-  // Productos pedidos en la mesa (las sesiones guardadas antes de Consumos no los traen).
-  consumos?: Consumo[]
+  tarifaHora: number
+  regla: string | null
+  // Productos pedidos en la mesa. A un cliente no se le muestran los de las mesas ajenas.
+  consumos: Consumo[]
 }
 
 export type SesionFinalizada = Sesion & {
   fin: number
   tiempoMs: number
   total: number
-  metodoPago: MetodoPago
-  // Detalle de la cuenta (las sesiones guardadas antes de M1 no lo tienen).
-  subtotal?: number
-  gratisMs?: number
-  descuento?: number
-  descuentoBar?: number
-  planId?: PlanId | null
+  // null si el cobro se anuló y la sesión todavía no se ha vuelto a cobrar.
+  metodoPago: MetodoPago | null
+  subtotal: number
+  gratisMs: number
+  descuento: number
+  descuentoBar: number
+  planId: PlanId | null
 }
 
 export type CategoriaProducto = 'bebida' | 'paquete'
@@ -82,7 +85,7 @@ export type Producto = {
 
 // Producto pedido en una mesa. El precio queda fijo al pedirlo, igual que las tarifas.
 export type Consumo = {
-  id: string
+  id: number
   productoId: string
   nombre: string
   categoria: CategoriaProducto
@@ -103,7 +106,7 @@ export type Pago = {
   recibido: number | null
   cambio: number | null
   // Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
-  mesa?: { mesaId: number; inicio: number }
+  sesionId?: number | null
 }
 
 // Tarjeta o transferencia rechazada después de registrar el cobro.

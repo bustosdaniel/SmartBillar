@@ -1244,3 +1244,15 @@ button.producto:hover { border-color: var(--verde-vivo); }
 .boton-enlace { display: inline-flex; align-items: center; gap: 0.35rem; width: fit-content; padding: 0; border: 0; background: none; color: #b91c1c; font: inherit; font-size: 0.88rem; font-weight: 500; cursor: pointer; }
 .boton-enlace:hover { text-decoration: underline; }
 .confirmar-anular { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.85rem; border: 1px solid #fecaca; border-radius: 10px; background: #fef2f2; font-size: 0.92rem; }
+
+/* ---------- Pantalla de carga (mientras llegan los datos del backend) ---------- */
+/* Ocupa el área de contenido (al lado del menú en escritorio, debajo de la barra en móvil). */
+.pantalla-carga { min-height: min(60vh, 480px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--texto-suave); text-align: center; }
+.pantalla-carga p { margin: 0; font-size: 0.95rem; }
+/* El logo al centro y el círculo girando alrededor. */
+.pantalla-carga-icono { position: relative; display: grid; place-items: center; width: 84px; height: 84px; color: var(--verde-vivo); }
+.pantalla-carga-logo { width: 52px; height: 52px; }
+.pantalla-carga-giro { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--verde-suave); border-top-color: var(--verde-vivo); animation: girar 0.9s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pantalla-carga-giro { animation-duration: 2.4s; } }
+

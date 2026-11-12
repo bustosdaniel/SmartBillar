@@ -44,15 +44,6 @@ export function vaciarNotificaciones() {
   store.guardar([])
 }
 
-// TEMPORAL: las mesas aún viven en el navegador y envían sus avisos a MySQL con esta función. Cuando el
-// backend los genere él mismo (paso 4) se elimina. Los invitados no tienen cuenta: no se les notifica.
-export function notificar(usuarioId: number | null, tipo: TipoNotificacion, asunto: string, mensaje: string, ruta?: string) {
-  if (usuarioId === null) return
-  pedir('/notificaciones', { cuerpo: { usuarioId, tipo, asunto, mensaje, ruta } })
-    .then(recargar)
-    .catch((error) => console.error('No se pudo guardar el aviso:', error))
-}
-
 export function marcarLeida(id: number) {
   store.guardar(store.obtener().map((n) => (n.id === id ? { ...n, leida: true } : n)))
   pedir(`/notificaciones/${id}/leida`, { metodo: 'PATCH' }).catch(() => recargar().catch(() => {}))

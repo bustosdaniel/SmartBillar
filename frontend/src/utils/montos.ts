@@ -18,7 +18,7 @@ export type Limite = {
 // viven solo en el navegador.
 export const LIMITES = {
   tarifaHora: { min: 1_000, max: 50_000, pesos: true },
-  ajusteTarifa: { min: -100, max: 200, unidad: '%' },
+  ajusteTarifa: { min: -100, max: 100, unidad: '%' },
   precioPlan: { min: 10_000, max: 500_000, pesos: true },
   inscripcion: { min: 0, max: 500_000, pesos: true },
   porcentaje: { min: 0, max: 100, unidad: '%' },

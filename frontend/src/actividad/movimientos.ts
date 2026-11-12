@@ -36,10 +36,3 @@ export function vaciarMovimientos() {
   store.guardar([])
 }
 
-// TEMPORAL: las mesas aún viven en el navegador y envían su actividad a MySQL con esta función. Cuando el
-// backend la registre él mismo (paso 4) se elimina.
-export function registrarMovimiento(movimiento: Omit<Movimiento, 'id' | 'fecha'>) {
-  pedir('/movimientos', { cuerpo: movimiento })
-    .then(recargar)
-    .catch((error) => console.error('No se pudo guardar el movimiento:', error))
-}

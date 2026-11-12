@@ -1,8 +1,7 @@
 import { totalConsumos } from '../consumos/productos'
 import { estadoMembresia, useMembresias, usePlanes } from '../membresias/membresias'
-import type { Mesa, Plan, Sesion, SesionFinalizada } from '../types'
-import { calcularCosto, tiempoJugado, useSesionesFinalizadas } from './sesiones'
-import { tarifaDeSesion } from './tarifas'
+import type { Plan, PlanId, Sesion, SesionFinalizada } from '../types'
+import { calcularCosto, tiempoJugado, useSesionesFinalizadas, type CuentaCobrada } from './sesiones'
 
 const HORA = 60 * 60 * 1000
 
@@ -29,6 +28,12 @@ function mismoMes(a: number, b: number) {
   return x.getFullYear() === y.getFullYear() && x.getMonth() === y.getMonth()
 }
 
+// La cuenta que cobró el backend, con el plan completo para mostrarla en el recibo.
+export function cuentaDeCobro(cuenta: CuentaCobrada, planes: Record<PlanId, Plan>): CuentaMesa {
+  const { planId, ...resto } = cuenta
+  return { ...resto, plan: planId ? planes[planId] : null }
+}
+
 // Horas gratis que el cliente ya gastó en el mes de `fecha`.
 export function gratisUsadoEnMes(finalizadas: SesionFinalizada[], clienteId: number, fecha: number) {
   return finalizadas
@@ -36,7 +41,8 @@ export function gratisUsadoEnMes(finalizadas: SesionFinalizada[], clienteId: num
     .reduce((total, s) => total + (s.gratisMs ?? 0), 0)
 }
 
-// Primero se descuentan las horas gratis del plan y luego el % sobre lo que queda.
+// Vista previa en vivo: el total que se cobra lo calcula el backend (services/mesas.py, calcular_cuenta)
+// con la misma fórmula. Primero se descuentan las horas gratis del plan y luego el % sobre lo que queda.
 // Los consumos llevan aparte el % de descuento en bar del plan.
 export function calcularCuenta(
   tiempoMs: number,
@@ -76,7 +82,7 @@ export function useCalculadoraCuenta() {
   const planes = usePlanes()
   const finalizadas = useSesionesFinalizadas()
 
-  return (sesion: Sesion, mesa: Mesa, ahora: number): CuentaMesa => {
+  return (sesion: Sesion, ahora: number): CuentaMesa => {
     const hasta = sesion.detenidaEn ?? ahora
     const tiempo = tiempoJugado(sesion, ahora)
     const membresia = sesion.clienteId === null ? undefined : membresias[sesion.clienteId]
@@ -86,6 +92,6 @@ export function useCalculadoraCuenta() {
       plan && sesion.clienteId !== null
         ? plan.horasGratisMes * HORA - gratisUsadoEnMes(finalizadas, sesion.clienteId, hasta)
         : 0
-    return calcularCuenta(tiempo, tarifaDeSesion(sesion, mesa.modo), plan, disponible, totalConsumos(sesion.consumos))
+    return calcularCuenta(tiempo, sesion.tarifaHora, plan, disponible, totalConsumos(sesion.consumos))
   }
 }

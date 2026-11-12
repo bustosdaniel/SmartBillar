@@ -103,6 +103,14 @@ export async function cambiarCargo(usuarioId: number, cargo: Cargo) {
   recordarUsuario(await pedir<Usuario>(`/usuarios/${usuarioId}/cargo`, { metodo: 'PATCH', cuerpo: { cargo } }))
 }
 
+// Solo el administrador. Sin historial, el cliente se borra de la base; con cobros, mesas o torneos se
+// conserva para que la caja cuadre, pero ya no puede entrar ni aparece en la app. Su correo queda libre.
+export async function eliminarCliente(clienteId: number): Promise<'borrado' | 'eliminado'> {
+  const { modo } = await pedir<{ modo: 'borrado' | 'eliminado' }>(`/usuarios/clientes/${clienteId}`, { metodo: 'DELETE' })
+  store.guardar(store.obtener().filter((u) => u.id !== clienteId))
+  return modo
+}
+
 // Ignora mayúsculas y tildes: "nunez" encuentra "Nuñez".
 export function normalizar(texto: string) {
   return texto

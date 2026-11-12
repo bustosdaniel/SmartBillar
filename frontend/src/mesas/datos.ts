@@ -1,4 +1,6 @@
+import { pedir } from '../api/cliente'
 import type { EstadoMesa, Mesa, ModoJuego } from '../types'
+import { crearStoreMemoria } from '../utils/storeMemoria'
 
 export const NOMBRES_MODO: Record<ModoJuego, string> = {
   pool: 'Pool',
@@ -38,18 +40,39 @@ export const EQUIPO_MODO: Record<ModoJuego, { mesa: string; detalle: string }> =
   },
 }
 
-// Datos de prueba mientras el backend no está listo. Las tarifas están en src/mesas/tarifas.ts.
-export const mesasMock: Mesa[] = [
-  { id: 1, nombre: 'Mesa 1', modo: 'pool' },
-  { id: 2, nombre: 'Mesa 2', modo: 'pool' },
-  { id: 3, nombre: 'Mesa 3', modo: 'pool' },
-  { id: 4, nombre: 'Mesa 4', modo: 'pool' },
-  { id: 5, nombre: 'Mesa 5', modo: 'tres-bandas' },
-  { id: 6, nombre: 'Mesa 6', modo: 'tres-bandas' },
-  { id: 7, nombre: 'Mesa 7', modo: 'libre' },
-  { id: 8, nombre: 'Mesa 8', modo: 'libre' },
-]
+// Las mesas del club viven en MySQL (GET /mesas); se cargan al iniciar sesión (mesas/sesiones.ts).
+// Incluye las retiradas, que solo sirven para mostrar el nombre en el historial.
+const mesas = crearStoreMemoria<Mesa[]>([])
 
-export function mesasDeModo(modo: ModoJuego) {
-  return mesasMock.filter((m) => m.modo === modo).length
+export const useTodasLasMesas = mesas.useValor
+export const guardarMesas = mesas.guardar
+
+// Las que se pueden usar hoy (sin las retiradas).
+export function useMesas() {
+  return useTodasLasMesas().filter((m) => !m.retirada)
+}
+
+// Solo el administrador. El nombre no se puede repetir entre las mesas activas.
+export async function crearMesa(nombre: string, modo: ModoJuego) {
+  const nueva = await pedir<Mesa>('/mesas', { cuerpo: { nombre, modo } })
+  mesas.guardar([...mesas.obtener(), nueva])
+  return nueva
+}
+
+// Solo el administrador. Si nunca se usó se borra; si tiene historial, queda retirada.
+export async function eliminarMesa(mesaId: number) {
+  const { modo } = await pedir<{ modo: 'borrada' | 'retirada' }>(`/mesas/${mesaId}`, { metodo: 'DELETE' })
+  mesas.guardar(
+    modo === 'borrada'
+      ? mesas.obtener().filter((m) => m.id !== mesaId)
+      : mesas.obtener().map((m) => (m.id === mesaId ? { ...m, retirada: true } : m)),
+  )
+}
+
+// Siguiente nombre libre, para sugerirlo al agregar una mesa ("Mesa 9").
+export function nombreSugerido(lista: Mesa[]) {
+  const usados = new Set(lista.map((m) => m.nombre.toLowerCase()))
+  let n = lista.length + 1
+  while (usados.has(`mesa ${n}`)) n++
+  return `Mesa ${n}`
 }

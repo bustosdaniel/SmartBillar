@@ -1,7 +1,6 @@
 import { pedir } from '../api/cliente'
 import type { Caja, CajaCerrada, Egreso, MetodoPago, Pago, Usuario } from '../types'
 import { formatearPesos } from '../utils/formato'
-import { crearStoreLocal } from '../utils/storeLocal'
 import { crearStoreMemoria } from '../utils/storeMemoria'
 
 export const NOMBRES_METODO: Record<MetodoPago, string> = {
@@ -20,25 +19,16 @@ for (const clave of ['billar.caja', 'billar.cajas-cerradas']) localStorage.remov
 const abierta = crearStoreMemoria<Caja | null>(null)
 const cerradas = crearStoreMemoria<CajaCerrada[]>([])
 
-// TEMPORAL hasta pasar las mesas al backend (paso 4b): de qué mesa es cada cobro, para poder anularlo
-// y devolver la mesa a "Por cobrar". Las sesiones de mesa todavía viven en el navegador.
-const pagosDeMesa = crearStoreLocal<Partial<Record<number, NonNullable<Pago['mesa']>>>>('billar.pagos-mesa', {})
-
 export const useCaja = abierta.useValor
 export const useCajasCerradas = cerradas.useValor
 
 let yo: Usuario | null = null
 let refresco: number | undefined
 
-function conMesa(caja: Caja): Caja {
-  const mesas = pagosDeMesa.obtener()
-  return { ...caja, pagos: caja.pagos.map((p) => (mesas[p.id] ? { ...p, mesa: mesas[p.id] } : p)) }
-}
-
 async function recargar() {
   if (yo?.rol !== 'admin') return
   const caja = await pedir<Caja | null>('/caja')
-  abierta.guardar(caja && conMesa(caja))
+  abierta.guardar(caja)
   if (yo.cargo === 'administrador') cerradas.guardar(await pedir<CajaCerrada[]>('/caja/cierres'))
 }
 
@@ -81,15 +71,7 @@ export function textoDiferencia(diferencia: number) {
   return `${diferencia > 0 ? 'Sobran' : 'Faltan'} ${formatearPesos(Math.abs(diferencia))}`
 }
 
-type NuevoPago = Pick<Pago, 'concepto' | 'cliente' | 'monto' | 'metodo' | 'recibido' | 'mesa'> & { clienteId?: number | null }
-
-// El backend calcula el cambio y rechaza el cobro si la caja está cerrada o el efectivo no alcanza.
-export async function registrarPago({ mesa, ...pago }: NuevoPago): Promise<Pago> {
-  const nuevo = await pedir<Pago>('/caja/pagos', { cuerpo: pago })
-  if (mesa) pagosDeMesa.guardar({ ...pagosDeMesa.obtener(), [nuevo.id]: mesa })
-  await recargar()
-  return { ...nuevo, mesa }
-}
+// Los cobros entran por su propia ruta (mesas, inscripciones, membresías): el backend calcula el monto.
 
 // Dinero que sale del cajón: compras, servicios, mantenimiento, devoluciones...
 export async function registrarEgreso(concepto: string, monto: number): Promise<Egreso> {

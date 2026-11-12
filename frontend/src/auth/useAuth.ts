@@ -11,6 +11,8 @@ export type DatosRegistro = {
 
 export type AuthContextValue = {
   usuario: Usuario | null
+  // true mientras se confirma la sesión y llegan los datos del backend (se muestra PantallaCarga).
+  cargando: boolean
   // Lanzan ErrorApi con el mensaje del backend si algo falla.
   login: (email: string, password: string, recordar: boolean) => Promise<Usuario>
   registrar: (datos: DatosRegistro) => Promise<Usuario>

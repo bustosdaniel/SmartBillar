@@ -1,8 +1,10 @@
-import type { ConfigTarifas, ModoJuego, ReglaHorario, Sesion } from '../types'
-import { crearStoreLocal } from '../utils/storeLocal'
+import { pedir } from '../api/cliente'
+import type { ConfigTarifas, ModoJuego, ReglaHorario } from '../types'
+import { crearStoreMemoria } from '../utils/storeMemoria'
 
 export const NOMBRES_DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
+// Valores con los que arranca la pantalla mientras llegan los del backend (iguales a los seeds).
 const configInicial: ConfigTarifas = {
   porModo: {
     pool: { hora: 12000 },
@@ -15,11 +17,19 @@ const configInicial: ConfigTarifas = {
   ],
 }
 
-const store = crearStoreLocal<ConfigTarifas>('billar.tarifas-v2', configInicial)
+const store = crearStoreMemoria<ConfigTarifas>(configInicial)
 
 export const useTarifas = store.useValor
-export const guardarTarifas = store.guardar
 export const obtenerTarifas = store.obtener
+
+export async function recargarTarifas() {
+  store.guardar(await pedir<ConfigTarifas>('/mesas/tarifas'))
+}
+
+// Solo el administrador (el backend responde 403 al cajero). Reemplaza toda la configuración.
+export async function guardarTarifas(config: ConfigTarifas) {
+  store.guardar(await pedir<ConfigTarifas>('/mesas/tarifas', { metodo: 'PUT', cuerpo: config }))
+}
 
 function minutos(hhmm: string) {
   const [h, m] = hhmm.split(':').map(Number)
@@ -61,9 +71,4 @@ export function textoDias(dias: number[]) {
     .filter((d) => dias.includes(d))
     .map((d) => NOMBRES_DIA[d])
     .join(', ')
-}
-
-// Tarifa por hora de la sesión, con compatibilidad para las sesiones anteriores a M2.
-export function tarifaDeSesion(sesion: Sesion, modo: ModoJuego) {
-  return sesion.tarifaHora ?? store.obtener().porModo[modo].hora
 }
