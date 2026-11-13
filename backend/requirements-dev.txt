@@ -1,0 +1,3 @@
+-r requirements.txt
+# Solo para desarrollo: pruebas automáticas (python -m pytest).
+pytest==9.2.0

@@ -99,18 +99,23 @@ Con los datos de prueba (`python -m app.seeds --demo`), todas las cuentas usan l
 
 Revisa a qué base apunta `DATABASE_URL` en `backend/.env` antes de probar: lo que hagas en la app se guarda ahí.
 
+## Pruebas
+
+Las pruebas automáticas cubren lo que maneja dinero y reglas: el cálculo de la cuenta de la mesa, las tarifas por
+horario (incluidas las que se cruzan), las llaves de los torneos, las validaciones de cuentas y montos, el
+formulario de cobro (un doble clic no cobra dos veces) y la seguridad de las sesiones. No necesitan la base de datos.
+
+```bash
+cd frontend && npm test                          # Vitest + Testing Library
+cd backend && .venv/bin/python -m pytest -q      # pytest (instala antes requirements-dev.txt)
+```
+
+GitHub corre las dos, el lint y el build en cada push (`.github/workflows/pruebas.yml`).
+
 ## Estado actual
 
-| Módulo | Dónde se guarda |
-|---|---|
-| Cuentas, usuarios y roles | MySQL, por la API |
-| Membresías y planes | MySQL, por la API |
-| Caja, cobros y cierres | MySQL, por la API |
-| Mesas, tarifas y consumos | Navegador (`localStorage`), falta conectarlos a la API |
-| Torneos | Navegador (`localStorage`), falta conectarlos a la API |
-| Notificaciones y actividad | Navegador (`localStorage`), falta conectarlas a la API |
+Todos los módulos guardan en MySQL a través de la API: cuentas y roles, membresías, caja, mesas, tarifas,
+consumos, torneos, notificaciones y actividad. Nada queda solo en el navegador salvo el token de la sesión.
 
-La base de datos ya tiene las tablas de todos los módulos; lo que falta son las rutas de la API de los que siguen
-en el navegador. Mientras tanto, esos datos no se comparten entre dispositivos.
-
-La recuperación de contraseña y los correos todavía no envían nada real: solo dejan el aviso en la aplicación.
+Pendiente: la recuperación de contraseña y los correos todavía son simulados (se guardan como notificaciones,
+pero no se envía ningún correo).
