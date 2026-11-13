@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ErrorApi, fijarToken, pedir } from '../api/cliente'
+import { alPerderSesion, ErrorApi, fijarToken, pedir } from '../api/cliente'
 import type { Usuario } from '../types'
 import { cargarCaja, vaciarCaja } from '../caja/caja'
 import { cargarMesas, vaciarMesas } from '../mesas/sesiones'
@@ -17,6 +17,8 @@ const SESION_KEY = 'billar.sesion'
 const SESION_ANTIGUA = 'billar.usuario'
 // Si el backend tarda más que esto, se muestra la app igual (cada pantalla se completa al llegar sus datos).
 const ESPERA_MAXIMA_MS = 12_000
+// Para que el login explique por qué se cerró la sesión.
+export const AVISO_SESION_CERRADA = 'billar.sesion-cerrada'
 
 type Sesion = { token: string; usuario: Usuario }
 
@@ -82,6 +84,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCargando(false)
   }
 
+  // Si el backend rechaza el token mientras se usa la app, se cierra la sesión y se vuelve al login.
+  useEffect(() => {
+    alPerderSesion(() => {
+      sessionStorage.setItem(AVISO_SESION_CERRADA, '1')
+      logout()
+    })
+  }, [])
+
+  function actualizarToken(token: string) {
+    if (!sesion) return
+    const nueva = { ...sesion, token }
+    fijarToken(token)
+    guardarSesion(nueva, localStorage.getItem(SESION_KEY) !== null)
+    setSesion(nueva)
+  }
+
   // Al abrir la app se confirma con el backend que el token sigue vigente (y se refrescan los datos).
   useEffect(() => {
     const guardada = leerSesion()
@@ -115,5 +133,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return actualizada.usuario
   }
 
-  return <AuthContext value={{ usuario, cargando, login, registrar, actualizarPerfil, logout }}>{children}</AuthContext>
+  return <AuthContext value={{ usuario, cargando, login, registrar, actualizarPerfil, logout, actualizarToken }}>{children}</AuthContext>
 }

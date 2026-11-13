@@ -24,7 +24,7 @@ import { formatearFecha, formatearHorasMin, formatearPesos } from '../../utils/f
 type Mensaje = { tipo: 'ok' | 'error'; texto: string } | null
 
 export function Perfil() {
-  const { usuario, actualizarPerfil } = useAuth()
+  const { usuario, actualizarPerfil, actualizarToken } = useAuth()
   const finalizadas = useSesionesFinalizadas()
   const membresias = useMembresias()
   const planes = usePlanes()
@@ -35,6 +35,8 @@ export function Perfil() {
   const [cambioClaveAbierto, setCambioClaveAbierto] = useState(false)
   const validacionDatos = useValidacion(validarDatosPersonales)
   const validacionClave = useValidacion(validarCambioPassword)
+  const [emailEscrito, setEmailEscrito] = useState<string | null>(null)
+  const [errorActual, setErrorActual] = useState('')
 
   if (!usuario) return null
 
@@ -45,12 +47,26 @@ export function Perfil() {
   const membresia = membresias[usuario.id]
   const membresiaVigente = membresia && estadoMembresia(membresia, ahora) !== 'vencida'
 
+  // Cambiar el correo (con el que se inicia sesión) exige la contraseña actual.
+  const cambiaCorreo = emailEscrito !== null && emailEscrito.trim().toLowerCase() !== usuario.email.toLowerCase()
+
   async function guardarDatos(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const formulario = e.currentTarget
     setMensajeDatos(null)
-    if (!validacionDatos.validarTodo(e.currentTarget)) return
+    setErrorActual('')
+    const valido = validacionDatos.validarTodo(formulario)
+    const datos = new FormData(formulario)
+    const actual = String(datos.get('actual') ?? '')
+    if (cambiaCorreo && !actual) {
+      setErrorActual('Escribe tu contraseña actual para cambiar el correo.')
+      return
+    }
+    if (!valido) return
     try {
-      await actualizarPerfil(leerDatosPersonales(new FormData(e.currentTarget)))
+      await actualizarPerfil({ ...leerDatosPersonales(datos), ...(cambiaCorreo ? { actual } : {}) })
+      setEmailEscrito(null)
+      formulario.reset()
       setMensajeDatos({ tipo: 'ok', texto: 'Tus datos se guardaron.' })
     } catch (error) {
       setMensajeDatos({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudieron guardar tus datos.' })
@@ -64,13 +80,14 @@ export function Perfil() {
     if (!validacionClave.validarTodo(formulario)) return
     const datos = new FormData(formulario)
     try {
-      await cambiarPassword(String(datos.get('actual')), String(datos.get('nueva')))
+      // Los demás dispositivos quedan sin sesión; este sigue con el token nuevo.
+      actualizarToken(await cambiarPassword(String(datos.get('actual')), String(datos.get('nueva'))))
     } catch (error) {
       setMensajeClave({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.' })
       return
     }
     formulario.reset()
-    setMensajeClave({ tipo: 'ok', texto: 'Tu contraseña se cambió.' })
+    setMensajeClave({ tipo: 'ok', texto: 'Tu contraseña se cambió. Se cerró la sesión en tus otros dispositivos.' })
     setCambioClaveAbierto(false)
   }
 
@@ -136,8 +153,20 @@ export function Perfil() {
             defaultValue={usuario.email}
             required
             autoComplete="email"
+            onChange={(e) => setEmailEscrito(e.target.value)}
             error={validacionDatos.errores.email}
           />
+          {cambiaCorreo && (
+            <CampoClaro
+              etiqueta="Contraseña actual"
+              name="actual"
+              type="password"
+              required
+              autoComplete="current-password"
+              ayuda="Por seguridad, para cambiar el correo con el que inicias sesión."
+              error={errorActual || undefined}
+            />
+          )}
           <CampoClaro
             etiqueta="Celular"
             name="telefono"

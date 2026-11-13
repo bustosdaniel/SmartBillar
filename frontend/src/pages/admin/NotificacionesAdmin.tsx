@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCheck, Mail } from 'lucide-react'
+import { CheckCheck, ExternalLink, Mail } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { useUsuarios } from '../../auth/usuarios'
 import { BandejaNotificaciones } from '../../components/BandejaNotificaciones'
@@ -63,8 +63,8 @@ export function NotificacionesAdmin() {
       ) : (
         <>
           <p className="aviso-claro aviso-azul">
-            <Mail size={18} aria-hidden="true" /> Por ahora los correos son simulados: aquí queda lo que se enviaría. El
-            envío real lo hará el backend.
+            <Mail size={18} aria-hidden="true" /> Aquí queda lo que se envía a los clientes. Mientras no haya un servicio de
+            correo configurado en el backend (SMTP en .env), los enlaces para recuperar la contraseña aparecen aquí.
           </p>
 
           <div className="filtros" role="group" aria-label="Filtrar por tipo">
@@ -114,6 +114,14 @@ export function NotificacionesAdmin() {
                               <strong>{n.asunto}</strong>
                               <br />
                               <span className="texto-suave">{n.mensaje}</span>
+                              {n.ruta?.startsWith('/restablecer') && (
+                                <>
+                                  <br />
+                                  <a className="enlace-correo" href={n.ruta} target="_blank" rel="noreferrer">
+                                    <ExternalLink size={14} aria-hidden="true" /> Abrir el enlace del correo
+                                  </a>
+                                </>
+                              )}
                             </span>
                           </span>
                         </td>

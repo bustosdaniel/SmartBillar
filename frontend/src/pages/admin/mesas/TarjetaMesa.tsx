@@ -9,6 +9,9 @@ import { useTarifas } from '../../../mesas/tarifas'
 import type { Mesa, Sesion } from '../../../types'
 import { formatearDuracion, formatearHora, formatearPesos } from '../../../utils/formato'
 
+// Una mesa abierta más de esto probablemente se olvidó finalizar: la cuenta seguiría creciendo.
+const AVISO_MESA_LARGA_MS = 8 * 60 * 60 * 1000
+
 type TarjetaMesaProps = {
   mesa: Mesa
   sesion: Sesion | undefined
@@ -72,6 +75,11 @@ export function TarjetaMesa({ mesa, sesion, ahora, cuenta, onIniciar, onFinaliza
               Inició {formatearHora(sesion.inicio)} · <strong>{formatearPesos(cuenta?.total ?? 0)}</strong>
             </span>
             {sesion.regla && <span className="insignia-regla">{sesion.regla}</span>}
+            {estado !== 'por-cobrar' && tiempo >= AVISO_MESA_LARGA_MS && (
+              <span role="alert" className="aviso-mesa-larga">
+                Lleva más de 8 h abierta. ¿Se olvidó finalizar?
+              </span>
+            )}
             <div className="mesa-consumos">
               <span>
                 <CupSoda size={15} aria-hidden="true" /> Consumos{' '}

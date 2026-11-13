@@ -11,7 +11,8 @@ export const NOMBRES_CARGO: Record<Cargo, string> = {
   cajero: 'Cajero / Operador',
 }
 
-export type DatosPerfil = Pick<Usuario, 'nombre' | 'email'> & { telefono: string }
+// `actual`: la contraseña, que el backend exige solo si cambia el correo.
+export type DatosPerfil = Pick<Usuario, 'nombre' | 'email'> & { telefono: string; actual?: string }
 
 // Los usuarios del prototipo vivían en el navegador; ahora están en MySQL. Se limpian una vez.
 for (const clave of ['billar.registrados', 'billar.cargos', 'billar.perfiles']) localStorage.removeItem(clave)
@@ -95,8 +96,10 @@ export async function actualizarMiPerfil(datos: DatosPerfil): Promise<Usuario> {
   return actualizado
 }
 
-export async function cambiarPassword(actual: string, nueva: string) {
-  await pedir<null>('/usuarios/yo/password', { metodo: 'PUT', cuerpo: { actual, nueva } })
+// Cierra la sesión en los demás dispositivos; devuelve el token nuevo para seguir en este.
+export async function cambiarPassword(actual: string, nueva: string): Promise<string> {
+  const { token } = await pedir<{ token: string }>('/usuarios/yo/password', { metodo: 'PUT', cuerpo: { actual, nueva } })
+  return token
 }
 
 export async function cambiarCargo(usuarioId: number, cargo: Cargo) {
@@ -109,6 +112,12 @@ export async function eliminarCliente(clienteId: number): Promise<'borrado' | 'e
   const { modo } = await pedir<{ modo: 'borrado' | 'eliminado' }>(`/usuarios/clientes/${clienteId}`, { metodo: 'DELETE' })
   store.guardar(store.obtener().filter((u) => u.id !== clienteId))
   return modo
+}
+
+// Solo el administrador: contraseña temporal para el cliente que la olvidó y está en caja (se ve una vez).
+export async function passwordTemporal(clienteId: number): Promise<string> {
+  const { password } = await pedir<{ password: string }>(`/usuarios/clientes/${clienteId}/password-temporal`, { metodo: 'POST' })
+  return password
 }
 
 // Ignora mayúsculas y tildes: "nunez" encuentra "Nuñez".

@@ -15,6 +15,7 @@ import { TorneosAdmin } from './pages/admin/TorneosAdmin'
 import { Usuarios } from './pages/admin/Usuarios'
 import { Login } from './pages/auth/Login'
 import { RecuperarPassword } from './pages/auth/RecuperarPassword'
+import { Restablecer } from './pages/auth/Restablecer'
 import { Registro } from './pages/auth/Registro'
 import { Consumos } from './pages/cliente/Consumos'
 import { Historial } from './pages/cliente/Historial'
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: '/login', element: <Login /> },
       { path: '/registro', element: <Registro /> },
       { path: '/recuperar', element: <RecuperarPassword /> },
+      { path: '/restablecer', element: <Restablecer /> },
     ],
   },
   {

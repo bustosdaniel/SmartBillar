@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { MODOS, NOMBRES_MODO } from '../../../mesas/datos'
-import { guardarTarifas, NOMBRES_DIA, obtenerTarifas } from '../../../mesas/tarifas'
+import { cruceDeReglas, guardarTarifas, NOMBRES_DIA, obtenerTarifas } from '../../../mesas/tarifas'
 import type { ConfigTarifas, ModoJuego, ReglaHorario } from '../../../types'
 import { errorNumero, leerNumero, LIMITES, mostrarNumero } from '../../../utils/montos'
 
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0]
 
-type ErroresRegla = Partial<Record<'nombre' | 'dias' | 'horas' | 'ajuste', string>>
+type ErroresRegla = Partial<Record<'nombre' | 'dias' | 'horas' | 'ajuste' | 'cruce', string>>
 
 function erroresDeRegla(r: ReglaHorario): ErroresRegla {
   const errores: ErroresRegla = {}
@@ -58,7 +58,15 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
   }
 
   const erroresPrecio = Object.fromEntries(MODOS.map((m) => [m, errorNumero(config.porModo[m].hora, LIMITES.tarifaHora)]))
-  const erroresReglas = Object.fromEntries(config.reglas.map((r) => [r.id, erroresDeRegla(r)]))
+  // Además de sus propios campos, cada regla se compara con las anteriores: no pueden cruzarse.
+  const erroresReglas = Object.fromEntries(
+    config.reglas.map((r, i) => {
+      const errores = erroresDeRegla(r)
+      const cruce = config.reglas.slice(0, i).map((otra) => cruceDeReglas(r, otra)).find(Boolean)
+      if (cruce) errores.cruce = cruce
+      return [r.id, errores]
+    }),
+  )
   const hayErrores =
     Object.values(erroresPrecio).some(Boolean) || Object.values(erroresReglas).some((e) => Object.keys(e).length > 0)
 

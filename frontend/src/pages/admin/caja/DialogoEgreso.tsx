@@ -9,6 +9,13 @@ export function DialogoEgreso({ onListo }: { onListo: () => void }) {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [monto, setMonto] = useState('')
+  const [concepto, setConcepto] = useState('')
+  const [conceptoTocado, setConceptoTocado] = useState(false)
+  const errorConcepto = !concepto.trim()
+    ? 'Escribe en qué se gastó (ej. Compra de tizas).'
+    : concepto.trim().length > 120
+      ? 'El concepto no puede tener más de 120 caracteres.'
+      : null
   const caja = useCaja()
   const disponible = caja ? efectivoEsperado(caja) : 0
 
@@ -18,16 +25,16 @@ export function DialogoEgreso({ onListo }: { onListo: () => void }) {
       ? null
       : (errorNumero(monto, LIMITES.egreso) ??
         (Number(monto) > disponible ? `No hay tanto efectivo en caja: hay ${formatearPesos(Math.max(0, disponible))}.` : null))
-  const bloqueado = enviando || monto.trim() === '' || errorMonto !== null
+  const bloqueado = enviando || monto.trim() === '' || errorMonto !== null || errorConcepto !== null
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setConceptoTocado(true)
     if (bloqueado) return
-    const datos = new FormData(e.currentTarget)
     setError('')
     setEnviando(true)
     try {
-      await registrarEgreso(String(datos.get('concepto')).trim(), Number(monto))
+      await registrarEgreso(concepto.trim(), Number(monto))
       onListo()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo registrar el egreso.')
@@ -36,10 +43,24 @@ export function DialogoEgreso({ onListo }: { onListo: () => void }) {
   }
 
   return (
-    <form className="formulario-claro" onSubmit={handleSubmit}>
+    <form className="formulario-claro" onSubmit={handleSubmit} noValidate>
       <label>
         Concepto
-        <input name="concepto" list="sugerencias-egreso" required autoFocus />
+        <input
+          name="concepto"
+          list="sugerencias-egreso"
+          value={concepto}
+          onChange={(e) => setConcepto(e.target.value)}
+          onBlur={() => setConceptoTocado(true)}
+          maxLength={120}
+          aria-invalid={conceptoTocado && errorConcepto ? true : undefined}
+          autoFocus
+        />
+        {conceptoTocado && errorConcepto && (
+          <span role="alert" className="campo-error">
+            {errorConcepto}
+          </span>
+        )}
         <datalist id="sugerencias-egreso">
           {SUGERENCIAS.map((s) => (
             <option key={s} value={s} />

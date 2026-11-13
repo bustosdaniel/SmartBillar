@@ -62,6 +62,39 @@ export function preciosAl(config: ConfigTarifas, modo: ModoJuego, fecha: number)
   return { hora: ajustar(base.hora, ajuste), regla }
 }
 
+const MINUTOS_DIA = 24 * 60
+const DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+
+// Minutos de la semana (0 = domingo 00:00) que cubre la regla; la madrugada de una franja que cruza
+// la medianoche cae en el día siguiente (como reglaVigente). Igual que _franjas del backend.
+function franjas(r: ReglaHorario): [number, number][] {
+  const desde = minutos(r.desde)
+  const hasta = minutos(r.hasta)
+  return r.dias.flatMap((dia): [number, number][] => {
+    const inicio = dia * MINUTOS_DIA
+    if (desde < hasta) return [[inicio + desde, inicio + hasta]]
+    const siguiente = ((dia + 1) % 7) * MINUTOS_DIA
+    return hasta > 0 ? [[inicio + desde, inicio + MINUTOS_DIA], [siguiente, siguiente + hasta]] : [[inicio + desde, inicio + MINUTOS_DIA]]
+  })
+}
+
+// Si dos tarifas aplican a la misma hora solo valdría la primera: se describe el primer cruce, o null.
+export function cruceDeReglas(a: ReglaHorario, b: ReglaHorario): string | null {
+  if (!a.desde || !a.hasta || !b.desde || !b.hasta || a.desde === a.hasta || b.desde === b.hasta) return null
+  let primero: number | null = null
+  for (const x of franjas(a)) {
+    for (const y of franjas(b)) {
+      const inicio = Math.max(x[0], y[0])
+      if (inicio < Math.min(x[1], y[1]) && (primero === null || inicio < primero)) primero = inicio
+    }
+  }
+  if (primero === null) return null
+  const dia = Math.floor(primero / MINUTOS_DIA)
+  const resto = primero % MINUTOS_DIA
+  const hora = `${String(Math.floor(resto / 60)).padStart(2, '0')}:${String(resto % 60).padStart(2, '0')}`
+  return `Se cruza con «${b.nombre.trim() || 'otra tarifa'}» el ${DIAS_LARGOS[dia]} a las ${hora}. Ajusta los días u horas.`
+}
+
 export function textoAjuste(ajuste: number) {
   return `${ajuste > 0 ? '+' : '−'}${Math.abs(ajuste)}%`
 }

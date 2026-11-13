@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Lock, Mail } from 'lucide-react'
+import { AVISO_SESION_CERRADA } from '../../auth/AuthContext'
 import { rutaInicio } from '../../auth/rutas'
 import { useAuth } from '../../auth/useAuth'
 import { validarLogin } from '../../auth/validaciones'
@@ -10,7 +11,12 @@ import { useValidacion } from '../../hooks/useValidacion'
 export function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [error, setError] = useState('')
+  // Si se llegó aquí porque el backend cerró la sesión, se explica una vez.
+  const [error, setError] = useState(() => {
+    if (!sessionStorage.getItem(AVISO_SESION_CERRADA)) return ''
+    sessionStorage.removeItem(AVISO_SESION_CERRADA)
+    return 'Tu sesión se cerró (venció o cambió la contraseña). Inicia sesión de nuevo.'
+  })
   const [enviando, setEnviando] = useState(false)
   const { errores, eventos, validarTodo } = useValidacion(validarLogin)
 

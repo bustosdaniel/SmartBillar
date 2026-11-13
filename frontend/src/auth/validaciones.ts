@@ -110,6 +110,19 @@ export function validarRegistro(datos: FormData): Errores {
   }
 }
 
+export function validarEmailRecuperar(email: string) {
+  return validarEmail(email)
+}
+
+// Contraseña nueva desde el enlace del correo de recuperación.
+export function validarRestablecer(datos: FormData): Errores {
+  const nueva = valor(datos, 'nueva')
+  return soloConError({
+    nueva: validarPasswordNueva(nueva, 'La contraseña nueva'),
+    confirmar: validarConfirmacion(nueva, valor(datos, 'confirmar')),
+  })
+}
+
 export function validarCambioPassword(datos: FormData): Errores {
   const actual = valor(datos, 'actual')
   const nueva = valor(datos, 'nueva')

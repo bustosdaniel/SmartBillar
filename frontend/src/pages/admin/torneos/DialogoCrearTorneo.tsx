@@ -21,23 +21,42 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
   const partidos = cupos / 2
   const tandas = mesasDelModo > 0 ? Math.ceil(partidos / mesasDelModo) : 0
   const errorInscripcion = errorNumero(inscripcion, LIMITES.inscripcion)
+  const [nombre, setNombre] = useState('')
+  const [premio, setPremio] = useState('')
+  // Se marcan al salir del campo o al intentar crear, no apenas se abre el formulario.
+  const [tocados, setTocados] = useState({ nombre: false, premio: false })
+  const errorNombre = !nombre.trim()
+    ? 'Ponle un nombre al torneo.'
+    : nombre.trim().length > 80
+      ? 'El nombre no puede tener más de 80 caracteres.'
+      : null
+  const errorPremio = !premio.trim()
+    ? 'Escribe el premio (ej. $300.000 + trofeo).'
+    : premio.trim().length > 120
+      ? 'El premio no puede tener más de 120 caracteres.'
+      : null
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (errorInscripcion || !modo) return
+    setTocados({ nombre: true, premio: true })
+    if (errorInscripcion || errorNombre || errorPremio || !modo) return
     const datos = new FormData(e.currentTarget)
     setError('')
+    if (!datos.get('fecha') || !datos.get('hora')) {
+      setError('Elige la fecha y la hora del torneo.')
+      return
+    }
     setEnviando(true)
     try {
       const id = await crearTorneo({
-        nombre: String(datos.get('nombre')).trim(),
+        nombre: nombre.trim(),
         modo,
         categoria: datos.get('categoria') as CategoriaTorneo,
         fecha: String(datos.get('fecha')),
         hora: String(datos.get('hora')),
         cupos,
         inscripcion: Number(inscripcion),
-        premio: String(datos.get('premio')).trim(),
+        premio: premio.trim(),
       })
       onListo(id)
     } catch (err) {
@@ -47,10 +66,24 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
   }
 
   return (
-    <form className="formulario-claro" onSubmit={handleSubmit}>
+    <form className="formulario-claro" onSubmit={handleSubmit} noValidate>
       <label>
         Nombre del torneo
-        <input name="nombre" required autoFocus placeholder="Ej: Copa de Navidad" />
+        <input
+          name="nombre"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          onBlur={() => setTocados((t) => ({ ...t, nombre: true }))}
+          maxLength={80}
+          aria-invalid={tocados.nombre && errorNombre ? true : undefined}
+          autoFocus
+          placeholder="Ej: Copa de Navidad"
+        />
+        {tocados.nombre && errorNombre && (
+          <span role="alert" className="campo-error">
+            {errorNombre}
+          </span>
+        )}
       </label>
       <div className="campos-fila">
         <label>
@@ -119,7 +152,20 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
       </div>
       <label>
         Premio
-        <input name="premio" required placeholder="Ej: $300.000 + trofeo" />
+        <input
+          name="premio"
+          value={premio}
+          onChange={(e) => setPremio(e.target.value)}
+          onBlur={() => setTocados((t) => ({ ...t, premio: true }))}
+          maxLength={120}
+          aria-invalid={tocados.premio && errorPremio ? true : undefined}
+          placeholder="Ej: $300.000 + trofeo"
+        />
+        {tocados.premio && errorPremio && (
+          <span role="alert" className="campo-error">
+            {errorPremio}
+          </span>
+        )}
       </label>
       {modo ? (
         <p className={`aviso-claro ${tandas > 1 ? 'aviso-cambio-plan' : ''}`}>

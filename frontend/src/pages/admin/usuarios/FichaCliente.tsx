@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Mail, Phone, Trash2 } from 'lucide-react'
+import { KeyRound, Mail, Phone, Trash2 } from 'lucide-react'
 import { useEsAdministrador } from '../../../auth/useAuth'
-import { eliminarCliente } from '../../../auth/usuarios'
+import { eliminarCliente, passwordTemporal } from '../../../auth/usuarios'
 import { NOMBRES_METODO } from '../../../caja/caja'
 import { useTodasLasMesas, NOMBRES_MODO } from '../../../mesas/datos'
 import { estadoMembresia } from '../../../membresias/membresias'
@@ -25,6 +25,20 @@ export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahor
   const [confirmar, setConfirmar] = useState(false)
   const [eliminando, setEliminando] = useState(false)
   const [error, setError] = useState('')
+  const [temporal, setTemporal] = useState('')
+  const [generando, setGenerando] = useState(false)
+
+  async function restablecer() {
+    setGenerando(true)
+    setError('')
+    try {
+      setTemporal(await passwordTemporal(cliente.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo restablecer la contraseña.')
+    } finally {
+      setGenerando(false)
+    }
+  }
 
   async function eliminar() {
     setEliminando(true)
@@ -100,6 +114,20 @@ export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahor
           })}
         </ul>
       )}
+
+      {esAdministrador &&
+        (temporal ? (
+          <div className="aviso-claro" role="status">
+            <p>
+              Contraseña temporal de {cliente.nombre}: <strong className="password-temporal">{temporal}</strong>
+            </p>
+            <p className="nota">Dísela al cliente: no se vuelve a mostrar. Debe cambiarla desde Mi perfil al entrar.</p>
+          </div>
+        ) : (
+          <button type="button" className="boton-enlace boton-enlace-neutro" onClick={restablecer} disabled={generando}>
+            <KeyRound size={15} aria-hidden="true" /> {generando ? 'Generando…' : 'Restablecer contraseña'}
+          </button>
+        ))}
 
       {esAdministrador &&
         (confirmar ? (

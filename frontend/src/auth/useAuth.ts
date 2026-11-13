@@ -18,6 +18,8 @@ export type AuthContextValue = {
   registrar: (datos: DatosRegistro) => Promise<Usuario>
   actualizarPerfil: (datos: DatosPerfil) => Promise<Usuario>
   logout: () => void
+  // Tras cambiar la contraseña: el backend da un token nuevo (los anteriores dejan de servir).
+  actualizarToken: (token: string) => void
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
