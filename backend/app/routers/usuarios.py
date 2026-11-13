@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import Administrador, BaseDeDatos, Empleado, UsuarioActual
 from app.schemas.usuarios import (
@@ -9,6 +9,7 @@ from app.schemas.usuarios import (
     PerfilEntrada,
     UsuarioSalida,
 )
+from app.seguridad import crear_token
 from app.services import usuarios as servicio
 from app.services.usuarios import ErrorDeDatos
 
@@ -67,14 +68,15 @@ def actualizar_perfil(datos: PerfilEntrada, db: BaseDeDatos, usuario: UsuarioAct
     return usuario
 
 
-@router.put("/yo/password", status_code=status.HTTP_204_NO_CONTENT)
-def cambiar_password(datos: CambioPassword, db: BaseDeDatos, usuario: UsuarioActual):
+@router.put("/yo/password")
+def cambiar_password(datos: CambioPassword, db: BaseDeDatos, usuario: UsuarioActual) -> dict[str, str]:
+    """Cierra la sesión en los demás dispositivos y devuelve un token nuevo para este."""
     try:
         servicio.cambiar_password(usuario, datos.actual, datos.nueva)
     except ErrorDeDatos as error:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(error)) from error
     db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return {"token": crear_token(usuario.id, usuario.version_sesion)}
 
 
 @router.delete("/clientes/{cliente_id}")
@@ -87,6 +89,18 @@ def eliminar_cliente(cliente_id: int, db: BaseDeDatos, _admin: Administrador) ->
         raise _conflicto(error) from error
     db.commit()
     return {"modo": modo}
+
+
+@router.post("/clientes/{cliente_id}/password-temporal")
+def password_temporal(cliente_id: int, db: BaseDeDatos, _admin: Administrador) -> dict[str, str]:
+    """Solo el administrador: para el cliente que olvidó su contraseña y está en caja. La temporal se
+    devuelve una sola vez (no se guarda en claro) y el cliente la cambia desde su perfil."""
+    try:
+        _cliente, temporal = servicio.restablecer_por_administrador(db, cliente_id)
+    except ErrorDeDatos as error:
+        raise _conflicto(error) from error
+    db.commit()
+    return {"password": temporal}
 
 
 @router.patch("/{usuario_id}/cargo", response_model=UsuarioSalida)

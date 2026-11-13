@@ -3,6 +3,7 @@
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 # Nombre del campo y terminación para concordar ("obligatorio" / "obligatoria").
 NOMBRES_CAMPO = {
@@ -65,6 +66,19 @@ def _mensaje(error: dict) -> str:
         # Nuestros validadores ya escriben el mensaje en español ("Value error, …").
         return str(error.get("msg", "")).removeprefix("Value error, ")
     return f"{nombre} no es válid{o}."
+
+
+async def errores_de_integridad(_peticion: Request, error: IntegrityError) -> JSONResponse:
+    """Un choque con la base que la validación previa no vio (dos registros con el mismo correo al mismo
+    tiempo, o un dato que otra persona acaba de borrar): 409 con un mensaje claro en vez de un 500."""
+    texto = str(error.orig).lower()
+    if "email" in texto and ("duplicate" in texto or "unique" in texto):
+        mensaje = "Ya existe una cuenta con ese correo."
+    elif "duplicate" in texto:
+        mensaje = "Ese dato ya está registrado. Recarga la página e intenta de nuevo."
+    else:
+        mensaje = "Uno de los datos ya no existe o cambió mientras tanto. Recarga la página e intenta de nuevo."
+    return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": mensaje})
 
 
 async def errores_de_validacion(_peticion: Request, error: RequestValidationError) -> JSONResponse:

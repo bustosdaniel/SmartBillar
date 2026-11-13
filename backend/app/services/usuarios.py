@@ -1,12 +1,27 @@
+import hashlib
+import math
 import secrets
+import string
+from datetime import timedelta
 
 from sqlalchemy import case, exists, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models import Jugador, Membresia, Movimiento, Notificacion, Pago, SesionMesa, SolicitudMembresia, Torneo, Usuario
+from app.models import (
+    Jugador,
+    Membresia,
+    Movimiento,
+    Notificacion,
+    Pago,
+    Recuperacion,
+    SesionMesa,
+    SolicitudMembresia,
+    Torneo,
+    Usuario,
+)
 from app.models.enums import Cargo, EstadoTorneo, Rol, TipoMovimiento, TipoNotificacion
 from app.seguridad import encriptar_password, verificar_password
-from app.services.notificaciones import notificar_administradores
+from app.services.notificaciones import notificar, notificar_administradores
 from app.tiempo import ahora_utc
 
 # Contraseña de las cuentas que crea el personal en caja; el cliente la cambia desde su perfil.
@@ -60,10 +75,35 @@ def listar_empleados(db: Session) -> list[Usuario]:
     return list(db.scalars(select(Usuario).where(Usuario.rol == Rol.ADMIN, ACTIVO).order_by(Usuario.nombre)))
 
 
+INTENTOS_MAXIMOS = 5
+BLOQUEO = timedelta(minutes=15)
+
+
+class CuentaBloqueada(ErrorDeDatos):
+    """Demasiados intentos fallidos seguidos: la cuenta no acepta contraseñas por un rato."""
+
+
 def autenticar(db: Session, email: str, password: str) -> Usuario | None:
+    """Tras INTENTOS_MAXIMOS contraseñas erradas seguidas, la cuenta se bloquea BLOQUEO minutos (aunque
+    después se escriba bien). Quien llama debe hacer commit también cuando falla, para guardar el intento."""
     usuario = buscar_por_email(db, email)
-    if usuario is None or not verificar_password(password, usuario.password_hash):
+    if usuario is None:
         return None
+    ahora = ahora_utc()
+    if usuario.bloqueado_hasta is not None and usuario.bloqueado_hasta > ahora:
+        minutos = max(1, math.ceil((usuario.bloqueado_hasta - ahora).total_seconds() / 60))
+        raise CuentaBloqueada(
+            f"Demasiados intentos fallidos. Por seguridad, espera {minutos} "
+            f"{'minuto' if minutos == 1 else 'minutos'} e intenta de nuevo."
+        )
+    if not verificar_password(password, usuario.password_hash):
+        usuario.intentos_fallidos += 1
+        if usuario.intentos_fallidos >= INTENTOS_MAXIMOS:
+            usuario.intentos_fallidos = 0
+            usuario.bloqueado_hasta = ahora + BLOQUEO
+        return None
+    usuario.intentos_fallidos = 0
+    usuario.bloqueado_hasta = None
     return usuario
 
 
@@ -104,7 +144,15 @@ def registrar_cliente(
     return cliente
 
 
-def actualizar_perfil(db: Session, usuario: Usuario, *, nombre: str, email: str, telefono: str) -> Usuario:
+def actualizar_perfil(
+    db: Session, usuario: Usuario, *, nombre: str, email: str, telefono: str, actual: str | None = None
+) -> Usuario:
+    """Cambiar el correo (con el que se inicia sesión) exige la contraseña actual."""
+    if email.strip().lower() != usuario.email.lower():
+        if not actual:
+            raise ErrorDeDatos("Para cambiar el correo escribe tu contraseña actual.")
+        if not verificar_password(actual, usuario.password_hash):
+            raise ErrorDeDatos("La contraseña actual no es correcta.")
     _validar_correo_libre(db, email, excepto_id=usuario.id)
     usuario.nombre = nombre
     usuario.email = email.strip().lower()
@@ -118,6 +166,8 @@ def cambiar_password(usuario: Usuario, actual: str, nueva: str) -> None:
     if nueva == actual:
         raise ErrorDeDatos("La contraseña nueva debe ser distinta de la actual.")
     usuario.password_hash = encriptar_password(nueva)
+    # Cierra la sesión en los demás dispositivos: sus tokens llevan la versión anterior.
+    usuario.version_sesion += 1
 
 
 def cambiar_cargo(db: Session, empleado_id: int, cargo: Cargo) -> Usuario:
@@ -181,3 +231,84 @@ def eliminar_cliente(db: Session, cliente_id: int) -> str:
     db.add(Movimiento(tipo=TipoMovimiento.CAJA, titulo="Cliente eliminado", detalle=nombre))
     db.flush()
     return modo
+
+
+# ---------- Recuperar la contraseña ----------
+
+VIGENCIA_ENLACE = timedelta(minutes=30)
+# Para que nadie llene el correo de alguien pidiendo enlaces seguidos.
+ESPERA_ENTRE_ENLACES = timedelta(minutes=2)
+
+
+def _hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def crear_enlace_recuperacion(db: Session, email: str) -> tuple[Usuario, str] | None:
+    """Devuelve (usuario, token) para enviarle el enlace, o None si el correo no tiene cuenta o ya se pidió
+    uno hace menos de 2 minutos. Quien llama responde igual en todos los casos: no revela qué correos existen.
+    Pedir uno nuevo deja sin efecto los anteriores."""
+    usuario = buscar_por_email(db, email)
+    if usuario is None:
+        return None
+    ahora = ahora_utc()
+    ultimo = db.scalar(select(func.max(Recuperacion.creado)).where(Recuperacion.usuario_id == usuario.id))
+    if ultimo is not None and ultimo > ahora - ESPERA_ENTRE_ENLACES:
+        return None
+    for anterior in db.scalars(
+        select(Recuperacion).where(Recuperacion.usuario_id == usuario.id, Recuperacion.usado_en.is_(None))
+    ):
+        anterior.usado_en = ahora
+    token = secrets.token_urlsafe(32)
+    db.add(Recuperacion(usuario_id=usuario.id, token_hash=_hash(token), creado=ahora, vence=ahora + VIGENCIA_ENLACE))
+    db.flush()
+    return usuario, token
+
+
+def restablecer_con_enlace(db: Session, token: str, nueva: str) -> Usuario:
+    """El enlace sirve una sola vez y antes de vencer. Cierra la sesión en todos los dispositivos y quita
+    el bloqueo por intentos fallidos."""
+    enlace = db.scalar(select(Recuperacion).where(Recuperacion.token_hash == _hash(token)))
+    ahora = ahora_utc()
+    usuario = db.get(Usuario, enlace.usuario_id) if enlace is not None else None
+    if enlace is None or enlace.usado_en is not None or enlace.vence <= ahora or usuario is None or usuario.eliminado_en:
+        raise ErrorDeDatos("El enlace no es válido o ya venció. Pide uno nuevo.")
+    enlace.usado_en = ahora
+    _nueva_password(usuario, nueva)
+    return usuario
+
+
+def _nueva_password(usuario: Usuario, password: str) -> None:
+    usuario.password_hash = encriptar_password(password)
+    usuario.version_sesion += 1
+    usuario.intentos_fallidos = 0
+    usuario.bloqueado_hasta = None
+
+
+def password_temporal() -> str:
+    """Fácil de dictar en caja y que cumple las reglas: mayúscula, minúscula, número y símbolo."""
+    letras = "".join(secrets.choice("abcdefghjkmnpqrstuvwxyz") for _ in range(5))
+    numeros = "".join(secrets.choice(string.digits) for _ in range(4))
+    return f"Billar-{letras}-{numeros}"
+
+
+def restablecer_por_administrador(db: Session, cliente_id: int) -> tuple[Usuario, str]:
+    """Para el cliente que no recuerda su contraseña y está en caja: se le genera una temporal (se muestra
+    una sola vez) y la cambia desde su perfil. Sus otras sesiones se cierran."""
+    cliente = db.get(Usuario, cliente_id)
+    if cliente is None or cliente.rol != Rol.CLIENTE or cliente.eliminado_en is not None:
+        raise ErrorDeDatos("Ese cliente no existe.")
+    temporal = password_temporal()
+    _nueva_password(cliente, temporal)
+    notificar(
+        db,
+        cliente.id,
+        TipoNotificacion.CUENTA,
+        "Restablecimos tu contraseña",
+        "El club te dio una contraseña temporal. Cámbiala desde Mi perfil apenas inicies sesión.",
+        ruta="/cliente/perfil",
+    )
+    db.add(Movimiento(tipo=TipoMovimiento.CAJA, titulo="Contraseña restablecida", detalle=cliente.nombre))
+    db.flush()
+    return cliente, temporal
+

@@ -14,6 +14,15 @@ class RegistroEntrada(ClienteNuevo):
     password: PasswordNueva
 
 
+class RecuperarEntrada(BaseModel):
+    email: EmailStr
+
+
+class RestablecerEntrada(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+    nueva: PasswordNueva
+
+
 class SesionSalida(BaseModel):
     token: str
     usuario: UsuarioSalida

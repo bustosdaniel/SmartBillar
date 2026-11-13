@@ -70,6 +70,34 @@ class ReglaEntrada(ReglaBase):
         return self
 
 
+DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
+MINUTOS_DIA = 24 * 60
+
+
+def _franjas(regla: "ReglaEntrada") -> list[tuple[int, int]]:
+    """Minutos de la semana (0 = domingo 00:00) que cubre la regla. Si cruza la medianoche, la parte de
+    la madrugada cae en el día siguiente (igual que reglaVigente del frontend)."""
+    desde = regla.desde.hour * 60 + regla.desde.minute
+    hasta = regla.hasta.hour * 60 + regla.hasta.minute
+    franjas = []
+    for dia in regla.dias:
+        inicio = dia * MINUTOS_DIA
+        if desde < hasta:
+            franjas.append((inicio + desde, inicio + hasta))
+        else:
+            franjas.append((inicio + desde, inicio + MINUTOS_DIA))
+            siguiente = (dia + 1) % 7 * MINUTOS_DIA
+            if hasta > 0:
+                franjas.append((siguiente, siguiente + hasta))
+    return franjas
+
+
+def primer_cruce(a: "ReglaEntrada", b: "ReglaEntrada") -> int | None:
+    """Primer minuto de la semana en que las dos reglas aplican a la vez, o None."""
+    cruces = [max(x[0], y[0]) for x in _franjas(a) for y in _franjas(b) if max(x[0], y[0]) < min(x[1], y[1])]
+    return min(cruces) if cruces else None
+
+
 class TarifasSalida(EsquemaCamel):
     por_modo: dict[ModoJuego, PrecioHora]
     reglas: list[ReglaSalida]
@@ -87,6 +115,20 @@ class TarifasEntrada(EsquemaCamel):
         if set(por_modo) != set(ModoJuego):
             raise ValueError("Falta el precio de algún modo de juego.")
         return por_modo
+
+    @model_validator(mode="after")
+    def _sin_cruces(self):
+        """Dos tarifas que aplican a la misma hora harían que solo valga la primera sin que nadie lo note."""
+        for i, a in enumerate(self.reglas):
+            for b in self.reglas[i + 1 :]:
+                minuto = primer_cruce(a, b)
+                if minuto is not None:
+                    dia, resto = divmod(minuto, MINUTOS_DIA)
+                    raise ValueError(
+                        f"Las tarifas «{a.nombre}» y «{b.nombre}» se cruzan el {DIAS[dia]} a las "
+                        f"{resto // 60:02d}:{resto % 60:02d}. Ajusta sus días u horas."
+                    )
+        return self
 
 
 # ---------- Sesiones ----------

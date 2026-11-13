@@ -19,9 +19,10 @@ BaseDeDatos = Annotated[Session, Depends(obtener_db)]
 def usuario_actual(
     db: BaseDeDatos, credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
 ) -> Usuario:
-    usuario_id = leer_token(credenciales.credentials) if credenciales else None
-    usuario = db.get(Usuario, usuario_id) if usuario_id is not None else None
-    if usuario is None or usuario.eliminado_en is not None:
+    leido = leer_token(credenciales.credentials) if credenciales else None
+    usuario = db.get(Usuario, leido[0]) if leido is not None else None
+    # Un token de antes de cambiar la contraseña, o de un usuario eliminado, ya no sirve.
+    if usuario is None or usuario.eliminado_en is not None or leido[1] != usuario.version_sesion:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Tu sesión no es válida o venció. Inicia sesión de nuevo.",

@@ -93,7 +93,9 @@ class ClienteNuevo(DatosPersonales):
 
 
 class PerfilEntrada(DatosPersonales):
-    """Datos que cada usuario edita en su perfil."""
+    """Datos que cada usuario edita en su perfil. `actual` (la contraseña) solo se exige si cambia el correo."""
+
+    actual: str | None = None
 
 
 class CambioPassword(BaseModel):

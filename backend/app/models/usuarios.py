@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, String, func
+from sqlalchemy import CheckConstraint, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -28,3 +28,8 @@ class Usuario(Base):
     # Cliente eliminado por un administrador que tenía historial (cobros, mesas, torneos): se conserva
     # la fila para que la caja y los reportes sigan cuadrando, pero no puede entrar ni aparece en listas.
     eliminado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Login: tras 5 intentos fallidos seguidos la cuenta se bloquea 15 minutos.
+    intentos_fallidos: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    bloqueado_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Va dentro de cada token: al cambiar la contraseña sube y los tokens anteriores dejan de servir.
+    version_sesion: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

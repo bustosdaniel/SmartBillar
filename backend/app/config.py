@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic import field_validator
@@ -20,6 +21,19 @@ class Configuracion(BaseSettings):
     jwt_horas: int = 12
     # La base guarda UTC; esta zona define qué es "hoy" para turnos, reportes y avisos.
     zona_horaria: str = "America/Bogota"
+    # /docs y /redoc (documentación de la API). Por defecto solo en local: en Vercel (variable VERCEL) se
+    # ocultan para no publicar el mapa de la API. MOSTRAR_DOCS=true los vuelve a mostrar.
+    mostrar_docs: bool = not os.environ.get("VERCEL")
+
+    # Dirección del frontend, para armar el enlace del correo de recuperación (/restablecer?token=…).
+    url_frontend: str = "http://localhost:5173"
+    # Correo por SMTP (Gmail con contraseña de aplicación, Brevo u otro). Sin SMTP_HOST no se envía nada:
+    # el enlace solo se escribe en la consola del backend, para probar en local.
+    smtp_host: str = ""
+    smtp_puerto: int = 587
+    smtp_usuario: str = ""
+    smtp_clave: str = ""
+    correo_remitente: str = ""
 
     @field_validator("database_url")
     @classmethod

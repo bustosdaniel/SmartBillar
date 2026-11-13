@@ -23,15 +23,18 @@ def verificar_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def crear_token(usuario_id: int) -> str:
+def crear_token(usuario_id: int, version: int = 0) -> str:
+    """`version` es Usuario.version_sesion: al cambiar la contraseña sube y este token deja de servir."""
     vence = ahora_utc() + timedelta(hours=configuracion.jwt_horas)
-    return jwt.encode({"sub": str(usuario_id), "exp": vence}, configuracion.jwt_secreto, algorithm=ALGORITMO)
+    datos = {"sub": str(usuario_id), "ver": version, "exp": vence}
+    return jwt.encode(datos, configuracion.jwt_secreto, algorithm=ALGORITMO)
 
 
-def leer_token(token: str) -> int | None:
-    """Devuelve el id del usuario, o None si el token es inválido o venció."""
+def leer_token(token: str) -> tuple[int, int] | None:
+    """Devuelve (id del usuario, versión de sesión), o None si el token es inválido o venció. Los tokens
+    anteriores a la versión no la traen y cuentan como versión 0."""
     try:
         datos = jwt.decode(token, configuracion.jwt_secreto, algorithms=[ALGORITMO])
-        return int(datos["sub"])
-    except (jwt.InvalidTokenError, KeyError, ValueError):
+        return int(datos["sub"]), int(datos.get("ver", 0))
+    except (jwt.InvalidTokenError, KeyError, ValueError, TypeError):
         return None
