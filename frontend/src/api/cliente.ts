@@ -1,6 +1,8 @@
 // Cliente HTTP del backend (FastAPI). Vite redirige /api al puerto 8000 (vite.config.ts).
 // El token de la sesión va en cada petición; los errores llegan como { detail: "mensaje" }.
 
+import { esperar } from './espera'
+
 export class ErrorApi extends Error {
   readonly estado: number
 
@@ -28,9 +30,18 @@ export function alPerderSesion(funcion: () => void) {
 type Opciones = {
   metodo?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   cuerpo?: unknown
+  // Mostrar que se está esperando (barra arriba y spinner en el botón). Por defecto sí en lo que
+  // cambia algo y en lo que pide un botón; no en las recargas automáticas en segundo plano.
+  enEspera?: boolean
 }
 
-export async function pedir<T>(ruta: string, { metodo, cuerpo }: Opciones = {}): Promise<T> {
+export function pedir<T>(ruta: string, opciones: Opciones = {}): Promise<T> {
+  const metodo = opciones.metodo ?? (opciones.cuerpo !== undefined ? 'POST' : 'GET')
+  const enEspera = opciones.enEspera ?? metodo !== 'GET'
+  return enEspera ? esperar(() => enviar<T>(ruta, opciones)) : enviar<T>(ruta, opciones)
+}
+
+async function enviar<T>(ruta: string, { metodo, cuerpo }: Opciones): Promise<T> {
   const conCuerpo = cuerpo !== undefined
   let respuesta: Response
   try {

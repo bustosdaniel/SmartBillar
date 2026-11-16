@@ -122,6 +122,8 @@ export type Egreso = {
   fecha: number
   concepto: string
   monto: number
+  // De dónde salió el dinero: solo el efectivo se descuenta del cajón.
+  metodo?: MetodoPago
 }
 
 export type Caja = {
@@ -153,7 +155,8 @@ export type Movimiento = {
   fecha: number
 }
 
-export type EstadoTorneo = 'inscripciones' | 'en-curso' | 'finalizado'
+// 'cancelado': llegó su día sin suficientes jugadores y no se jugó.
+export type EstadoTorneo = 'inscripciones' | 'en-curso' | 'finalizado' | 'cancelado'
 
 export type CategoriaTorneo = 'abierta' | 'principiante' | 'avanzado'
 

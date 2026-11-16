@@ -41,10 +41,24 @@ export function errorNumero(valor: string | number, limite: Limite): string | nu
   const numero = Number(texto)
   if (!Number.isFinite(numero)) return 'Escribe un número válido.'
   if (!Number.isInteger(numero)) return 'Debe ser un número entero, sin decimales.'
-  const mostrar = (n: number) => (limite.pesos ? formatearPesos(n) : `${n}${limite.unidad ?? ''}`)
-  if (numero < limite.min) return `No puede ser menor que ${mostrar(limite.min)}.`
-  if (numero > limite.max) return `No puede ser mayor que ${mostrar(limite.max)}.`
+  if (numero < limite.min) return `No puede ser menor que ${mostrarLimite(limite.min, limite)}.`
+  if (numero > limite.max) return `No puede ser mayor que ${mostrarLimite(limite.max, limite)}.`
   return null
+}
+
+function mostrarLimite(numero: number, limite: Limite) {
+  return limite.pesos ? formatearPesos(numero) : `${numero}${limite.unidad ?? ''}`
+}
+
+// Por qué no se dejó escribir algo en un campo numérico (CampoNumero), o null si sí se podía.
+export function motivoRechazo(texto: string, limite: Limite): string | null {
+  if (aceptaEscritura(texto, limite)) return null
+  if (/^-?\d+$/.test(texto)) {
+    const numero = Number(texto)
+    if (numero > limite.max) return `No puede ser mayor que ${mostrarLimite(limite.max, limite)}.`
+    if (numero < limite.min) return `No puede ser menor que ${mostrarLimite(limite.min, limite)}.`
+  }
+  return limite.min < 0 ? 'Solo números enteros.' : 'Solo números enteros, sin signos ni decimales.'
 }
 
 // Valor de un input numérico controlado: NaN si quedó vacío, para que errorNumero lo marque.
@@ -52,12 +66,14 @@ export function leerNumero(texto: string) {
   return texto.trim() === '' ? Number.NaN : Number(texto)
 }
 
-// Para mostrar en un input controlado un número que puede ser NaN.
-export function mostrarNumero(valor: number) {
-  return Number.isNaN(valor) ? '' : valor
-}
-
-// Para campos de texto que guardan lo que se escribe: recorta si se pasa del tope.
-export function limitarTextoMonto(texto: string) {
-  return Number(texto) > MONTO_MAXIMO ? String(MONTO_MAXIMO) : texto
+// Lo que va escrito en un campo numérico todavía puede quedar dentro del límite: solo dígitos (y el
+// signo menos si el límite admite negativos), sin ceros de más a la izquierda y sin pasarse del
+// máximo. Lo que no cumple no se deja escribir. Quedarse por debajo del mínimo sí se permite mientras
+// se escribe (para llegar a 1.000 se pasa por 1): eso lo avisa errorNumero.
+export function aceptaEscritura(texto: string, limite: Limite) {
+  if (texto === '') return true
+  if (texto === '-') return limite.min < 0
+  if (!/^-?(?:0|[1-9]\d*)$/.test(texto)) return false
+  const numero = Number(texto)
+  return numero <= limite.max && (numero >= 0 || numero >= limite.min)
 }

@@ -77,7 +77,7 @@ export async function buscarPorEmail(email: string): Promise<Usuario | null> {
   const buscado = email.trim()
   if (!buscado) return null
   try {
-    const cliente = await pedir<Usuario>(`/usuarios/cliente?email=${encodeURIComponent(buscado)}`)
+    const cliente = await pedir<Usuario>(`/usuarios/cliente?email=${encodeURIComponent(buscado)}`, { enEspera: true })
     recordarUsuario(cliente)
     return cliente
   } catch (error) {

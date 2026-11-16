@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorNumero, leerNumero, LIMITES, LIMITES_PRODUCTO, limitarTextoMonto, MONTO_MAXIMO } from './montos'
+import { errorNumero, leerNumero, LIMITES, LIMITES_PRODUCTO, aceptaEscritura, MONTO_MAXIMO } from './montos'
 
 // Los campos de dinero del personal: nada de cifras absurdas ni precios irreales.
 
@@ -47,12 +47,28 @@ describe('precios de productos según su categoría', () => {
   })
 })
 
-describe('limitarTextoMonto: el efectivo recibido no pasa del tope', () => {
-  it('recorta lo que se pasa', () => {
-    expect(limitarTextoMonto('99999999')).toBe(String(MONTO_MAXIMO))
+describe('aceptaEscritura: no se puede escribir más allá del límite', () => {
+  it('no deja pasar del máximo que dice el aviso', () => {
+    expect(aceptaEscritura('50000', LIMITES.tarifaHora)).toBe(true)
+    expect(aceptaEscritura('50001', LIMITES.tarifaHora)).toBe(false)
+    expect(aceptaEscritura('500000', LIMITES.inscripcion)).toBe(true)
+    expect(aceptaEscritura('5000000', LIMITES.inscripcion)).toBe(false)
+    expect(aceptaEscritura(String(MONTO_MAXIMO + 1), LIMITES.baseCaja)).toBe(false)
   })
 
-  it('deja igual lo que está dentro', () => {
-    expect(limitarTextoMonto('50000')).toBe('50000')
+  it('deja escribir por debajo del mínimo mientras se llega al valor', () => {
+    expect(aceptaEscritura('1', LIMITES.tarifaHora)).toBe(true)
+    expect(aceptaEscritura('', LIMITES.tarifaHora)).toBe(true)
+  })
+
+  it('no deja letras, decimales, ceros a la izquierda ni negativos donde no van', () => {
+    for (const texto of ['12a', '1.5', '1e3', '012', '-5']) expect(aceptaEscritura(texto, LIMITES.tarifaHora)).toBe(false)
+  })
+
+  it('el ajuste de tarifa admite negativos hasta el mínimo', () => {
+    expect(aceptaEscritura('-', LIMITES.ajusteTarifa)).toBe(true)
+    expect(aceptaEscritura('-100', LIMITES.ajusteTarifa)).toBe(true)
+    expect(aceptaEscritura('-101', LIMITES.ajusteTarifa)).toBe(false)
+    expect(aceptaEscritura('101', LIMITES.ajusteTarifa)).toBe(false)
   })
 })

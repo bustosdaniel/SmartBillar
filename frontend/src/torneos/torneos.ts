@@ -19,14 +19,34 @@ export const TEXTO_ESTADO_TORNEO: Record<EstadoTorneo, string> = {
   inscripciones: 'Inscripciones abiertas',
   'en-curso': 'En curso',
   finalizado: 'Finalizado',
+  cancelado: 'Cancelado',
 }
+
+// Para ordenar las listas: primero lo que se está jugando, luego lo que viene.
+export const ORDEN_ESTADO_TORNEO: Record<EstadoTorneo, number> = { 'en-curso': 0, inscripciones: 1, finalizado: 2, cancelado: 3 }
+
+// El mismo MINIMO_JUGADORES del backend (services/torneos.py): con menos, el torneo se cancela.
+export const MINIMO_JUGADORES = 2
 
 const fechaCorta = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })
 
 export function formatearFechaTorneo(torneo: Torneo) {
-  const [a, m, d] = torneo.fecha.split('-').map(Number)
-  return `${fechaCorta.format(new Date(a, m - 1, d))} · ${torneo.hora}`
+  return `${fechaCorta.format(fechaDe(torneo))} · ${torneo.hora}`
 }
+
+function fechaDe(torneo: Torneo) {
+  const [a, m, d] = torneo.fecha.split('-').map(Number)
+  return new Date(a, m - 1, d)
+}
+
+// Las inscripciones cierran cuando empieza el día del torneo: el último día para inscribirse es el anterior.
+export function textoCierreInscripciones(torneo: Torneo) {
+  const ultimoDia = fechaDe(torneo)
+  ultimoDia.setDate(ultimoDia.getDate() - 1)
+  return `Inscripciones hasta el ${fechaCorta.format(ultimoDia)}`
+}
+
+export const AVISO_CANCELADO = `No se realizó: no se inscribieron suficientes jugadores (mínimo ${MINIMO_JUGADORES}).`
 
 const store = crearStoreMemoria<Torneo[]>([])
 
@@ -70,7 +90,9 @@ type DatosCobro = { metodo: MetodoPago; recibido: number | null }
 
 export async function crearTorneo(datos: DatosTorneo) {
   const { id } = await pedir<{ id: number }>('/torneos', { cuerpo: datos })
-  await recargar()
+  // El torneo ya quedó creado: si falla solo la recarga de la lista, no se informa como error (si no,
+  // se vuelve a intentar y queda duplicado). La recarga automática lo trae después.
+  await recargar().catch(() => {})
   return id
 }
 
@@ -112,6 +134,18 @@ export async function retirarme(torneoId: number) {
 // El cliente puede retirarse solo si no hay dinero que devolver; si pagó, la devolución se hace en caja.
 export function puedeRetirarse(torneo: Torneo, jugador: Jugador) {
   return torneo.estado === 'inscripciones' && (!jugador.pagado || jugador.monto === 0)
+}
+
+// Para corregir un torneo creado por error. Solo sin inscritos y si todavía no se jugó.
+export async function eliminarTorneo(torneoId: number) {
+  await pedir(`/torneos/${torneoId}`, { metodo: 'DELETE' })
+  await recargar().catch(() => {})
+}
+
+export function errorEliminarTorneo(torneo: Torneo): string | null {
+  if (torneo.estado === 'en-curso' || torneo.estado === 'finalizado') return 'Un torneo que ya se jugó no se puede eliminar.'
+  if (torneo.jugadores.length > 0) return 'Para eliminarlo, quita primero a los inscritos (y devuélveles la inscripción si pagaron).'
+  return null
 }
 
 export async function iniciarTorneo(torneoId: number) {

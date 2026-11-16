@@ -113,6 +113,12 @@ export async function cancelarSolicitud(clienteId: number, origen: 'cliente' | '
   await recargar()
 }
 
+// El cliente deja su plan: los beneficios terminan de inmediato y no se devuelve lo pagado.
+export async function cancelarMembresia() {
+  await pedir('/membresias/mia', { metodo: 'DELETE' })
+  await recargar()
+}
+
 // Solo el administrador (el backend lo verifica).
 export async function actualizarPlan(plan: Plan) {
   const { id, nombre: _nombre, ...datos } = plan

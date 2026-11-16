@@ -74,8 +74,8 @@ export function textoDiferencia(diferencia: number) {
 // Los cobros entran por su propia ruta (mesas, inscripciones, membresías): el backend calcula el monto.
 
 // Dinero que sale del cajón: compras, servicios, mantenimiento, devoluciones...
-export async function registrarEgreso(concepto: string, monto: number): Promise<Egreso> {
-  const nuevo = await pedir<Egreso>('/caja/egresos', { cuerpo: { concepto, monto } })
+export async function registrarEgreso(concepto: string, monto: number, metodo: MetodoPago = 'efectivo'): Promise<Egreso> {
+  const nuevo = await pedir<Egreso>('/caja/egresos', { cuerpo: { concepto, monto, metodo } })
   await recargar()
   return nuevo
 }
@@ -99,7 +99,10 @@ export function totalPorMetodo(caja: Caja, metodo: MetodoPago) {
   return caja.pagos.filter((p) => p.metodo === metodo).reduce((total, p) => total + p.monto, 0)
 }
 
-// Los egresos se pagan en efectivo desde el cajón.
+// Solo los egresos en efectivo salen del cajón (los de antes del método no lo traen: eran en efectivo).
 export function efectivoEsperado(caja: Caja) {
-  return caja.base + totalPorMetodo(caja, 'efectivo') - totalEgresos(caja)
+  const egresosEfectivo = (caja.egresos ?? [])
+    .filter((e) => (e.metodo ?? 'efectivo') === 'efectivo')
+    .reduce((total, e) => total + e.monto, 0)
+  return caja.base + totalPorMetodo(caja, 'efectivo') - egresosEfectivo
 }
