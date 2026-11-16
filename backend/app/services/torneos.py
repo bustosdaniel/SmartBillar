@@ -1,7 +1,7 @@
 """Torneos de eliminación directa: inscripciones, llaves y resultados. El backend calcula el precio y cada
 operación guarda sus cobros, avisos y movimientos en la misma transacción."""
 
-from datetime import datetime
+from datetime import date, datetime
 from math import floor
 
 from sqlalchemy import select
@@ -22,6 +22,8 @@ NOMBRES_CATEGORIA = {
 }
 
 TORNEO = TipoNotificacion.TORNEO
+# Con menos no se pueden armar llaves.
+MINIMO_JUGADORES = 2
 
 
 def _ruta_cliente(torneo: Torneo) -> str:
@@ -35,6 +37,15 @@ def _ruta_admin(torneo: Torneo) -> str:
 def _momento(torneo: Torneo) -> datetime:
     """Cuándo empieza, en la hora del club."""
     return datetime.combine(torneo.fecha, torneo.hora, ZONA_CLUB)
+
+
+def _hoy() -> date:
+    return datetime.now(ZONA_CLUB).date()
+
+
+def _inscripciones_cerradas(torneo: Torneo) -> bool:
+    """Las inscripciones cierran cuando empieza el día del torneo (a la medianoche, hora del club)."""
+    return _hoy() >= torneo.fecha
 
 
 def _fecha_texto(torneo: Torneo) -> str:
@@ -119,8 +130,9 @@ def listar(db: Session, usuario: Usuario) -> list[dict]:
 
 def crear(db: Session, **datos) -> Torneo:
     torneo = Torneo(**datos, estado=EstadoTorneo.INSCRIPCIONES)
-    if _momento(torneo) <= datetime.now(ZONA_CLUB):
-        raise ErrorDeDatos("La fecha y la hora del torneo deben ser futuras.")
+    # Las inscripciones cierran al empezar el día del torneo: uno para hoy nacería ya cerrado.
+    if _inscripciones_cerradas(torneo):
+        raise ErrorDeDatos("El torneo debe ser a partir de mañana: las inscripciones cierran el día del torneo.")
     # Eliminación directa: con menos mesas que partidos se juega por tandas, pero hace falta al menos una.
     if db.scalar(select(Mesa.id).where(Mesa.modo == torneo.modo, Mesa.retirada_en.is_(None)).limit(1)) is None:
         raise ErrorDeDatos(f"El club no tiene mesas de {NOMBRES_MODO[torneo.modo]}. Agrega una en Mesas primero.")
@@ -150,10 +162,8 @@ def _precio(db: Session, torneo: Torneo, cliente_id: int) -> int:
 
 
 def _agregar_jugador(db: Session, torneo: Torneo, cliente: Usuario, pagado: bool, monto: int) -> Jugador:
-    if torneo.estado != EstadoTorneo.INSCRIPCIONES:
-        raise ErrorDeDatos("Las inscripciones están cerradas.")
-    if _momento(torneo) <= datetime.now(ZONA_CLUB):
-        raise ErrorDeDatos("Las inscripciones cerraron: el torneo ya llegó a su fecha.")
+    if torneo.estado != EstadoTorneo.INSCRIPCIONES or _inscripciones_cerradas(torneo):
+        raise ErrorDeDatos("Las inscripciones están cerradas: ya llegó el día del torneo.")
     if len(torneo.jugadores) >= torneo.cupos:
         raise ErrorDeDatos("No quedan cupos.")
     if any(j.cliente_id == cliente.id for j in torneo.jugadores):
@@ -237,10 +247,15 @@ def cobrar_pendiente(
 
 
 def _sacar(db: Session, torneo: Torneo, jugador: Jugador, retiro: bool) -> None:
-    """Solo antes de iniciar: con las llaves armadas ya no se puede sacar a nadie."""
-    if torneo.estado != EstadoTorneo.INSCRIPCIONES:
+    """Solo antes de iniciar (o en un torneo cancelado, para devolverle la inscripción): con las llaves
+    armadas ya no se puede sacar a nadie."""
+    if torneo.estado not in (EstadoTorneo.INSCRIPCIONES, EstadoTorneo.CANCELADO):
         raise ErrorDeDatos("Con el torneo iniciado ya no se puede quitar a nadie.")
     torneo.jugadores.remove(jugador)
+    if torneo.estado == EstadoTorneo.CANCELADO:
+        # El torneo no se jugó: sacarlo es devolverle la inscripción (ya se le avisó al cancelar).
+        _movimiento(db, torneo, f"Inscripción devuelta (torneo cancelado) · {jugador.nombre}")
+        return
     _movimiento(db, torneo, f"{'Se retiró' if retiro else 'Inscripción anulada'} · {jugador.nombre}")
     notificar(
         db,
@@ -281,14 +296,30 @@ def retirarme(db: Session, torneo_id: int, cliente: Usuario) -> None:
     )
 
 
+def eliminar(db: Session, torneo_id: int) -> None:
+    """Para corregir un error al crearlo (otro modo, otra fecha…). Solo sin inscritos: a quien ya se
+    inscribió hay que quitarlo antes (y devolverle lo pagado), y uno que ya se jugó es historial."""
+    torneo = _torneo(db, torneo_id)
+    if torneo.estado in (EstadoTorneo.EN_CURSO, EstadoTorneo.FINALIZADO):
+        raise ErrorDeDatos("Un torneo que ya se jugó no se puede eliminar.")
+    if torneo.jugadores:
+        raise ErrorDeDatos("Quita primero a los inscritos (y devuélveles la inscripción si pagaron).")
+    _movimiento(db, torneo, f"Torneo eliminado · {NOMBRES_MODO[torneo.modo]} · {_fecha_texto(torneo)}")
+    db.delete(torneo)
+
+
 def iniciar(db: Session, torneo_id: int) -> None:
     torneo = _torneo(db, torneo_id)
     if torneo.estado != EstadoTorneo.INSCRIPCIONES:
         raise ErrorDeDatos("Este torneo ya fue iniciado.")
-    if len(torneo.jugadores) < 2:
-        raise ErrorDeDatos("Se necesitan al menos 2 jugadores para iniciar.")
+    if len(torneo.jugadores) < MINIMO_JUGADORES:
+        raise ErrorDeDatos(f"Se necesitan al menos {MINIMO_JUGADORES} jugadores para iniciar.")
     if any(not j.pagado for j in torneo.jugadores):
         raise ErrorDeDatos("Hay inscripciones pendientes de pago. Cóbralas antes de iniciar.")
+    _armar_llaves(db, torneo)
+
+
+def _armar_llaves(db: Session, torneo: Torneo) -> None:
     jugadores = sorted(torneo.jugadores, key=lambda j: j.id)
     cuadro = llaves.generar_llaves([j.id for j in jugadores])
     for lugar in cuadro:
@@ -309,6 +340,67 @@ def iniciar(db: Session, torneo_id: int) -> None:
             ruta=_ruta_cliente(torneo),
         )
     _movimiento(db, torneo, f"Torneo iniciado · {len(jugadores)} jugadores")
+
+
+def cerrar_por_fecha(db: Session) -> bool:
+    """Los torneos que llegaron a su día con las inscripciones abiertas: se cierran solos.
+
+    - Las inscripciones sin pagar vencen: no hay llaves con cupos sin pagar.
+    - Con al menos MINIMO_JUGADORES se arman las llaves y el torneo queda en curso.
+    - Si no, se cancela: se avisa a los inscritos y a los administradores (para devolver lo pagado).
+
+    Se llama al listar los torneos, así que pasa la primera vez que alguien los mira ese día. La fila
+    se bloquea (y se salta si otra petición ya la está cerrando) para no armar las llaves dos veces.
+    Devuelve si cambió algo.
+    """
+    pendientes = db.scalars(
+        select(Torneo)
+        .where(Torneo.estado == EstadoTorneo.INSCRIPCIONES, Torneo.fecha <= _hoy())
+        .with_for_update(skip_locked=True)
+    ).all()
+    for torneo in pendientes:
+        for jugador in [j for j in torneo.jugadores if not j.pagado]:
+            torneo.jugadores.remove(jugador)
+            _movimiento(db, torneo, f"Inscripción vencida sin pagar · {jugador.nombre}")
+            notificar(
+                db,
+                jugador.cliente_id,
+                TORNEO,
+                f"Tu inscripción en {torneo.nombre} venció",
+                "Llegó el día del torneo sin que se pagara la inscripción, así que se liberó el cupo.",
+                ruta=_ruta_cliente(torneo),
+            )
+        db.flush()
+        if len(torneo.jugadores) >= MINIMO_JUGADORES:
+            _armar_llaves(db, torneo)
+        else:
+            _cancelar(db, torneo)
+    return bool(pendientes)
+
+
+def _cancelar(db: Session, torneo: Torneo) -> None:
+    torneo.estado = EstadoTorneo.CANCELADO
+    _movimiento(db, torneo, f"Torneo cancelado · {len(torneo.jugadores)} inscritos, mínimo {MINIMO_JUGADORES}")
+    por_devolver = [j for j in torneo.jugadores if j.pagado and j.monto > 0]
+    for jugador in torneo.jugadores:
+        devolucion = " Acércate a la caja para que te devuelvan la inscripción." if jugador in por_devolver else ""
+        notificar(
+            db,
+            jugador.cliente_id,
+            TORNEO,
+            f"{torneo.nombre} no se va a realizar",
+            f"No se inscribieron suficientes jugadores (mínimo {MINIMO_JUGADORES}).{devolucion}",
+            ruta=_ruta_cliente(torneo),
+        )
+    devolver = ", ".join(f"{j.nombre} ({caja.pesos(j.monto)})" for j in por_devolver)
+    notificar_administradores(
+        db,
+        TORNEO,
+        f"Torneo cancelado · {torneo.nombre}",
+        f"Llegó su día con {len(torneo.jugadores)} inscritos y se necesitan {MINIMO_JUGADORES}."
+        + (f" Devuelve la inscripción a: {devolver}." if devolver else ""),
+        ruta=_ruta_admin(torneo),
+    )
 
 
 def asignar_mesa(db: Session, torneo_id: int, partido_id: int, mesa_id: int | None) -> None:

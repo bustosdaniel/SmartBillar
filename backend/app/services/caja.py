@@ -32,9 +32,9 @@ def pagos_validos(caja: Caja) -> list[Pago]:
 
 
 def efectivo_esperado(caja: Caja) -> int:
-    """Base + cobros en efectivo − egresos (los egresos salen en efectivo del cajón)."""
+    """Base + cobros en efectivo − egresos en efectivo (los pagados por transferencia o tarjeta no salen del cajón)."""
     efectivo = sum(p.monto for p in pagos_validos(caja) if p.metodo == MetodoPago.EFECTIVO)
-    return caja.base + efectivo - sum(e.monto for e in caja.egresos)
+    return caja.base + efectivo - sum(e.monto for e in caja.egresos if e.metodo == MetodoPago.EFECTIVO)
 
 
 def abrir(db: Session, base: int) -> Caja:
@@ -102,13 +102,15 @@ def registrar_pago(
     return pago
 
 
-def registrar_egreso(db: Session, concepto: str, monto: int) -> Egreso:
+def registrar_egreso(db: Session, concepto: str, monto: int, metodo: MetodoPago = MetodoPago.EFECTIVO) -> Egreso:
     caja = _exigir_abierta(db)
-    # Sale en efectivo del cajón: no puede ser más de lo que hay.
+    # En efectivo sale del cajón: no puede ser más de lo que hay. Por transferencia o tarjeta, no lo toca.
     disponible = efectivo_esperado(caja)
-    if monto > disponible:
-        raise ErrorDeDatos(f"No hay tanto efectivo en caja: hay {pesos(max(0, disponible))}.")
-    egreso = Egreso(caja_id=caja.id, concepto=concepto, monto=monto)
+    if metodo == MetodoPago.EFECTIVO and monto > disponible:
+        raise ErrorDeDatos(
+            f"En el cajón solo hay {pesos(max(0, disponible))} en efectivo. Si se pagó de otra forma, elige transferencia o tarjeta."
+        )
+    egreso = Egreso(caja_id=caja.id, concepto=concepto, monto=monto, metodo=metodo)
     db.add(egreso)
     db.add(Movimiento(tipo=TipoMovimiento.CAJA, titulo="Egreso", detalle=f"{concepto} · {pesos(monto)}"))
     db.flush()

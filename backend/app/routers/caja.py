@@ -65,7 +65,7 @@ def anular_pago(pago_id: int, db: BaseDeDatos, _admin: Administrador):
 @router.post("/egresos", response_model=EgresoSalida, status_code=status.HTTP_201_CREATED)
 def registrar_egreso(datos: EgresoEntrada, db: BaseDeDatos, _empleado: Empleado):
     try:
-        egreso = servicio.registrar_egreso(db, datos.concepto, datos.monto)
+        egreso = servicio.registrar_egreso(db, datos.concepto, datos.monto, datos.metodo)
     except ErrorDeDatos as error:
         raise _conflicto(error) from error
     db.commit()

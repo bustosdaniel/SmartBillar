@@ -89,6 +89,17 @@ def solicitar(datos: SolicitudEntrada, db: BaseDeDatos, cliente: Cliente):
     return solicitud
 
 
+@router.delete("/mia", status_code=status.HTTP_204_NO_CONTENT)
+def cancelar_membresia(db: BaseDeDatos, cliente: Cliente):
+    """El cliente cancela su plan (sin devolución): los beneficios terminan de inmediato."""
+    try:
+        servicio.cancelar_membresia(db, cliente)
+    except ErrorDeDatos as error:
+        raise _conflicto(error) from error
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.delete("/mia/solicitud", status_code=status.HTTP_204_NO_CONTENT)
 def cancelar(db: BaseDeDatos, cliente: Cliente):
     try:

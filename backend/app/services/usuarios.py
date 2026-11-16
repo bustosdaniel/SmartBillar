@@ -222,7 +222,7 @@ def eliminar_cliente(db: Session, cliente_id: int) -> str:
     torneo = db.scalar(
         select(Torneo.nombre)
         .join(Jugador, Jugador.torneo_id == Torneo.id)
-        .where(Jugador.cliente_id == cliente.id, Torneo.estado != EstadoTorneo.FINALIZADO)
+        .where(Jugador.cliente_id == cliente.id, Torneo.estado.notin_([EstadoTorneo.FINALIZADO, EstadoTorneo.CANCELADO]))
     )
     if torneo is not None:
         raise ErrorDeDatos(f"{cliente.nombre} está inscrito en «{torneo}». Quítalo del torneo antes de eliminarlo.")

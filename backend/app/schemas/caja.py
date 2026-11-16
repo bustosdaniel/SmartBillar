@@ -27,6 +27,7 @@ class EgresoSalida(EsquemaCamel):
     fecha: Milisegundos
     concepto: str
     monto: int
+    metodo: MetodoPago
 
 
 class CajaSalida(EsquemaCamel):
@@ -63,3 +64,5 @@ class DatosPago(EsquemaCamel):
 class EgresoEntrada(EsquemaCamel):
     concepto: str = Field(min_length=1, max_length=120)
     monto: int = Field(gt=0, le=MONTO_MAXIMO)
+    # De dónde sale el dinero: solo el efectivo se descuenta del cajón.
+    metodo: MetodoPago = MetodoPago.EFECTIVO

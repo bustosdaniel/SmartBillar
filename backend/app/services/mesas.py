@@ -103,7 +103,7 @@ def eliminar_mesa(db: Session, mesa_id: int) -> str:
     mesa = _mesa(db, mesa_id)
     if db.scalar(select(SesionMesa.id).where(SesionMesa.mesa_id == mesa.id, SesionMesa.fin.is_(None))) is not None:
         raise ErrorDeDatos(f"La {mesa.nombre} está en juego. Cóbrala antes de eliminarla.")
-    pendientes = select(Torneo.id).where(Torneo.modo == mesa.modo, Torneo.estado != EstadoTorneo.FINALIZADO)
+    pendientes = select(Torneo.id).where(Torneo.modo == mesa.modo, Torneo.estado.notin_([EstadoTorneo.FINALIZADO, EstadoTorneo.CANCELADO]))
     en_partido = db.scalar(
         select(Partido.id).where(Partido.mesa_id == mesa.id, Partido.ganador_id.is_(None), Partido.torneo_id.in_(pendientes))
     )

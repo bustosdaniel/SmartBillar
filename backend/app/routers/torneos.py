@@ -34,6 +34,9 @@ def _pago(datos: CobroEntrada) -> tuple:
 
 @router.get("", response_model=list[TorneoSalida])
 def listar(db: BaseDeDatos, usuario: UsuarioActual):
+    # Los que llegaron a su día se cierran aquí: se arman sus llaves o se cancelan por falta de jugadores.
+    if servicio.cerrar_por_fecha(db):
+        db.commit()
     return servicio.listar(db, usuario)
 
 
@@ -66,6 +69,11 @@ def cobrar(torneo_id: int, jugador_id: int, datos: CobroEntrada, db: BaseDeDatos
 @router.delete("/{torneo_id}/jugadores/{jugador_id}", status_code=status.HTTP_204_NO_CONTENT)
 def quitar(torneo_id: int, jugador_id: int, db: BaseDeDatos, _admin: Administrador, devolver: bool = False):
     _ejecutar(db, servicio.quitar, torneo_id, jugador_id, devolver)
+
+
+@router.delete("/{torneo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar(torneo_id: int, db: BaseDeDatos, _admin: Administrador):
+    _ejecutar(db, servicio.eliminar, torneo_id)
 
 
 @router.post("/{torneo_id}/iniciar", status_code=status.HTTP_204_NO_CONTENT)

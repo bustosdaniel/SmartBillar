@@ -36,6 +36,8 @@ class EstadoTorneo(StrEnum):
     INSCRIPCIONES = "inscripciones"
     EN_CURSO = "en-curso"
     FINALIZADO = "finalizado"
+    # Llegó su día sin suficientes jugadores (con la inscripción pagada): no se juega.
+    CANCELADO = "cancelado"
 
 
 class CategoriaTorneo(StrEnum):

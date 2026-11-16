@@ -92,6 +92,30 @@ def cancelar_solicitud(db: Session, cliente: Usuario) -> None:
     )
 
 
+def cancelar_membresia(db: Session, cliente: Usuario) -> None:
+    """El cliente deja su plan: pierde los beneficios desde ya y no se le devuelve lo pagado."""
+    membresia = db.get(Membresia, cliente.id)
+    if membresia is None or membresia.vence <= ahora_utc():
+        raise ErrorDeDatos("No tienes una membresía activa.")
+    plan = _plan(db, membresia.plan_id)
+    db.delete(membresia)
+    notificar(
+        db,
+        cliente.id,
+        TipoNotificacion.MEMBRESIA,
+        f"Cancelaste tu plan {plan.nombre}",
+        "Tus beneficios terminaron. Cuando quieras, puedes elegir un plan de nuevo.",
+        ruta="/cliente/membresia",
+    )
+    notificar_administradores(
+        db,
+        TipoNotificacion.MEMBRESIA,
+        "Membresía cancelada",
+        f"{cliente.nombre} canceló su plan {plan.nombre}.",
+        ruta="/admin/membresias",
+    )
+
+
 def rechazar_solicitud(db: Session, cliente_id: int) -> None:
     """El personal no aprueba la solicitud; se le avisa al cliente."""
     solicitud = db.get(SolicitudMembresia, cliente_id)

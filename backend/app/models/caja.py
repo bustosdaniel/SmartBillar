@@ -58,7 +58,8 @@ class Pago(Base):
 
 
 class Egreso(Base):
-    """Dinero que sale del cajón: compras, servicios, devoluciones…"""
+    """Dinero que sale: compras, servicios, devoluciones… Solo el de `metodo` efectivo sale del cajón y
+    cuenta en el arqueo; uno pagado por transferencia o tarjeta queda registrado como gasto."""
 
     __tablename__ = "egresos"
     __table_args__ = (CheckConstraint("monto > 0", name="monto_positivo"),)
@@ -68,3 +69,6 @@ class Egreso(Base):
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     concepto: Mapped[str] = mapped_column(String(120))
     monto: Mapped[int] = mapped_column(Integer)
+    metodo: Mapped[MetodoPago] = mapped_column(
+        columna_enum(MetodoPago, "metodo_pago"), default=MetodoPago.EFECTIVO, server_default=MetodoPago.EFECTIVO.value
+    )
