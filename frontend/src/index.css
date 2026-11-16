@@ -1366,3 +1366,30 @@ button[aria-busy='true']::before {
 .datos-transferencia dd strong { font-size: 1.05rem; }
 .datos-transferencia .boton-icono { width: 28px; height: 28px; flex-shrink: 0; }
 .verificar-transferencia { display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* Gráfica de dona (components/GraficaDona.tsx). */
+.dona { display: flex; flex-direction: column; align-items: center; gap: 1rem; margin: 0; }
+.dona-grafica { position: relative; width: min(220px, 100%); aspect-ratio: 1; }
+.dona-grafica svg { display: block; width: 100%; height: 100%; overflow: visible; }
+/* 2px del fondo entre porciones, para que se lean como partes separadas. */
+.dona-porcion { stroke: var(--blanco); stroke-width: 2; stroke-linejoin: round; cursor: default; transition: opacity 0.15s, transform 0.15s; transform-origin: center; }
+.dona-porcion:hover { transform: scale(1.03); }
+.dona-atenuada { opacity: 0.35; }
+.dona-vacia { stroke: #eef1ef; }
+.dona-centro { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; text-align: center; pointer-events: none; padding: 0 2.6rem; }
+.dona-centro span { font-size: 0.78rem; color: var(--texto-suave); }
+.dona-centro strong { font: 700 1.05rem/1.2 var(--fuente-titulo); font-variant-numeric: tabular-nums; color: var(--texto); }
+.dona-leyenda { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.9rem; }
+.dona-leyenda li { display: grid; grid-template-columns: auto 1fr auto 3rem; align-items: center; gap: 0.5rem; padding: 0.25rem 0.4rem; border-radius: 6px; }
+.dona-leyenda li.activa { background: var(--fondo); }
+.dona-muestra { width: 12px; height: 12px; border-radius: 3px; }
+.dona-leyenda strong { font-variant-numeric: tabular-nums; }
+.dona-porcentaje { text-align: right; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .dona-porcion { transition: none; } .dona-porcion:hover { transform: none; } }
+/* Reportes: barras a la izquierda y dona a la derecha; una debajo de la otra cuando no caben. */
+.fila-reportes { display: grid; grid-template-columns: minmax(0, 2fr) minmax(min(280px, 100%), 1fr); gap: 1rem; align-items: stretch; }
+@media (max-width: 900px) { .fila-reportes { grid-template-columns: minmax(0, 1fr); } }
+/* Consumos del cliente: Bebidas y Paquetes lado a lado; en cada una, los productos en 2 columnas. */
+.catalogo-categorias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.grid-productos-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 760px) { .catalogo-categorias { grid-template-columns: minmax(0, 1fr); } }
