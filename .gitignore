@@ -29,3 +29,6 @@ dist-ssr
 __pycache__/
 *.py[cod]
 .env
+
+# Permisos locales de Claude Code
+.claude/settings.local.json
