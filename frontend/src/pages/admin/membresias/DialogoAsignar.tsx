@@ -73,7 +73,7 @@ export function DialogoAsignar({ renovar, solicitud, onListo }: DialogoAsignarPr
     if (!cliente) return
     setError('')
     try {
-      setResultado(await asignarMembresia(cliente, planId, { metodo: datos.metodo, recibido: datos.recibido }))
+      setResultado(await asignarMembresia(cliente, planId, { metodo: datos.metodo, recibido: datos.recibido, referencia: datos.referencia }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo activar la membresía.')
     }

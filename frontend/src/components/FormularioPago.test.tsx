@@ -66,7 +66,7 @@ describe('FormularioPago', () => {
     await usuario.type(recibido, '20000')
     expect(screen.getByText('Cambio a devolver')).toBeTruthy()
     await usuario.click(screen.getByRole('button', { name: /Cobrar/ }))
-    expect(onPagar).toHaveBeenCalledWith({ metodo: 'efectivo', recibido: 20000, cambio: 5000 })
+    expect(onPagar).toHaveBeenCalledWith({ metodo: 'efectivo', recibido: 20000, cambio: 5000, referencia: null })
   })
 
   it('el efectivo recibido no deja escribir más de $10.000.000', async () => {
@@ -77,5 +77,24 @@ describe('FormularioPago', () => {
     // Al llegar al tope ya no deja escribir otra cifra.
     await usuario.type(recibido, '100000001')
     expect((recibido as HTMLInputElement).value).toBe('10000000')
+  })
+
+  it('por transferencia muestra la cuenta y solo cobra con la referencia y la verificación', async () => {
+    const usuario = userEvent.setup()
+    const onPagar = vi.fn()
+    render(<FormularioPago total={15000} onCancelar={() => {}} onPagar={onPagar} />)
+
+    await usuario.click(screen.getByRole('button', { name: /Transferencia/ }))
+    expect(screen.getByText('321 344 5413')).toBeTruthy()
+    expect(screen.getByText('@3213445413')).toBeTruthy()
+    const cobrar = screen.getByRole('button', { name: /Cobrar/ }) as HTMLButtonElement
+    expect(cobrar.disabled).toBe(true)
+
+    await usuario.type(screen.getByLabelText(/Referencia del comprobante/), 'm 123-45678')
+    expect(cobrar.disabled).toBe(true)
+    await usuario.click(screen.getByRole('checkbox'))
+    expect(cobrar.disabled).toBe(false)
+    await usuario.click(cobrar)
+    expect(onPagar).toHaveBeenCalledWith({ metodo: 'transferencia', recibido: null, cambio: null, referencia: 'M123-45678' })
   })
 })

@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { Banknote, CirclePause, Info, Timer } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
+import { DatosTransferencia } from '../../components/DatosTransferencia'
 import { Encabezado } from '../../components/Encabezado'
 import { useAhora } from '../../hooks/useAhora'
 import { useTodasLasMesas, NOMBRES_MODO } from '../../mesas/datos'
@@ -117,6 +118,7 @@ export function MiMesa() {
           <Banknote size={18} aria-hidden="true" /> Tu tiempo terminó. Acércate a la caja para pagar.
         </p>
       )}
+      {porCobrar && <DatosTransferencia monto={cuenta.total} nota="Si pagas por transferencia, muestra el comprobante en caja: el pago queda listo cuando el club ve llegar la plata." />}
 
       {pausada && (
         <p className="aviso-claro aviso-ambar">

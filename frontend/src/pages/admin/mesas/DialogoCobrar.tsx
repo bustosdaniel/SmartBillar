@@ -35,7 +35,7 @@ export function DialogoCobrar({ mesa, sesion: inicial, onListo }: DialogoCobrarP
   // Solo se envía cómo pagó: el total lo calcula el backend con la misma fórmula de la vista previa.
   async function cobrar(datos: DatosPago) {
     try {
-      const cobro = await cobrarMesa(mesa.id, { metodo: datos.metodo, recibido: datos.recibido })
+      const cobro = await cobrarMesa(mesa.id, { metodo: datos.metodo, recibido: datos.recibido, referencia: datos.referencia })
       setAviso('')
       setCobrado({ pago: cobro.pago, cuenta: cuentaDeCobro(cobro.cuenta, planes), consumos: cobro.sesion.consumos })
     } catch (err) {

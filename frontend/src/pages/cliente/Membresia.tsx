@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Clock, Percent, PiggyBank } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
+import { DatosTransferencia } from '../../components/DatosTransferencia'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { TarjetaPlan } from '../../components/TarjetaPlan'
@@ -82,6 +83,7 @@ export function Membresia() {
           </button>
         </div>
       )}
+      {solicitud && <DatosTransferencia monto={planes[solicitud.planId].precioMensual} nota="Si pagas por transferencia, muestra el comprobante en caja: el pago queda listo cuando el club ve llegar la plata." />}
       <div className="grid-planes">
         {PLAN_IDS.map((id) => {
           const esMiPlan = plan?.id === id && estado !== 'vencida'

@@ -1356,3 +1356,13 @@ button[aria-busy='true']::before {
   .barra-espera span { animation-duration: 3s; }
   button[aria-busy='true']::before { animation-duration: 2s; }
 }
+
+/* Datos para pagar por transferencia (components/DatosTransferencia.tsx). */
+.datos-transferencia { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem 0.9rem; border: 1px solid #c4b5fd; border-radius: 10px; background: #f5f3ff; color: var(--texto); }
+.datos-transferencia-titulo { display: flex; align-items: center; gap: 0.4rem; font-size: 0.92rem; }
+.datos-transferencia dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 0.5rem 1rem; margin: 0; }
+.datos-transferencia dt { font-size: 0.8rem; color: var(--texto-suave); }
+.datos-transferencia dd { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-variant-numeric: tabular-nums; }
+.datos-transferencia dd strong { font-size: 1.05rem; }
+.datos-transferencia .boton-icono { width: 28px; height: 28px; flex-shrink: 0; }
+.verificar-transferencia { display: flex; flex-direction: column; gap: 0.6rem; }

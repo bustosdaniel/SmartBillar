@@ -123,7 +123,10 @@ export function Caja() {
                     <td>{formatearHora(p.fecha)}</td>
                     <td>{p.concepto}</td>
                     <td>{p.cliente}</td>
-                    <td>{NOMBRES_METODO[p.metodo]}</td>
+                    <td>
+                      {NOMBRES_METODO[p.metodo]}
+                      {p.referencia && <span className="texto-suave"> · Ref. {p.referencia}</span>}
+                    </td>
                     <td className="numero">{p.recibido === null ? '—' : formatearPesos(p.recibido)}</td>
                     <td className="numero">{p.cambio === null ? '—' : formatearPesos(p.cambio)}</td>
                     <td className="numero">

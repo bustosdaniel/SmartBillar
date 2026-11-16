@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router'
 import { ArrowLeft, Trophy } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
+import { DatosTransferencia } from '../../components/DatosTransferencia'
 import { Llaves } from '../../components/Llaves'
 import { NOMBRES_MODO } from '../../mesas/datos'
 import { campeon } from '../../torneos/llaves'
@@ -70,7 +71,12 @@ export function TorneoDetalle() {
         </p>
       )}
 
-      {yo && !yo.pagado && <p className="aviso-claro aviso-ambar">Tu inscripción está pendiente de pago: acércate a la caja.</p>}
+      {yo && !yo.pagado && (
+        <>
+          <p className="aviso-claro aviso-ambar">Tu inscripción está pendiente de pago: acércate a la caja.</p>
+          <DatosTransferencia monto={yo.monto} nota="Si pagas por transferencia, muestra el comprobante en caja: el pago queda listo cuando el club ve llegar la plata." />
+        </>
+      )}
 
       <div className="grid-resumen">
         <div className="tarjeta dato">
