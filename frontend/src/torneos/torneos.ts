@@ -86,7 +86,7 @@ export function cuposLibres(torneo: Torneo) {
 }
 
 export type DatosTorneo = Omit<Torneo, 'id' | 'estado' | 'jugadores' | 'partidos'>
-type DatosCobro = { metodo: MetodoPago; recibido: number | null }
+type DatosCobro = { metodo: MetodoPago; recibido: number | null; referencia: string | null }
 
 export async function crearTorneo(datos: DatosTorneo) {
   const { id } = await pedir<{ id: number }>('/torneos', { cuerpo: datos })

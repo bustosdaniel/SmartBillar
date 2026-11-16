@@ -131,7 +131,7 @@ export async function actualizarPlan(plan: Plan) {
 export async function asignarMembresia(
   cliente: { id: number },
   planId: PlanId,
-  pago: { metodo: MetodoPago; recibido: number | null },
+  pago: { metodo: MetodoPago; recibido: number | null; referencia: string | null },
 ) {
   const nueva = await pedir<Membresia>('/membresias', { cuerpo: { clienteId: cliente.id, planId, pago } })
   await Promise.all([recargar(), refrescarCaja()])

@@ -110,6 +110,8 @@ export type Pago = {
   metodo: MetodoPago
   recibido: number | null
   cambio: number | null
+  // Transferencia: referencia del comprobante verificada en la app.
+  referencia?: string | null
   // Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
   sesionId?: number | null
 }

@@ -143,7 +143,10 @@ export type Cobro = { pago: Pago; sesion: SesionFinalizada; cuenta: CuentaCobrad
 
 // El monto lo calcula el backend: aquí solo va cómo pagó el cliente. Si falla (caja cerrada, efectivo
 // insuficiente), la mesa sigue Por cobrar.
-export async function cobrarMesa(mesaId: number, pago: { metodo: MetodoPago; recibido: number | null }): Promise<Cobro> {
+export async function cobrarMesa(
+  mesaId: number,
+  pago: { metodo: MetodoPago; recibido: number | null; referencia: string | null },
+): Promise<Cobro> {
   const cobro = await pedir<Cobro>(`/mesas/${mesaId}/cobrar`, { cuerpo: { pago } })
   const { [mesaId]: _cobrada, ...resto } = activas.obtener()
   activas.guardar(resto)
