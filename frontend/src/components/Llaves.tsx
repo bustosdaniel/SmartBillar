@@ -101,7 +101,7 @@ export function Llaves({ torneo, editable = false, resaltar = null }: LlavesProp
                         </select>
                       </label>
                     ) : (
-                      partido.mesaId !== null && pendiente && <span className="llave-mesa-texto">Mesa {partido.mesaId}</span>
+                      partido.mesaId !== null && pendiente && <span className="llave-mesa-texto">{todas.find((m) => m.id === partido.mesaId)?.nombre ?? 'Mesa asignada'}</span>
                     ))}
                   </div>
                 )

@@ -3,7 +3,7 @@ import { ArrowLeft, Trophy } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { DatosTransferencia } from '../../components/DatosTransferencia'
 import { Llaves } from '../../components/Llaves'
-import { NOMBRES_MODO } from '../../mesas/datos'
+import { NOMBRES_MODO, useTodasLasMesas } from '../../mesas/datos'
 import { campeon } from '../../torneos/llaves'
 import {
   AVISO_CANCELADO,
@@ -21,6 +21,7 @@ export function TorneoDetalle() {
   const { id } = useParams()
   const { usuario } = useAuth()
   const torneo = useTorneos().find((t) => String(t.id) === id)
+  const mesas = useTodasLasMesas()
 
   if (!torneo) {
     return (
@@ -67,7 +68,9 @@ export function TorneoDetalle() {
       {miPartido && (
         <p className="aviso-claro">
           Tu próximo partido es contra <strong>{rival}</strong>
-          {miPartido.mesaId !== null ? ` en la Mesa ${miPartido.mesaId}.` : '. La mesa se asigna al comenzar.'}
+          {miPartido.mesaId !== null
+            ? ` en la ${mesas.find((m) => m.id === miPartido.mesaId)?.nombre ?? 'mesa asignada'}.`
+            : '. La mesa se asigna al comenzar.'}
         </p>
       )}
 

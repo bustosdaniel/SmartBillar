@@ -48,8 +48,18 @@ export const useTodasLasMesas = mesas.useValor
 export const guardarMesas = mesas.guardar
 
 // Las que se pueden usar hoy (sin las retiradas).
+// Orden natural por nombre: "Mesa 2" antes que "Mesa 10", aunque la 2 se haya creado después.
+const ordenNatural = new Intl.Collator('es', { numeric: true, sensitivity: 'base' })
+
 export function useMesas() {
-  return useTodasLasMesas().filter((m) => !m.retirada)
+  return useTodasLasMesas()
+    .filter((m) => !m.retirada)
+    .toSorted((a, b) => ordenNatural.compare(a.nombre, b.nombre))
+}
+
+// "Mesa 9" → "9", para las tarjetas pequeñas; si el nombre no lleva número, va completo.
+export function numeroDeMesa(mesa: Mesa) {
+  return mesa.nombre.match(/^mesa\s+(\d+)$/i)?.[1] ?? mesa.nombre
 }
 
 // Solo el administrador. El nombre no se puede repetir entre las mesas activas.
@@ -70,9 +80,10 @@ export async function eliminarMesa(mesaId: number) {
 }
 
 // Siguiente nombre libre, para sugerirlo al agregar una mesa ("Mesa 9").
+// El primer número libre: si se borró la Mesa 9, la siguiente que se cree vuelve a ser la Mesa 9.
 export function nombreSugerido(lista: Mesa[]) {
   const usados = new Set(lista.map((m) => m.nombre.toLowerCase()))
-  let n = lista.length + 1
+  let n = 1
   while (usados.has(`mesa ${n}`)) n++
   return `Mesa ${n}`
 }

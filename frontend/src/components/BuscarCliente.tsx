@@ -18,11 +18,16 @@ const ESPERA_SUGERENCIAS_MS = 250
 
 // El cliente se identifica por su correo: mientras se escribe se sugieren correos (o nombres) que
 // contienen el texto, para elegir sin escribirlo completo. Si no aparece, "intente de nuevo" o registrarlo.
+// Lo que se puede escribir para buscar al cliente (parte del correo o del nombre).
+const LARGO_MAXIMO_BUSQUEDA = 25
+
 export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente encontrado, buen juego.' }: BuscarClienteProps) {
   const membresias = useMembresias()
   const planes = usePlanes()
   const ahora = useAhora()
   const [email, setEmail] = useState('')
+  // Al llegar al máximo de un correo ya no deja escribir más y lo avisa.
+  const llegoAlMaximo = email.length >= LARGO_MAXIMO_BUSQUEDA
   const [noEncontrado, setNoEncontrado] = useState(false)
   const [error, setError] = useState('')
   const [buscando, setBuscando] = useState(false)
@@ -159,8 +164,10 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
             aria-autocomplete="list"
             aria-activedescendant={activa >= 0 ? `sugerencia-cliente-${activa}` : undefined}
             value={email}
+            maxLength={LARGO_MAXIMO_BUSQUEDA}
+            aria-invalid={llegoAlMaximo ? true : undefined}
             onChange={(e) => {
-              setEmail(e.target.value)
+              setEmail(e.target.value.slice(0, LARGO_MAXIMO_BUSQUEDA))
               setNoEncontrado(false)
               setError('')
               setCerradas(false)
@@ -173,6 +180,11 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
             autoFocus
             required
           />
+          {llegoAlMaximo && (
+            <span role="alert" className="campo-error">
+              Máximo {LARGO_MAXIMO_BUSQUEDA} caracteres.
+            </span>
+          )}
         </label>
         <button type="submit" className="boton" disabled={buscando}>
           <Search size={16} aria-hidden="true" /> {buscando ? 'Buscando…' : 'Buscar'}
