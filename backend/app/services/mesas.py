@@ -354,7 +354,8 @@ def listar_finalizadas(db: Session, usuario: Usuario) -> list[dict]:
 def _activa(db: Session, mesa_id: int) -> SesionMesa:
     sesion = db.scalar(select(SesionMesa).where(SesionMesa.mesa_id == mesa_id, SesionMesa.fin.is_(None)))
     if sesion is None:
-        raise ErrorDeDatos(f"La Mesa {mesa_id} no tiene una sesión activa.")
+        mesa = db.get(Mesa, mesa_id)
+        raise ErrorDeDatos(f"La {mesa.nombre if mesa else 'mesa'} no tiene una sesión activa.")
     return sesion
 
 
@@ -372,7 +373,7 @@ def iniciar(db: Session, mesa_id: int, cliente_id: int) -> SesionMesa:
         raise ErrorDeDatos(f"La {mesa.nombre} ya está ocupada.")
     otra = db.scalar(select(SesionMesa).where(SesionMesa.cliente_id == cliente_id, SesionMesa.fin.is_(None)))
     if otra is not None:
-        raise ErrorDeDatos(f"{cliente.nombre} ya está jugando en la Mesa {otra.mesa_id}.")
+        raise ErrorDeDatos(f"{cliente.nombre} ya está jugando en la {otra.mesa.nombre}.")
     ahora = ahora_utc()
     tarifa, regla = _tarifa_al(db, mesa.modo, ahora)
     sesion = SesionMesa(mesa_id=mesa.id, cliente_id=cliente.id, inicio=ahora, pausado_ms=0, tarifa_hora=tarifa, regla=regla)

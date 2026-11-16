@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.models import (
     Jugador,
     Membresia,
+    Mesa,
     Movimiento,
     Notificacion,
     Pago,
@@ -216,9 +217,13 @@ def eliminar_cliente(db: Session, cliente_id: int) -> str:
     cliente = db.get(Usuario, cliente_id)
     if cliente is None or cliente.rol != Rol.CLIENTE or cliente.eliminado_en is not None:
         raise ErrorDeDatos("Ese cliente no existe.")
-    mesa = db.scalar(select(SesionMesa.mesa_id).where(SesionMesa.cliente_id == cliente.id, SesionMesa.fin.is_(None)))
+    mesa = db.scalar(
+        select(Mesa.nombre)
+        .join(SesionMesa, SesionMesa.mesa_id == Mesa.id)
+        .where(SesionMesa.cliente_id == cliente.id, SesionMesa.fin.is_(None))
+    )
     if mesa is not None:
-        raise ErrorDeDatos(f"{cliente.nombre} está en la Mesa {mesa}. Cóbrala antes de eliminarlo.")
+        raise ErrorDeDatos(f"{cliente.nombre} está en la {mesa}. Cóbrala antes de eliminarlo.")
     torneo = db.scalar(
         select(Torneo.nombre)
         .join(Jugador, Jugador.torneo_id == Torneo.id)
