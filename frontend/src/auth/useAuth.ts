@@ -2,12 +2,7 @@ import { createContext, use } from 'react'
 import type { Usuario } from '../types'
 import type { DatosPerfil } from './usuarios'
 
-export type DatosRegistro = {
-  nombre: string
-  email: string
-  telefono: string
-  password: string
-}
+export type DatosRegistro = DatosPerfil & { password: string }
 
 export type AuthContextValue = {
   usuario: Usuario | null

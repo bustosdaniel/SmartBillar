@@ -12,7 +12,15 @@ export const NOMBRES_CARGO: Record<Cargo, string> = {
 }
 
 // `actual`: la contraseña, que el backend exige solo si cambia el correo.
-export type DatosPerfil = Pick<Usuario, 'nombre' | 'email'> & { telefono: string; actual?: string }
+export type DatosPerfil = {
+  primer_nombre: string
+  segundo_nombre: string
+  primer_apellido: string
+  segundo_apellido: string
+  email: string
+  telefono: string
+  actual?: string
+}
 
 // Los usuarios del prototipo vivían en el navegador; ahora están en MySQL. Se limpian una vez.
 for (const clave of ['billar.registrados', 'billar.cargos', 'billar.perfiles']) localStorage.removeItem(clave)

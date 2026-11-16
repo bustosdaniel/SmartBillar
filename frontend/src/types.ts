@@ -5,7 +5,12 @@ export type Cargo = 'administrador' | 'cajero'
 
 export type Usuario = {
   id: number
+  // Nombre completo para mostrar; las partes vienen aparte (vacías en el personal).
   nombre: string
+  primer_nombre?: string | null
+  segundo_nombre?: string | null
+  primer_apellido?: string | null
+  segundo_apellido?: string | null
   email: string
   rol: Rol
   telefono?: string

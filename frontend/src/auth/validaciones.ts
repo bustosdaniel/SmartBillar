@@ -1,21 +1,28 @@
 import type { FormEvent } from 'react'
+import { aInternacional, buscarPais, validarCelular } from './celular'
 
 // Reglas de los formularios de cuenta. Las mismas están en backend/app/schemas/usuarios.py.
 
 export type Errores = Record<string, string>
 
 const PATRON_NOMBRE = /^\p{L}+(?:[ '.-]+\p{L}+)*$/u
-const PATRON_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-// Celular colombiano: 10 dígitos que empiezan por 3, con o sin indicativo 57.
-const PATRON_CELULAR = /^(?:\+?57)?3[0-9]{9}$/
-const LARGO_MAXIMO_EMAIL = 160
-const LARGO_MAXIMO_NOMBRE = 120
+const PATRON_EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,6}$/
 // bcrypt no admite contraseñas de más de 72 bytes.
 const BYTES_MAXIMOS_PASSWORD = 72
 
-// El más largo que se acepta escrito con separadores: "+57 300 123 4567".
-export const LARGO_MAXIMO_CELULAR = 16
-export const AYUDA_CELULAR = '10 dígitos, empieza por 3.'
+export const LARGO_MAXIMO_EMAIL = 160
+export const LARGO_MAXIMO_NOMBRE = 25
+const LARGO_MINIMO_NOMBRE = 2
+
+// El nombre va en partes; el segundo nombre es opcional.
+export const PARTES_NOMBRE = [
+  { campo: 'primer_nombre', etiqueta: 'Primer nombre', obligatorio: true },
+  { campo: 'segundo_nombre', etiqueta: 'Segundo nombre', obligatorio: false },
+  { campo: 'primer_apellido', etiqueta: 'Primer apellido', obligatorio: true },
+  { campo: 'segundo_apellido', etiqueta: 'Segundo apellido', obligatorio: true },
+] as const
+
+export type CampoNombre = (typeof PARTES_NOMBRE)[number]['campo']
 
 export const REGLAS_PASSWORD = [
   { texto: 'Mínimo 8 caracteres', cumple: (password: string) => password.length >= 8 },
@@ -25,31 +32,71 @@ export const REGLAS_PASSWORD = [
   { texto: 'Un carácter especial', cumple: (password: string) => /[^\p{L}\p{N}\s]/u.test(password) },
 ]
 
-// En el celular no se pueden escribir letras ni símbolos que nunca serían válidos.
-export function filtrarCelular(e: FormEvent<HTMLInputElement>) {
+// Si lo escrito hasta ahora todavía puede terminar en un correo válido. Después de ".com" solo puede
+// ir el país (".com.co") y nada más.
+function correoAMedias(texto: string) {
+  if (texto.length > LARGO_MAXIMO_EMAIL || texto.includes('..')) return false
+  const [usuario, dominio, ...sobra] = texto.split('@')
+  if (sobra.length > 0) return false
+  if (!/^[A-Za-z0-9._%+-]*$/.test(usuario)) return false
+  if (dominio === undefined) return true
+  if (!usuario || usuario.endsWith('.') || !/^[A-Za-z0-9.-]*$/.test(dominio) || dominio.startsWith('.')) return false
+  const etiquetas = dominio.toLowerCase().split('.')
+  for (let i = 1; i < etiquetas.length; i++) {
+    const etiqueta = etiquetas[i]
+    // ".comx": ya no puede ser ".com".
+    if (etiqueta.startsWith('com') && etiqueta !== 'com') return false
+    if (etiqueta === 'com') {
+      const despues = etiquetas.slice(i + 1)
+      return despues.length === 0 || (despues.length === 1 && /^[a-z]{0,2}$/.test(despues[0]))
+    }
+  }
+  return true
+}
+
+// Se queda con lo que todavía puede formar un correo: un carácter que no va (un espacio, una
+// segunda @, algo después de ".com") no se deja escribir.
+export function dejarCorreoValido(texto: string) {
+  let aceptado = ''
+  for (const caracter of texto) {
+    if (correoAMedias(aceptado + caracter)) aceptado += caracter
+  }
+  return aceptado
+}
+
+export function filtrarEmail(e: FormEvent<HTMLInputElement>) {
   const campo = e.currentTarget
-  const filtrado = campo.value.replace(/[^0-9+\s-]/g, '')
+  const filtrado = dejarCorreoValido(campo.value)
   if (filtrado !== campo.value) campo.value = filtrado
 }
 
-function validarNombre(nombre: string) {
-  if (!nombre) return 'El nombre es obligatorio.'
-  if (nombre.length < 3) return 'El nombre debe tener al menos 3 caracteres.'
-  if (nombre.length > LARGO_MAXIMO_NOMBRE) return `El nombre no puede tener más de ${LARGO_MAXIMO_NOMBRE} caracteres.`
-  if (!PATRON_NOMBRE.test(nombre)) return 'El nombre solo puede tener letras y espacios.'
+// En el nombre solo se pueden escribir letras, espacios y los separadores de un nombre (' . -).
+export function filtrarNombre(e: FormEvent<HTMLInputElement>) {
+  const campo = e.currentTarget
+  const filtrado = campo.value.replace(/[^\p{L}\s'.-]/gu, '').slice(0, LARGO_MAXIMO_NOMBRE)
+  if (filtrado !== campo.value) campo.value = filtrado
+}
+
+function validarParteNombre(valor: string, etiqueta: string, obligatorio: boolean) {
+  if (!valor) return obligatorio ? `El ${etiqueta.toLowerCase()} es obligatorio.` : ''
+  if (valor.length < LARGO_MINIMO_NOMBRE) return `El ${etiqueta.toLowerCase()} debe tener al menos ${LARGO_MINIMO_NOMBRE} letras.`
+  if (valor.length > LARGO_MAXIMO_NOMBRE) return `El ${etiqueta.toLowerCase()} no puede tener más de ${LARGO_MAXIMO_NOMBRE} caracteres.`
+  if (!PATRON_NOMBRE.test(valor)) return `El ${etiqueta.toLowerCase()} solo puede tener letras.`
   return ''
+}
+
+function correoValido(email: string) {
+  if (email.length > LARGO_MAXIMO_EMAIL || !PATRON_EMAIL.test(email) || email.includes('..')) return false
+  const etiquetas = email.split('@')[1].toLowerCase().split('.')
+  const com = etiquetas.indexOf('com', 1)
+  if (com === -1) return true
+  const despues = etiquetas.slice(com + 1)
+  return despues.length === 0 || (despues.length === 1 && despues[0].length === 2)
 }
 
 function validarEmail(email: string) {
   if (!email) return 'El correo es obligatorio.'
-  if (email.length > LARGO_MAXIMO_EMAIL || !PATRON_EMAIL.test(email)) return 'El correo no es válido.'
-  return ''
-}
-
-function validarCelular(telefono: string) {
-  if (!telefono) return 'El celular es obligatorio.'
-  if (!PATRON_CELULAR.test(telefono.replace(/[\s-]/g, ''))) return 'El celular debe tener 10 dígitos y empezar por 3.'
-  return ''
+  return correoValido(email) ? '' : 'El correo no es válido.'
 }
 
 function validarPasswordNueva(password: string, nombreCampo = 'La contraseña') {
@@ -74,11 +121,15 @@ function valor(datos: FormData, campo: string) {
   return String(datos.get(campo) ?? '')
 }
 
+// El celular sale en formato internacional ("+573001234567"), como lo guarda el backend.
 export function leerDatosPersonales(datos: FormData) {
+  const partes = Object.fromEntries(
+    PARTES_NOMBRE.map(({ campo }) => [campo, valor(datos, campo).split(/\s+/).filter(Boolean).join(' ')]),
+  ) as Record<CampoNombre, string>
   return {
-    nombre: valor(datos, 'nombre').trim(),
+    ...partes,
     email: valor(datos, 'email').trim(),
-    telefono: valor(datos, 'telefono').trim(),
+    telefono: aInternacional(valor(datos, 'telefono'), buscarPais(valor(datos, 'pais'))),
   }
 }
 
@@ -91,11 +142,13 @@ export function validarLogin(datos: FormData): Errores {
 }
 
 export function validarDatosPersonales(datos: FormData): Errores {
-  const { nombre, email, telefono } = leerDatosPersonales(datos)
+  const leidos = leerDatosPersonales(datos)
   return soloConError({
-    nombre: validarNombre(nombre),
-    email: validarEmail(email),
-    telefono: validarCelular(telefono),
+    ...Object.fromEntries(
+      PARTES_NOMBRE.map(({ campo, etiqueta, obligatorio }) => [campo, validarParteNombre(leidos[campo], etiqueta, obligatorio)]),
+    ),
+    email: validarEmail(leidos.email),
+    telefono: validarCelular(valor(datos, 'telefono'), buscarPais(valor(datos, 'pais'))),
   })
 }
 
