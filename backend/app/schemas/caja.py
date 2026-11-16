@@ -14,6 +14,7 @@ class PagoSalida(EsquemaCamel):
     metodo: MetodoPago
     recibido: int | None
     cambio: int | None
+    referencia: str | None = None
     # Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
     sesion_id: int | None = None
 
@@ -59,6 +60,8 @@ class DatosPago(EsquemaCamel):
 
     metodo: MetodoPago
     recibido: int | None = Field(default=None, ge=0, le=MONTO_MAXIMO)
+    # Transferencia: referencia del comprobante (la que muestra Nequi/Daviplata), verificada en la app.
+    referencia: str | None = Field(default=None, max_length=40)
 
 
 class EgresoEntrada(EsquemaCamel):

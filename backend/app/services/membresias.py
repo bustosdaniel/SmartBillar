@@ -133,7 +133,9 @@ def rechazar_solicitud(db: Session, cliente_id: int) -> None:
     )
 
 
-def asignar(db: Session, cliente_id: int, plan_id: str, metodo, recibido: int | None) -> Membresia:
+def asignar(
+    db: Session, cliente_id: int, plan_id: str, metodo, recibido: int | None, referencia: str | None = None
+) -> Membresia:
     """Cobra el plan en la caja abierta y activa o renueva por 30 días, todo en la misma transacción: si
     el cobro falla, no se activa nada. Si renueva el mismo plan antes de vencer, se suman al vencimiento
     actual. Atiende (borra) la solicitud del cliente si tenía una: si la tiene, se cobra el plan que pidió
@@ -155,6 +157,7 @@ def asignar(db: Session, cliente_id: int, plan_id: str, metodo, recibido: int | 
         monto=plan.precio_mensual,
         metodo=metodo,
         recibido=recibido,
+        referencia=referencia,
     )
     ahora = ahora_utc()
     membresia = db.get(Membresia, cliente.id)

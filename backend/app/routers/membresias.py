@@ -47,7 +47,9 @@ def membresias(db: BaseDeDatos, _empleado: Empleado):
 def asignar(datos: AsignarEntrada, db: BaseDeDatos, _empleado: Empleado):
     """Administrador o cajero: cobra en caja y activa o renueva la membresía, en una sola transacción."""
     try:
-        membresia = servicio.asignar(db, datos.cliente_id, datos.plan_id, datos.pago.metodo, datos.pago.recibido)
+        membresia = servicio.asignar(
+            db, datos.cliente_id, datos.plan_id, datos.pago.metodo, datos.pago.recibido, datos.pago.referencia
+        )
     except ErrorDeDatos as error:
         raise _conflicto(error) from error
     db.commit()

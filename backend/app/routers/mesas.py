@@ -129,7 +129,7 @@ def quitar_consumo(mesa_id: int, consumo_id: int, db: BaseDeDatos, _empleado: Em
 @router.post("/{mesa_id}/cobrar", response_model=CobroSalida)
 def cobrar(mesa_id: int, datos: CobrarEntrada, db: BaseDeDatos, _empleado: Empleado):
     """Cobra el total que calcula el servidor y deja la mesa libre, en una sola transacción."""
-    pago, sesion, cuenta = _ejecutar(db, servicio.cobrar, mesa_id, datos.pago.metodo, datos.pago.recibido)
+    pago, sesion, cuenta = _ejecutar(db, servicio.cobrar, mesa_id, datos.pago.metodo, datos.pago.recibido, datos.pago.referencia)
     return {
         "pago": pago,
         "sesion": servicio.sesion_salida(sesion) | {"metodo_pago": pago.metodo},

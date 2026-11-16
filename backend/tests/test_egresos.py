@@ -31,3 +31,13 @@ def test_en_efectivo_no_puede_pasar_de_lo_que_hay_pero_por_transferencia_si(monk
         servicio.registrar_egreso(SesionFalsa(), "Insumos", 1_500_000)
     egreso = servicio.registrar_egreso(SesionFalsa(), "Insumos", 1_500_000, MetodoPago.TRANSFERENCIA)
     assert egreso.metodo == MetodoPago.TRANSFERENCIA
+
+
+def test_una_transferencia_exige_la_referencia_del_comprobante(monkeypatch):
+    caja = _caja()
+    monkeypatch.setattr(servicio, "_exigir_abierta", lambda _db: caja)
+    datos = dict(concepto="Mesa 1", cliente="Ana", monto=15_000, metodo=MetodoPago.TRANSFERENCIA)
+    with pytest.raises(ErrorDeDatos, match="referencia"):
+        servicio.registrar_pago(SesionFalsa(), **datos)
+    pago = servicio.registrar_pago(SesionFalsa(), **datos, referencia=" M12345678 ")
+    assert pago.referencia == "M12345678"

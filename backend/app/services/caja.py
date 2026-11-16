@@ -71,11 +71,18 @@ def registrar_pago(
     monto: int,
     metodo: MetodoPago,
     recibido: int | None = None,
+    referencia: str | None = None,
     cliente_id: int | None = None,
     sesion_id: int | None = None,
     jugador_id: int | None = None,
 ) -> Pago:
     caja = _exigir_abierta(db)
+    referencia = (referencia or "").strip() or None
+    # Sin la referencia del comprobante no hay cómo comprobar después que la plata sí llegó.
+    if metodo == MetodoPago.TRANSFERENCIA and (referencia is None or len(referencia) < 4):
+        raise ErrorDeDatos("Escribe la referencia del comprobante de la transferencia (mínimo 4 caracteres).")
+    if metodo != MetodoPago.TRANSFERENCIA:
+        referencia = None
     if metodo == MetodoPago.EFECTIVO:
         if recibido is None or recibido < monto:
             raise ErrorDeDatos(f"El efectivo recibido no alcanza para {pesos(monto)}.")
@@ -91,6 +98,7 @@ def registrar_pago(
         metodo=metodo,
         recibido=recibido,
         cambio=cambio,
+        referencia=referencia,
         sesion_id=sesion_id,
         jugador_id=jugador_id,
     )

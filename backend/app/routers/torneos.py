@@ -29,7 +29,7 @@ def _ejecutar(db: Session, operacion: Callable, *args, **datos):
 
 
 def _pago(datos: CobroEntrada) -> tuple:
-    return (datos.pago.metodo, datos.pago.recibido) if datos.pago else (None, None)
+    return (datos.pago.metodo, datos.pago.recibido, datos.pago.referencia) if datos.pago else (None, None, None)
 
 
 @router.get("", response_model=list[TorneoSalida])

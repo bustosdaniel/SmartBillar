@@ -183,7 +183,12 @@ def _agregar_jugador(db: Session, torneo: Torneo, cliente: Usuario, pagado: bool
 
 
 def _cobrar(
-    db: Session, torneo: Torneo, jugador: Jugador, metodo: MetodoPago | None, recibido: int | None
+    db: Session,
+    torneo: Torneo,
+    jugador: Jugador,
+    metodo: MetodoPago | None,
+    recibido: int | None,
+    referencia: str | None = None,
 ) -> None:
     if jugador.monto == 0:
         return
@@ -197,18 +202,26 @@ def _cobrar(
         monto=jugador.monto,
         metodo=metodo,
         recibido=recibido,
+        referencia=referencia,
         jugador_id=jugador.id,
     )
 
 
-def inscribir(db: Session, torneo_id: int, cliente_id: int, metodo: MetodoPago | None, recibido: int | None) -> None:
+def inscribir(
+    db: Session,
+    torneo_id: int,
+    cliente_id: int,
+    metodo: MetodoPago | None,
+    recibido: int | None,
+    referencia: str | None = None,
+) -> None:
     """El personal inscribe y cobra a la vez: si el cobro falla, no queda inscrito."""
     torneo = _torneo(db, torneo_id)
     cliente = db.get(Usuario, cliente_id)
     if cliente is None or cliente.rol != Rol.CLIENTE or cliente.eliminado_en is not None:
         raise ErrorDeDatos("Ese cliente no existe.")
     jugador = _agregar_jugador(db, torneo, cliente, True, _precio(db, torneo, cliente.id))
-    _cobrar(db, torneo, jugador, metodo, recibido)
+    _cobrar(db, torneo, jugador, metodo, recibido, referencia)
 
 
 def inscribirme(db: Session, torneo_id: int, cliente: Usuario) -> None:
@@ -228,13 +241,18 @@ def inscribirme(db: Session, torneo_id: int, cliente: Usuario) -> None:
 
 
 def cobrar_pendiente(
-    db: Session, torneo_id: int, jugador_id: int, metodo: MetodoPago | None, recibido: int | None
+    db: Session,
+    torneo_id: int,
+    jugador_id: int,
+    metodo: MetodoPago | None,
+    recibido: int | None,
+    referencia: str | None = None,
 ) -> None:
     torneo = _torneo(db, torneo_id)
     jugador = _jugador(torneo, jugador_id)
     if jugador.pagado:
         raise ErrorDeDatos("Esa inscripción ya está pagada.")
-    _cobrar(db, torneo, jugador, metodo, recibido)
+    _cobrar(db, torneo, jugador, metodo, recibido, referencia)
     jugador.pagado = True
     notificar(
         db,

@@ -468,7 +468,9 @@ def quitar_consumo(db: Session, mesa_id: int, consumo_id: int) -> SesionMesa:
     return sesion
 
 
-def cobrar(db: Session, mesa_id: int, metodo: MetodoPago, recibido: int | None) -> tuple[Pago, SesionMesa, Cuenta]:
+def cobrar(
+    db: Session, mesa_id: int, metodo: MetodoPago, recibido: int | None, referencia: str | None = None
+) -> tuple[Pago, SesionMesa, Cuenta]:
     """Cobra la cuenta que calcula el servidor y cierra la sesión en la misma transacción: si el cobro
     falla (caja cerrada, efectivo insuficiente), la mesa sigue Por cobrar."""
     sesion = _activa(db, mesa_id)
@@ -483,6 +485,7 @@ def cobrar(db: Session, mesa_id: int, metodo: MetodoPago, recibido: int | None) 
         monto=cuenta.total,
         metodo=metodo,
         recibido=recibido,
+        referencia=referencia,
         sesion_id=sesion.id,
     )
     sesion.fin = sesion.detenida_en

@@ -51,6 +51,8 @@ class Pago(Base):
     metodo: Mapped[MetodoPago] = mapped_column(columna_enum(MetodoPago, "metodo_pago"))
     recibido: Mapped[int | None] = mapped_column(Integer)
     cambio: Mapped[int | None] = mapped_column(Integer)
+    # Transferencia (Nequi, Daviplata, Bre-B): la referencia del comprobante que se verificó en la app.
+    referencia: Mapped[str | None] = mapped_column(String(40))
     # Origen del cobro (como mucho uno): permite anularlo y deshacer lo que cobró.
     sesion_id: Mapped[int | None] = mapped_column(ForeignKey("sesiones.id"))
     jugador_id: Mapped[int | None] = mapped_column(ForeignKey("jugadores.id", ondelete="SET NULL"))
