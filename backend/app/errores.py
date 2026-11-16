@@ -8,6 +8,10 @@ from sqlalchemy.exc import IntegrityError
 # Nombre del campo y terminación para concordar ("obligatorio" / "obligatoria").
 NOMBRES_CAMPO = {
     "nombre": ("El nombre", "o"),
+    "primer_nombre": ("El primer nombre", "o"),
+    "segundo_nombre": ("El segundo nombre", "o"),
+    "primer_apellido": ("El primer apellido", "o"),
+    "segundo_apellido": ("El segundo apellido", "o"),
     "email": ("El correo", "o"),
     "telefono": ("El celular", "o"),
     "password": ("La contraseña", "a"),

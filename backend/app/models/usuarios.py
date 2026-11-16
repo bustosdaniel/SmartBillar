@@ -16,7 +16,13 @@ class Usuario(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Nombre completo para mostrar; se arma con las partes de abajo (services/usuarios.nombre_completo).
     nombre: Mapped[str] = mapped_column(String(120))
+    # Las partes del nombre. Vacías en el personal y en cuentas que aún no editan su perfil.
+    primer_nombre: Mapped[str | None] = mapped_column(String(25))
+    segundo_nombre: Mapped[str | None] = mapped_column(String(25))
+    primer_apellido: Mapped[str | None] = mapped_column(String(25))
+    segundo_apellido: Mapped[str | None] = mapped_column(String(25))
     # Identifica al cliente: con él inicia sesión y el personal lo busca en caja (BuscarCliente).
     email: Mapped[str] = mapped_column(String(160), unique=True)
     telefono: Mapped[str | None] = mapped_column(String(20))

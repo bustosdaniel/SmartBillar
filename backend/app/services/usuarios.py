@@ -113,10 +113,25 @@ def _validar_correo_libre(db: Session, email: str, excepto_id: int | None = None
         raise ErrorDeDatos("Ya existe una cuenta con ese correo.")
 
 
+def nombre_completo(primer_nombre: str, segundo_nombre: str, primer_apellido: str, segundo_apellido: str) -> str:
+    return " ".join(parte for parte in (primer_nombre, segundo_nombre, primer_apellido, segundo_apellido) if parte)
+
+
+def _poner_nombre(usuario: Usuario, primer_nombre: str, segundo_nombre: str, primer_apellido: str, segundo_apellido: str) -> None:
+    usuario.primer_nombre = primer_nombre
+    usuario.segundo_nombre = segundo_nombre or None
+    usuario.primer_apellido = primer_apellido
+    usuario.segundo_apellido = segundo_apellido
+    usuario.nombre = nombre_completo(primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
+
+
 def registrar_cliente(
     db: Session,
     *,
-    nombre: str,
+    primer_nombre: str,
+    segundo_nombre: str = "",
+    primer_apellido: str,
+    segundo_apellido: str,
     email: str,
     telefono: str,
     password: str = PASSWORD_TEMPORAL,
@@ -125,12 +140,12 @@ def registrar_cliente(
     """`avisar`: si el cliente se registra solo, se avisa al personal; si lo registra el personal, no."""
     _validar_correo_libre(db, email)
     cliente = Usuario(
-        nombre=nombre,
         email=email.strip().lower(),
         telefono=telefono,
         rol=Rol.CLIENTE,
         password_hash=encriptar_password(password),
     )
+    _poner_nombre(cliente, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
     db.add(cliente)
     db.flush()
     if avisar:
@@ -138,14 +153,23 @@ def registrar_cliente(
             db,
             TipoNotificacion.CUENTA,
             "Nuevo cliente registrado",
-            f"{nombre} creó su cuenta ({cliente.email}).",
+            f"{cliente.nombre} creó su cuenta ({cliente.email}).",
             ruta="/admin/usuarios",
         )
     return cliente
 
 
 def actualizar_perfil(
-    db: Session, usuario: Usuario, *, nombre: str, email: str, telefono: str, actual: str | None = None
+    db: Session,
+    usuario: Usuario,
+    *,
+    primer_nombre: str,
+    segundo_nombre: str = "",
+    primer_apellido: str,
+    segundo_apellido: str,
+    email: str,
+    telefono: str,
+    actual: str | None = None,
 ) -> Usuario:
     """Cambiar el correo (con el que se inicia sesión) exige la contraseña actual."""
     if email.strip().lower() != usuario.email.lower():
@@ -154,7 +178,7 @@ def actualizar_perfil(
         if not verificar_password(actual, usuario.password_hash):
             raise ErrorDeDatos("La contraseña actual no es correcta.")
     _validar_correo_libre(db, email, excepto_id=usuario.id)
-    usuario.nombre = nombre
+    _poner_nombre(usuario, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
     usuario.email = email.strip().lower()
     usuario.telefono = telefono
     return usuario

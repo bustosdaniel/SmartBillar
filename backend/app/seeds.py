@@ -129,15 +129,15 @@ EMPLEADOS = [
 # Los tres primeros son los de prueba del frontend; el resto eran "invitados" de los torneos de
 # ejemplo y ahora son clientes con cuenta (ya no hay clientes sin cuenta).
 CLIENTES_DEMO = [
-    (1, "Cliente Demo", "cliente@billar.com", "3001234567"),
-    (3, "Juan Pérez", "juan@billar.com", "3109876543"),
-    (4, "Laura Gómez", "laura@billar.com", "3205551234"),
-    (8, "Carlos Ruiz", "carlos@billar.com", "3001110001"),
-    (9, "Andrés Mora", "andres@billar.com", "3001110002"),
-    (10, "Pedro Díaz", "pedro@billar.com", "3001110003"),
-    (11, "Sofía Castro", "sofia@billar.com", "3001110004"),
-    (12, "Mateo Rojas", "mateo@billar.com", "3001110005"),
-    (13, "Valentina León", "valentina@billar.com", "3001110006"),
+    (1, "Cliente Demo", "cliente@billar.com", "+573001234567"),
+    (3, "Juan Pérez", "juan@billar.com", "+573109876543"),
+    (4, "Laura Gómez", "laura@billar.com", "+573205551234"),
+    (8, "Carlos Ruiz", "carlos@billar.com", "+573001110001"),
+    (9, "Andrés Mora", "andres@billar.com", "+573001110002"),
+    (10, "Pedro Díaz", "pedro@billar.com", "+573001110003"),
+    (11, "Sofía Castro", "sofia@billar.com", "+573001110004"),
+    (12, "Mateo Rojas", "mateo@billar.com", "+573001110005"),
+    (13, "Valentina León", "valentina@billar.com", "+573001110006"),
 ]
 
 

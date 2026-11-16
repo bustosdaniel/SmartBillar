@@ -5,12 +5,25 @@ from typing import Annotated
 from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import Cargo, Rol
+from app.schemas.celular import normalizar_celular
 from app.schemas.comun import Milisegundos
 
 # Las mismas reglas están en frontend/src/auth/validaciones.ts.
 PATRON_NOMBRE = re.compile(r"[^\W\d_]+(?:[ '.-]+[^\W\d_]+)*")
-# Celular colombiano: 10 dígitos que empiezan por 3, con o sin indicativo 57.
-PATRON_CELULAR = re.compile(r"(?:\+?57)?(3[0-9]{9})")
+# usuario@dominio.ext: la terminación es de letras (.com, .co, .edu.co…); después de ".com" solo
+# puede ir el país (.com.co) y nada más.
+PATRON_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,6}")
+
+
+def correo_valido(correo: str) -> bool:
+    if not PATRON_EMAIL.fullmatch(correo) or ".." in correo:
+        return False
+    dominio = correo.rsplit("@", 1)[1].lower()
+    etiquetas = dominio.split(".")
+    if "com" not in etiquetas[1:]:
+        return True
+    despues = etiquetas[etiquetas.index("com", 1) + 1 :]
+    return despues == [] or (len(despues) == 1 and len(despues[0]) == 2)
 LARGO_MINIMO_PASSWORD = 8
 # bcrypt rechaza con una excepción las contraseñas de más de 72 bytes.
 BYTES_MAXIMOS_PASSWORD = 72
@@ -43,6 +56,10 @@ class UsuarioSalida(BaseModel):
 
     id: int
     nombre: str
+    primer_nombre: str | None
+    segundo_nombre: str | None
+    primer_apellido: str | None
+    segundo_apellido: str | None
     email: str
     rol: Rol
     cargo: Cargo | None
@@ -62,30 +79,52 @@ class EmpleadoPublico(BaseModel):
     cargo: Cargo | None
 
 
+LARGO_MINIMO_PARTE_NOMBRE = 2
+LARGO_MAXIMO_PARTE_NOMBRE = 25
+ParteNombre = Annotated[str, Field(min_length=LARGO_MINIMO_PARTE_NOMBRE, max_length=LARGO_MAXIMO_PARTE_NOMBRE)]
+
+
 class DatosPersonales(BaseModel):
-    nombre: str = Field(min_length=3, max_length=120)
+    primer_nombre: ParteNombre
+    # Opcional: llega vacío o no llega.
+    segundo_nombre: str = Field(default="", max_length=LARGO_MAXIMO_PARTE_NOMBRE)
+    primer_apellido: ParteNombre
+    segundo_apellido: ParteNombre
     email: EmailStr = Field(max_length=160)
     telefono: str = Field(min_length=1)
 
-    @field_validator("nombre", "telefono", mode="before")
+    @field_validator("primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido", "telefono", mode="before")
     @classmethod
-    def sin_espacios_extra(cls, valor: str) -> str:
-        return valor.strip() if isinstance(valor, str) else valor
+    def sin_espacios_extra(cls, valor: str | None) -> str:
+        if valor is None:
+            return ""
+        return " ".join(valor.split()) if isinstance(valor, str) else valor
 
-    @field_validator("nombre")
+    @field_validator("primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido")
     @classmethod
-    def nombre_valido(cls, valor: str) -> str:
-        if not PATRON_NOMBRE.fullmatch(valor):
-            raise ValueError("El nombre solo puede tener letras y espacios.")
+    def solo_letras(cls, valor: str) -> str:
+        if valor and not PATRON_NOMBRE.fullmatch(valor):
+            raise ValueError("Los nombres y apellidos solo pueden tener letras.")
+        return valor
+
+    @field_validator("segundo_nombre")
+    @classmethod
+    def segundo_nombre_completo(cls, valor: str) -> str:
+        if valor and len(valor) < LARGO_MINIMO_PARTE_NOMBRE:
+            raise ValueError(f"El segundo nombre debe tener al menos {LARGO_MINIMO_PARTE_NOMBRE} letras.")
+        return valor
+
+    @field_validator("email")
+    @classmethod
+    def correo_con_terminacion(cls, valor: str) -> str:
+        if not correo_valido(valor):
+            raise ValueError("El correo no es válido.")
         return valor
 
     @field_validator("telefono")
     @classmethod
     def celular_valido(cls, valor: str) -> str:
-        celular = PATRON_CELULAR.fullmatch(re.sub(r"[\s-]", "", valor))
-        if celular is None:
-            raise ValueError("El celular debe tener 10 dígitos y empezar por 3.")
-        return celular.group(1)
+        return normalizar_celular(valor)
 
 
 class ClienteNuevo(DatosPersonales):
