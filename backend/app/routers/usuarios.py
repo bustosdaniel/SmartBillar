@@ -33,7 +33,7 @@ def empleados(db: BaseDeDatos, _usuario: UsuarioActual):
 
 
 @router.get("/cliente", response_model=UsuarioSalida)
-def buscar_cliente(db: BaseDeDatos, _empleado: Empleado, email: str = Query(min_length=1)):
+def buscar_cliente(db: BaseDeDatos, _empleado: Empleado, email: str = Query(min_length=1, max_length=160)):
     """Busca un cliente por su correo, como en caja al iniciar una mesa o inscribir en un torneo."""
     cliente = servicio.buscar_cliente_por_email(db, email)
     if cliente is None:

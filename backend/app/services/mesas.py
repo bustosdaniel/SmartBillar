@@ -406,6 +406,7 @@ def reanudar(db: Session, mesa_id: int) -> SesionMesa:
     """Quita la pausa, o devuelve a juego una mesa finalizada por error (ese rato no se cobra)."""
     sesion = _activa(db, mesa_id)
     ahora = ahora_utc()
+    pausada = sesion.detenida_en is None
     if sesion.detenida_en is not None:
         sesion.pausado_ms += _ms(ahora - sesion.detenida_en)
         sesion.detenida_en = None
@@ -414,7 +415,7 @@ def reanudar(db: Session, mesa_id: int) -> SesionMesa:
         sesion.pausada_desde = None
     else:
         return sesion
-    _movimiento(db, TipoMovimiento.REANUDAR, sesion.mesa, "Sesión reanudada")
+    _movimiento(db, TipoMovimiento.REANUDAR, sesion.mesa, "Sesión reanudada" if pausada else "Volvió a juego (estaba por cobrar)")
     db.flush()
     return sesion
 

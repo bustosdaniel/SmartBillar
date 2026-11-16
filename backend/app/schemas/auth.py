@@ -4,8 +4,9 @@ from app.schemas.usuarios import ClienteNuevo, PasswordNueva, UsuarioSalida
 
 
 class LoginEntrada(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=1)
+    email: EmailStr = Field(max_length=160)
+    # Tope generoso: las contraseñas nuevas tienen máximo 72 bytes; esto solo evita cuerpos gigantes.
+    password: str = Field(min_length=1, max_length=200)
 
 
 class RegistroEntrada(ClienteNuevo):

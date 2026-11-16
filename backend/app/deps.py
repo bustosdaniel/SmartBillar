@@ -28,6 +28,8 @@ def usuario_actual(
             "Tu sesión no es válida o venció. Inicia sesión de nuevo.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Para la auditoría (db.registrar_responsable): todo lo que se guarde en esta petición es suyo.
+    db.info["usuario_id"] = usuario.id
     return usuario
 
 

@@ -58,6 +58,7 @@ export function Login() {
         name="password"
         type="password"
         autoComplete="current-password"
+        maxLength={72}
         required
         error={errores.password}
       />

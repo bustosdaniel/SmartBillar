@@ -15,12 +15,15 @@ class PagoSalida(EsquemaCamel):
     recibido: int | None
     cambio: int | None
     referencia: str | None = None
+    # Empleado que lo cobró (None en los registros de antes de guardarlo).
+    registrado_por: str | None = None
     # Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
     sesion_id: int | None = None
 
 
 class PagoAnuladoSalida(PagoSalida):
     anulado_en: Milisegundos
+    anulado_por: str | None = None
 
 
 class EgresoSalida(EsquemaCamel):
@@ -29,6 +32,7 @@ class EgresoSalida(EsquemaCamel):
     concepto: str
     monto: int
     metodo: MetodoPago
+    registrado_por: str | None = None
 
 
 class CajaSalida(EsquemaCamel):
@@ -44,6 +48,8 @@ class CajaSalida(EsquemaCamel):
     cierre: Milisegundos | None = None
     contado: int | None = None
     nota: str | None = None
+    abierta_por: str | None = None
+    cerrada_por: str | None = None
 
 
 class AbrirEntrada(EsquemaCamel):
@@ -52,7 +58,7 @@ class AbrirEntrada(EsquemaCamel):
 
 class CerrarEntrada(EsquemaCamel):
     contado: int = Field(ge=0, le=MONTO_MAXIMO)
-    nota: str = ""
+    nota: str = Field(default="", max_length=300)
 
 
 class DatosPago(EsquemaCamel):

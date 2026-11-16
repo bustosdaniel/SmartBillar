@@ -4,10 +4,11 @@ from sqlalchemy import CheckConstraint, Computed, DateTime, ForeignKey, Integer,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.models.auditoria import RegistradoPor
 from app.models.enums import MetodoPago, columna_enum
 
 
-class Caja(Base):
+class Caja(RegistradoPor, Base):
     """Turno de caja: apertura con base y cierre con arqueo (efectivo contado)."""
 
     __tablename__ = "cajas"
@@ -24,11 +25,19 @@ class Caja(Base):
         Integer, Computed("(CASE WHEN cierre IS NULL THEN 1 END)", persisted=True), unique=True
     )
 
+    # Quién la abrió es `registrado_por`; quién la cerró, este.
+    cerrada_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    _cerrador = relationship("Usuario", foreign_keys=[cerrada_por_id], lazy="joined", viewonly=True)
+
     pagos: Mapped[list["Pago"]] = relationship(order_by="Pago.fecha", lazy="selectin")
     egresos: Mapped[list["Egreso"]] = relationship(order_by="Egreso.fecha", lazy="selectin")
 
+    @property
+    def cerrada_por(self) -> str | None:
+        return self._cerrador.nombre if self._cerrador is not None else None
 
-class Pago(Base):
+
+class Pago(RegistradoPor, Base):
     """Cobro registrado en caja: de una mesa, una inscripción o una membresía.
     Un pago anulado (tarjeta o transferencia rechazada) no suma en caja ni en reportes."""
 
@@ -57,9 +66,15 @@ class Pago(Base):
     sesion_id: Mapped[int | None] = mapped_column(ForeignKey("sesiones.id"))
     jugador_id: Mapped[int | None] = mapped_column(ForeignKey("jugadores.id", ondelete="SET NULL"))
     anulado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    anulado_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    _anulador = relationship("Usuario", foreign_keys=[anulado_por_id], lazy="joined", viewonly=True)
+
+    @property
+    def anulado_por(self) -> str | None:
+        return self._anulador.nombre if self._anulador is not None else None
 
 
-class Egreso(Base):
+class Egreso(RegistradoPor, Base):
     """Dinero que sale: compras, servicios, devoluciones… Solo el de `metodo` efectivo sale del cajón y
     cuenta en el arqueo; uno pagado por transferencia o tarjeta queda registrado como gasto."""
 

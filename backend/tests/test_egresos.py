@@ -36,8 +36,12 @@ def test_en_efectivo_no_puede_pasar_de_lo_que_hay_pero_por_transferencia_si(monk
 def test_una_transferencia_exige_la_referencia_del_comprobante(monkeypatch):
     caja = _caja()
     monkeypatch.setattr(servicio, "_exigir_abierta", lambda _db: caja)
+    avisos = []
+    monkeypatch.setattr(servicio, "notificar_administradores", lambda _db, _tipo, asunto, mensaje, ruta=None: avisos.append(mensaje))
     datos = dict(concepto="Mesa 1", cliente="Ana", monto=15_000, metodo=MetodoPago.TRANSFERENCIA)
     with pytest.raises(ErrorDeDatos, match="referencia"):
         servicio.registrar_pago(SesionFalsa(), **datos)
     pago = servicio.registrar_pago(SesionFalsa(), **datos, referencia=" M12345678 ")
     assert pago.referencia == "M12345678"
+    # Todo el personal se entera del cobro.
+    assert avisos == ["Ana pagó $ 15.000 por transferencia (ref. M12345678)."]

@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+from app.models.auditoria import RegistradoPor
 from app.models.enums import TipoMovimiento, TipoNotificacion, columna_enum
 
 
@@ -24,7 +25,7 @@ class Notificacion(Base):
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-class Movimiento(Base):
+class Movimiento(RegistradoPor, Base):
     """Actividad del club para "Últimos movimientos" del Inicio del admin."""
 
     __tablename__ = "movimientos"

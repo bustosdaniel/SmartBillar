@@ -5,7 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Caja, Egreso, Jugador, Movimiento, Pago
-from app.models.enums import MetodoPago, TipoMovimiento
+from app.models.enums import MetodoPago, TipoMovimiento, TipoNotificacion
+from app.services.notificaciones import notificar_administradores
 from app.services.usuarios import ErrorDeDatos
 from app.tiempo import ahora_utc
 
@@ -53,6 +54,7 @@ def cerrar(db: Session, contado: int, nota: str) -> Caja:
     if diferencia != 0 and not nota.strip():
         raise ErrorDeDatos("El arqueo no cuadra: escribe una observación para cerrar la caja.")
     caja.cierre, caja.contado, caja.nota = ahora_utc(), contado, nota.strip() or None
+    caja.cerrada_por_id = db.info.get("usuario_id")
     detalle = (
         "Arqueo cuadrado"
         if diferencia == 0
@@ -106,6 +108,15 @@ def registrar_pago(
     db.add(
         Movimiento(tipo=TipoMovimiento.PAGO, titulo=f"Cobro · {concepto}", detalle=f"{NOMBRES_METODO[metodo]} · {pesos(monto)}")
     )
+    # Todo el personal (administradores y cajeros) se entera de cada cobro, lo haga quien lo haga.
+    con_referencia = f" (ref. {referencia})" if referencia else ""
+    notificar_administradores(
+        db,
+        TipoNotificacion.FACTURA,
+        f"Cobro registrado · {concepto}",
+        f"{cliente} pagó {pesos(monto)} por {NOMBRES_METODO[metodo].lower()}{con_referencia}.",
+        ruta="/admin/caja",
+    )
     db.flush()
     return pago
 
@@ -137,6 +148,7 @@ def anular_pago(db: Session, pago_id: int) -> Pago:
     if pago.anulado_en is not None:
         raise ErrorDeDatos("Ese cobro ya estaba anulado.")
     pago.anulado_en = ahora_utc()
+    pago.anulado_por_id = db.info.get("usuario_id")
     # Si era una mesa, vuelve a quedar Por cobrar. (Import local: mesas usa este módulo para cobrar.)
     if pago.sesion_id is not None:
         from app.services.mesas import reabrir_por_anulacion
@@ -172,4 +184,6 @@ def a_salida(caja: Caja) -> dict:
         "cierre": caja.cierre,
         "contado": caja.contado,
         "nota": caja.nota,
+        "abierta_por": caja.registrado_por,
+        "cerrada_por": caja.cerrada_por,
     }

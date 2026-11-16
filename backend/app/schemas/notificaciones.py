@@ -21,3 +21,4 @@ class MovimientoSalida(EsquemaCamel):
     titulo: str
     detalle: str
     fecha: Milisegundos
+    registrado_por: str | None = None
