@@ -4,13 +4,14 @@ import { CalendarDays, CreditCard, History, Lock, PiggyBank, Trophy } from 'luci
 import { useAuth } from '../../auth/useAuth'
 import { cambiarPassword } from '../../auth/usuarios'
 import {
-  AYUDA_CELULAR,
-  filtrarCelular,
-  LARGO_MAXIMO_CELULAR,
+  filtrarEmail,
+  LARGO_MAXIMO_EMAIL,
   leerDatosPersonales,
   validarCambioPassword,
   validarDatosPersonales,
 } from '../../auth/validaciones'
+import { CampoCelular } from '../../components/CampoCelular'
+import { CamposNombre } from '../../components/CamposNombre'
 import { CampoClaro } from '../../components/CampoClaro'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
@@ -138,14 +139,7 @@ export function Perfil() {
       <div className="perfil-contenido">
         <form className="tarjeta panel-bloque formulario-claro" onSubmit={guardarDatos} {...validacionDatos.eventos} noValidate>
           <h2 className="titulo-bloque">Datos personales</h2>
-          <CampoClaro
-            etiqueta="Nombre completo"
-            name="nombre"
-            defaultValue={usuario.nombre}
-            required
-            autoComplete="name"
-            error={validacionDatos.errores.nombre}
-          />
+          <CamposNombre variante="claro" errores={validacionDatos.errores} usuario={usuario} />
           <CampoClaro
             etiqueta="Correo"
             name="email"
@@ -153,6 +147,8 @@ export function Perfil() {
             defaultValue={usuario.email}
             required
             autoComplete="email"
+            maxLength={LARGO_MAXIMO_EMAIL}
+            onInput={filtrarEmail}
             onChange={(e) => setEmailEscrito(e.target.value)}
             error={validacionDatos.errores.email}
           />
@@ -167,19 +163,7 @@ export function Perfil() {
               error={errorActual || undefined}
             />
           )}
-          <CampoClaro
-            etiqueta="Celular"
-            name="telefono"
-            type="tel"
-            defaultValue={usuario.telefono ?? ''}
-            required
-            autoComplete="tel"
-            inputMode="tel"
-            maxLength={LARGO_MAXIMO_CELULAR}
-            onInput={filtrarCelular}
-            error={validacionDatos.errores.telefono}
-            ayuda={AYUDA_CELULAR}
-          />
+          <CampoCelular variante="claro" valorInicial={usuario.telefono} error={validacionDatos.errores.telefono} />
           {mensajeDatos && (
             <p role={mensajeDatos.tipo === 'error' ? 'alert' : 'status'} className={mensajeDatos.tipo === 'error' ? 'alerta-clara' : 'aviso-claro'}>
               {mensajeDatos.texto}

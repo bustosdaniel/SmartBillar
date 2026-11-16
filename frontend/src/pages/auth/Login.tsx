@@ -4,7 +4,7 @@ import { Lock, Mail } from 'lucide-react'
 import { AVISO_SESION_CERRADA } from '../../auth/AuthContext'
 import { rutaInicio } from '../../auth/rutas'
 import { useAuth } from '../../auth/useAuth'
-import { validarLogin } from '../../auth/validaciones'
+import { filtrarEmail, LARGO_MAXIMO_EMAIL, validarLogin } from '../../auth/validaciones'
 import { CampoTexto } from '../../components/CampoTexto'
 import { useValidacion } from '../../hooks/useValidacion'
 
@@ -47,6 +47,8 @@ export function Login() {
         name="email"
         type="email"
         autoComplete="email"
+        maxLength={LARGO_MAXIMO_EMAIL}
+        onInput={filtrarEmail}
         required
         error={errores.email}
       />

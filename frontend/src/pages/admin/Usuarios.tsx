@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Search, UserPlus } from 'lucide-react'
+import { formatearCelular } from '../../auth/celular'
 import { useEsAdministrador } from '../../auth/useAuth'
 import { cambiarCargo, NOMBRES_CARGO, normalizar, useRecargarUsuarios, useUsuarios } from '../../auth/usuarios'
 import { Encabezado } from '../../components/Encabezado'
@@ -36,7 +37,7 @@ export function Usuarios() {
 
   const clientes = usuarios
     .filter((u) => u.rol === 'cliente')
-    .filter((u) => !termino || [u.nombre, u.email, u.telefono ?? ''].some((c) => normalizar(c).includes(termino)))
+    .filter((u) => !termino || [u.nombre, u.email, u.telefono ?? '', formatearCelular(u.telefono)].some((c) => normalizar(c).includes(termino)))
     .map((u) => {
       const partidas = finalizadas.filter((s) => s.clienteId === u.id)
       const ultima = partidas.reduce((max, s) => Math.max(max, s.fin), 0)
@@ -132,7 +133,7 @@ export function Usuarios() {
                             </span>
                           </button>
                         </td>
-                        <td>{usuario.telefono ?? '—'}</td>
+                        <td>{formatearCelular(usuario.telefono) || '—'}</td>
                         <td>
                           {membresia && vigente ? (
                             <span className={`insignia-plan insignia-${membresia.planId}`}>{planes[membresia.planId].nombre}</span>

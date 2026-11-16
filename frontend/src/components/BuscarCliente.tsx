@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Search, UserPlus, X } from 'lucide-react'
+import { formatearCelular } from '../auth/celular'
 import { buscarPorEmail, recordarUsuario, sugerirClientes } from '../auth/usuarios'
 import { useAhora } from '../hooks/useAhora'
 import { planVigente, useMembresias, usePlanes } from '../membresias/membresias'
@@ -125,7 +126,7 @@ export function BuscarCliente({ cliente, onCambio, mensajeEncontrado = 'Cliente 
           </strong>
           <span className="texto-suave">
             {cliente.email}
-            {cliente.telefono && ` · ${cliente.telefono}`}
+            {cliente.telefono && ` · ${formatearCelular(cliente.telefono)}`}
           </span>
           <span className="cliente-encontrado-mensaje">{mensajeEncontrado}</span>
         </div>

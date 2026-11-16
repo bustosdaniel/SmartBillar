@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { KeyRound, Mail, Phone, Trash2 } from 'lucide-react'
+import { formatearCelular } from '../../../auth/celular'
 import { useEsAdministrador } from '../../../auth/useAuth'
 import { eliminarCliente, passwordTemporal } from '../../../auth/usuarios'
 import { NOMBRES_METODO } from '../../../caja/caja'
@@ -63,7 +64,7 @@ export function FichaCliente({ cliente, partidas, membresia, plan, torneos, ahor
         </span>
         {cliente.telefono && (
           <span>
-            <Phone size={15} aria-hidden="true" /> {cliente.telefono}
+            <Phone size={15} aria-hidden="true" /> {formatearCelular(cliente.telefono)}
           </span>
         )}
       </div>

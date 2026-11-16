@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Lock, Mail, Phone, User } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 import { rutaInicio } from '../../auth/rutas'
 import { useAuth } from '../../auth/useAuth'
-import { AYUDA_CELULAR, filtrarCelular, LARGO_MAXIMO_CELULAR, leerDatosPersonales, validarRegistro } from '../../auth/validaciones'
+import { filtrarEmail, LARGO_MAXIMO_EMAIL, leerDatosPersonales, validarRegistro } from '../../auth/validaciones'
+import { CampoCelular } from '../../components/CampoCelular'
+import { CamposNombre } from '../../components/CamposNombre'
 import { CampoTexto } from '../../components/CampoTexto'
 import { useValidacion } from '../../hooks/useValidacion'
 
@@ -35,29 +37,19 @@ export function Registro() {
         <h1>Crear cuenta</h1>
         <p>Regístrate para reservar mesas e inscribirte en torneos</p>
       </header>
-      <CampoTexto etiqueta="Nombre completo" icono={User} name="nombre" autoComplete="name" required error={errores.nombre} />
+      <CamposNombre variante="oscuro" errores={errores} />
       <CampoTexto
         etiqueta="Correo electrónico"
         icono={Mail}
         name="email"
         type="email"
         autoComplete="email"
+        maxLength={LARGO_MAXIMO_EMAIL}
+        onInput={filtrarEmail}
         required
         error={errores.email}
       />
-      <CampoTexto
-        etiqueta="Celular"
-        icono={Phone}
-        name="telefono"
-        type="tel"
-        autoComplete="tel"
-        required
-        inputMode="tel"
-        maxLength={LARGO_MAXIMO_CELULAR}
-        onInput={filtrarCelular}
-        error={errores.telefono}
-        ayuda={AYUDA_CELULAR}
-      />
+      <CampoCelular variante="oscuro" error={errores.telefono} />
       <CampoTexto
         etiqueta="Contraseña"
         icono={Lock}

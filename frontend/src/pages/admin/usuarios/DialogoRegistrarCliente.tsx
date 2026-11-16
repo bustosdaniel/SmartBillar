@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { PASSWORD_TEMPORAL, registrarCliente } from '../../../auth/usuarios'
-import { AYUDA_CELULAR, filtrarCelular, LARGO_MAXIMO_CELULAR, leerDatosPersonales, validarDatosPersonales } from '../../../auth/validaciones'
+import { filtrarEmail, LARGO_MAXIMO_EMAIL, leerDatosPersonales, validarDatosPersonales } from '../../../auth/validaciones'
+import { CampoCelular } from '../../../components/CampoCelular'
+import { CamposNombre } from '../../../components/CamposNombre'
 import { CampoClaro } from '../../../components/CampoClaro'
 import { useValidacion } from '../../../hooks/useValidacion'
 import type { Usuario } from '../../../types'
@@ -36,20 +38,9 @@ export function DialogoRegistrarCliente({ onListo, emailInicial = '', onRegistra
 
   return (
     <form className="formulario-claro" onSubmit={handleSubmit} {...eventos} noValidate>
-      <CampoClaro etiqueta="Nombre completo" name="nombre" required autoFocus error={errores.nombre} />
-      <CampoClaro
-        etiqueta="Celular"
-        name="telefono"
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        required
-        maxLength={LARGO_MAXIMO_CELULAR}
-        onInput={filtrarCelular}
-        error={errores.telefono}
-        ayuda={AYUDA_CELULAR}
-      />
-      <CampoClaro etiqueta="Correo" name="email" defaultValue={emailInicial} type="email" required error={errores.email} />
+      <CamposNombre variante="claro" errores={errores} autoFocus />
+      <CampoCelular variante="claro" error={errores.telefono} />
+      <CampoClaro etiqueta="Correo" name="email" defaultValue={emailInicial} type="email" maxLength={LARGO_MAXIMO_EMAIL} onInput={filtrarEmail} required error={errores.email} />
       {error && (
         <p role="alert" className="alerta-clara">
           {error}
