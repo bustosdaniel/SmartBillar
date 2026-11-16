@@ -52,18 +52,21 @@ export function Consumos() {
         </div>
       )}
 
-      {CATEGORIAS.map((categoria) => (
-        <section key={categoria} className="panel-bloque">
-          <h2 className="titulo-bloque">{NOMBRES_CATEGORIA[categoria]}</h2>
-          <div className="grid-productos">
-            {productos
-              .filter((p) => p.categoria === categoria)
-              .map((p) => (
-                <TarjetaProducto key={p.id} producto={p} />
-              ))}
-          </div>
-        </section>
-      ))}
+      {/* Bebidas y Paquetes lado a lado, cada una en su tarjeta con los productos en 2 columnas. */}
+      <div className="catalogo-categorias">
+        {CATEGORIAS.map((categoria) => (
+          <section key={categoria} className="tarjeta panel-bloque">
+            <h2 className="titulo-bloque">{NOMBRES_CATEGORIA[categoria]}</h2>
+            <div className="grid-productos grid-productos-2">
+              {productos
+                .filter((p) => p.categoria === categoria)
+                .map((p) => (
+                  <TarjetaProducto key={p.id} producto={p} />
+                ))}
+            </div>
+          </section>
+        ))}
+      </div>
       <p className="nota">Pide en la caja: el personal lo agrega a la cuenta de tu mesa y lo pagas al finalizar.</p>
 
       {anteriores.length > 0 && (

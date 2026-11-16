@@ -1,5 +1,5 @@
-import imagenBandas from '../assets/images/image-bandas.png'
-import imagenLibres from '../assets/images/image-libres.png'
+import imagenBandas from '../assets/images/3_Bandas.png'
+import imagenLibres from '../assets/images/Libres.png'
 import imagenPool from '../assets/images/image-pool.jpg'
 import type { ModoJuego } from '../types'
 

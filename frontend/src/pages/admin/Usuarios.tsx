@@ -17,6 +17,21 @@ import { FichaCliente } from './usuarios/FichaCliente'
 type Pestana = 'clientes' | 'empleados'
 const CARGOS: Cargo[] = ['administrador', 'cajero']
 
+// La búsqueda va contra nombre, correo y celular: más de 60 caracteres no encuentra a nadie, y fuera de
+// letras, números, espacios y lo que lleva un correo (@ . _ - +) no hay nada que buscar.
+const LARGO_MAXIMO_BUSQUEDA = 60
+
+function filtrarBusqueda(escrito: string): { texto: string; aviso: string | null } {
+  const permitido = escrito.replace(/[^\p{L}\p{N}\s@._+-]/gu, '').replace(/^\s+/, '').replace(/\s{2,}/g, ' ')
+  if (permitido !== escrito.replace(/^\s+/, '').replace(/\s{2,}/g, ' ')) {
+    return { texto: permitido.slice(0, LARGO_MAXIMO_BUSQUEDA), aviso: 'Solo letras, números, espacios y los signos de un correo (@ . _ - +).' }
+  }
+  if (permitido.length > LARGO_MAXIMO_BUSQUEDA || escrito.length >= LARGO_MAXIMO_BUSQUEDA) {
+    return { texto: permitido.slice(0, LARGO_MAXIMO_BUSQUEDA), aviso: `Máximo ${LARGO_MAXIMO_BUSQUEDA} caracteres.` }
+  }
+  return { texto: permitido, aviso: null }
+}
+
 export function Usuarios() {
   const esAdministrador = useEsAdministrador()
   const finalizadas = useSesionesFinalizadas()
@@ -26,6 +41,7 @@ export function Usuarios() {
   const ahora = useAhora()
   const [pestana, setPestana] = useState<Pestana>('clientes')
   const [busqueda, setBusqueda] = useState('')
+  const [avisoBusqueda, setAvisoBusqueda] = useState<string | null>(null)
   const [registrando, setRegistrando] = useState(false)
   const [ficha, setFicha] = useState<Usuario | null>(null)
   const [errorCargo, setErrorCargo] = useState('')
@@ -99,9 +115,21 @@ export function Usuarios() {
               type="search"
               placeholder="Buscar por nombre, correo o celular"
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              maxLength={LARGO_MAXIMO_BUSQUEDA}
+              aria-invalid={avisoBusqueda ? true : undefined}
+              onChange={(e) => {
+                const { texto, aviso } = filtrarBusqueda(e.target.value)
+                setAvisoBusqueda(aviso)
+                setBusqueda(texto)
+              }}
+              onBlur={() => setAvisoBusqueda(null)}
             />
           </label>
+          {avisoBusqueda && (
+            <span role="alert" className="campo-error">
+              {avisoBusqueda}
+            </span>
+          )}
           {clientes.length === 0 ? (
             <p className="texto-suave">No hay clientes que coincidan con “{busqueda}”.</p>
           ) : (

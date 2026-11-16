@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NOMBRES_METODO, useCaja, useCajasCerradas } from '../../caja/caja'
 import { Encabezado } from '../../components/Encabezado'
 import { GraficaBarras } from '../../components/GraficaBarras'
+import { GraficaDona } from '../../components/GraficaDona'
 import { SelectorPeriodo } from '../../components/SelectorPeriodo'
 import { TotalesPeriodo } from '../../components/TotalesPeriodo'
 import { useAhora } from '../../hooks/useAhora'
@@ -10,6 +11,15 @@ import type { MetodoPago } from '../../types'
 import { formatearFecha, formatearHora, formatearPesos } from '../../utils/formato'
 
 const METODOS: MetodoPago[] = ['efectivo', 'transferencia', 'tarjeta']
+
+// Un color fijo por concepto (no por posición): Mesas siempre es azul aunque cambie el periodo.
+// Paleta categórica validada (separación para daltonismo); la leyenda lleva valor y % de cada uno.
+const COLOR_CONCEPTO: Record<string, string> = {
+  Mesas: '#2a78d6',
+  Membresías: '#eb6834',
+  Torneos: '#1baf7a',
+  Otros: '#eda100',
+}
 
 function Desglose({ titulo, filas, total }: { titulo: string; filas: [string, number][]; total: number }) {
   return (
@@ -59,13 +69,23 @@ export function Reportes() {
 
       <TotalesPeriodo ingresos={actual.ingresos} egresos={actual.egresos} />
 
-      <div className="tarjeta panel-bloque">
-        <h2 className="titulo-bloque">Ingresos por {periodo === 'diario' ? 'día' : periodo === 'semanal' ? 'semana' : 'mes'}</h2>
-        <GraficaBarras tramos={tramos} titulo="Ingresos por periodo" alta />
+      {/* Barras (cómo van los ingresos en el tiempo) y al lado la dona (de dónde vinieron en este periodo). */}
+      <div className="fila-reportes">
+        <div className="tarjeta panel-bloque">
+          <h2 className="titulo-bloque">Ingresos por {periodo === 'diario' ? 'día' : periodo === 'semanal' ? 'semana' : 'mes'}</h2>
+          <GraficaBarras tramos={tramos} titulo="Ingresos por periodo" alta />
+        </div>
+        <div className="tarjeta panel-bloque">
+          <h2 className="titulo-bloque">Ingresos por concepto</h2>
+          <GraficaDona
+            titulo="Ingresos por concepto"
+            subtitulo={TEXTO_ACTUAL[periodo]}
+            porciones={porCategoria.map(([nombre, valor]) => ({ nombre, valor, color: COLOR_CONCEPTO[nombre] }))}
+          />
+        </div>
       </div>
 
       <div className="grid-reportes">
-        <Desglose titulo="Ingresos por concepto" filas={porCategoria} total={actual.ingresos} />
         <Desglose titulo="Ingresos por método de pago" filas={porMetodo} total={actual.ingresos} />
         <div className="tarjeta panel-bloque">
           <h2 className="titulo-bloque">Egresos</h2>

@@ -101,18 +101,21 @@ export function ConsumosMesas() {
         </div>
       )}
 
-      {CATEGORIAS.map((categoria) => (
-        <section key={categoria} className="panel-bloque">
-          <h2 className="titulo-bloque">{NOMBRES_CATEGORIA[categoria]}</h2>
-          <div className="grid-productos">
-            {productos
-              .filter((p) => p.categoria === categoria)
-              .map((p) => (
-                <TarjetaProducto key={p.id} producto={p} />
-              ))}
-          </div>
-        </section>
-      ))}
+      {/* Bebidas y Paquetes lado a lado, cada una en su tarjeta con los productos en 2 columnas (igual que el cliente). */}
+      <div className="catalogo-categorias">
+        {CATEGORIAS.map((categoria) => (
+          <section key={categoria} className="tarjeta panel-bloque">
+            <h2 className="titulo-bloque">{NOMBRES_CATEGORIA[categoria]}</h2>
+            <div className="grid-productos grid-productos-2">
+              {productos
+                .filter((p) => p.categoria === categoria)
+                .map((p) => (
+                  <TarjetaProducto key={p.id} producto={p} />
+                ))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       <Modal
         abierto={dialogo !== null}
