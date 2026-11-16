@@ -112,12 +112,14 @@ export type Pago = {
   cambio: number | null
   // Transferencia: referencia del comprobante verificada en la app.
   referencia?: string | null
+  // Empleado que lo cobró (null en los cobros de antes de guardarlo).
+  registradoPor?: string | null
   // Cobro de una mesa: permite anularlo y devolver la mesa a "Por cobrar".
   sesionId?: number | null
 }
 
 // Tarjeta o transferencia rechazada después de registrar el cobro.
-export type PagoAnulado = Pago & { anuladoEn: number }
+export type PagoAnulado = Pago & { anuladoEn: number; anuladoPor?: string | null }
 
 export type Egreso = {
   id: number
@@ -126,6 +128,7 @@ export type Egreso = {
   monto: number
   // De dónde salió el dinero: solo el efectivo se descuenta del cajón.
   metodo?: MetodoPago
+  registradoPor?: string | null
 }
 
 export type Caja = {
@@ -137,6 +140,7 @@ export type Caja = {
   egresos?: Egreso[]
   // Fuera de los pagos: no suman en caja, arqueo ni reportes.
   anulados?: PagoAnulado[]
+  abiertaPor?: string | null
 }
 
 export type CajaCerrada = Caja & {
@@ -145,6 +149,7 @@ export type CajaCerrada = Caja & {
   // que se cerraron sin contar.
   contado?: number | null
   nota?: string | null
+  cerradaPor?: string | null
 }
 
 export type TipoMovimiento = 'inicio' | 'pausa' | 'reanudar' | 'detener' | 'fin' | 'pago' | 'caja' | 'torneo' | 'consumo'
@@ -155,6 +160,7 @@ export type Movimiento = {
   titulo: string
   detalle: string
   fecha: number
+  registradoPor?: string | null
 }
 
 // 'cancelado': llegó su día sin suficientes jugadores y no se jugó.
