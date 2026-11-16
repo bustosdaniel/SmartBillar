@@ -105,6 +105,7 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
           Observación (obligatoria si no cuadra)
           <textarea
             rows={2}
+            maxLength={300}
             value={nota}
             onChange={(e) => setNota(e.target.value)}
             placeholder={esperado < 0 ? 'Ej: el egreso de insumos se pagó con dinero de la tarjeta' : 'Ej: se dio mal un cambio'}

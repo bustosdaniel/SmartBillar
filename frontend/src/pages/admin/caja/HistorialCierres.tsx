@@ -1,5 +1,5 @@
 import { efectivoEsperado, textoDiferencia, useCajasCerradas } from '../../../caja/caja'
-import { formatearFecha, formatearHora, formatearPesos } from '../../../utils/formato'
+import { formatearFecha, formatearHora, formatearPesos, nombreCorto } from '../../../utils/formato'
 
 export function HistorialCierres() {
   const cierres = useCajasCerradas().toReversed().slice(0, 6)
@@ -30,6 +30,13 @@ export function HistorialCierres() {
                       {' '}
                       · {formatearHora(c.apertura)} – {formatearHora(c.cierre)}
                     </span>
+                    {(c.abiertaPor || c.cerradaPor) && (
+                      <span className="texto-suave nota-cierre">
+                        {c.abiertaPor && `Abrió ${nombreCorto(c.abiertaPor)}`}
+                        {c.abiertaPor && c.cerradaPor && ' · '}
+                        {c.cerradaPor && `Cerró ${nombreCorto(c.cerradaPor)}`}
+                      </span>
+                    )}
                   </td>
                   <td className="numero">{formatearPesos(esperado)}</td>
                   <td className="numero">{c.contado == null ? '—' : formatearPesos(c.contado)}</td>

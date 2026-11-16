@@ -8,7 +8,7 @@ import { TotalesPeriodo } from '../../components/TotalesPeriodo'
 import { useAhora } from '../../hooks/useAhora'
 import { categoriaPago, reporte, TEXTO_ACTUAL, todasLasCajas, type Periodo } from '../../reportes/reportes'
 import type { MetodoPago } from '../../types'
-import { formatearFecha, formatearHora, formatearPesos } from '../../utils/formato'
+import { formatearFecha, formatearHora, formatearPesos, nombreCorto } from '../../utils/formato'
 
 const METODOS: MetodoPago[] = ['efectivo', 'transferencia', 'tarjeta']
 
@@ -99,6 +99,7 @@ export function Reportes() {
                     <strong>{e.concepto}</strong>
                     <span>
                       {formatearFecha(e.fecha)} · {formatearHora(e.fecha)}
+                      {e.registradoPor && ` · por ${nombreCorto(e.registradoPor)}`}
                     </span>
                   </span>
                   <strong className="texto-egreso">−{formatearPesos(e.monto)}</strong>

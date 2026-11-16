@@ -7,7 +7,7 @@ import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { anularCobroMesa } from '../../mesas/sesiones'
 import type { Pago } from '../../types'
-import { formatearHora, formatearPesos } from '../../utils/formato'
+import { formatearHora, formatearPesos, nombreCorto } from '../../utils/formato'
 import { DialogoCerrarCaja } from './caja/DialogoCerrarCaja'
 import { DialogoEgreso } from './caja/DialogoEgreso'
 import { HistorialCierres } from './caja/HistorialCierres'
@@ -55,7 +55,10 @@ export function Caja() {
   return (
     <section className="pagina">
       <header className="panel-cabecera">
-        <Encabezado titulo="Caja" subtitulo={`Abierta desde las ${formatearHora(caja.apertura)}`} />
+        <Encabezado
+          titulo="Caja"
+          subtitulo={`Abierta desde las ${formatearHora(caja.apertura)}${caja.abiertaPor ? ` por ${nombreCorto(caja.abiertaPor)}` : ''}`}
+        />
         <div className="acciones-cabecera">
           <button type="button" className="boton boton-secundario" onClick={() => setEgresoAbierto(true)}>
             <MinusCircle size={16} aria-hidden="true" /> Registrar egreso
@@ -112,6 +115,7 @@ export function Caja() {
                   <th className="numero">Recibido</th>
                   <th className="numero">Cambio</th>
                   <th className="numero">Monto</th>
+                  <th>Cobró</th>
                   <th>
                     <span className="sr-only">Acciones</span>
                   </th>
@@ -132,6 +136,7 @@ export function Caja() {
                     <td className="numero">
                       <strong>{formatearPesos(p.monto)}</strong>
                     </td>
+                    <td title={p.registradoPor ?? undefined}>{p.registradoPor ? nombreCorto(p.registradoPor) : '—'}</td>
                     <td>
                       {esAdministrador && puedeAnularse(p) && (
                         <button
@@ -164,7 +169,9 @@ export function Caja() {
                     {p.concepto} · {p.cliente}
                   </strong>
                   <span>
-                    {NOMBRES_METODO[p.metodo]} rechazada · cobrado {formatearHora(p.fecha)}, anulado {formatearHora(p.anuladoEn)}
+                    {NOMBRES_METODO[p.metodo]} rechazada · cobrado {formatearHora(p.fecha)}
+                    {p.registradoPor && ` por ${nombreCorto(p.registradoPor)}`}, anulado {formatearHora(p.anuladoEn)}
+                    {p.anuladoPor && ` por ${nombreCorto(p.anuladoPor)}`}
                   </span>
                 </span>
                 <s className="texto-suave">{formatearPesos(p.monto)}</s>
@@ -184,6 +191,7 @@ export function Caja() {
                   <strong>{e.concepto}</strong>
                   <span>
                     {formatearHora(e.fecha)} · {e.metodo && e.metodo !== 'efectivo' ? NOMBRES_METODO[e.metodo] : 'Efectivo del cajón'}
+                    {e.registradoPor && ` · por ${nombreCorto(e.registradoPor)}`}
                   </span>
                 </span>
                 <strong className="texto-egreso">−{formatearPesos(e.monto)}</strong>

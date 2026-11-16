@@ -1,7 +1,7 @@
 import { Banknote, CircleCheck, CupSoda, CirclePause, CirclePlay, CircleStop, Play, Trophy, Wallet, type LucideIcon } from 'lucide-react'
 import { useMovimientos } from '../../../actividad/movimientos'
 import type { TipoMovimiento } from '../../../types'
-import { formatearHora } from '../../../utils/formato'
+import { formatearHora, nombreCorto } from '../../../utils/formato'
 
 const ICONO_MOVIMIENTO: Record<TipoMovimiento, LucideIcon> = {
   inicio: Play,
@@ -36,7 +36,10 @@ export function UltimosMovimientos() {
                 </span>
                 <span className="movimiento-texto">
                   <strong>{m.titulo}</strong>
-                  <span>{m.detalle}</span>
+                  <span>
+                    {m.detalle}
+                    {m.registradoPor && ` · ${nombreCorto(m.registradoPor)}`}
+                  </span>
                 </span>
                 <time dateTime={new Date(m.fecha).toISOString()}>{formatearHora(m.fecha)}</time>
               </li>

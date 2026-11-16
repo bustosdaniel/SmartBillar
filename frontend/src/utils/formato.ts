@@ -34,3 +34,8 @@ export function formatearHorasMin(ms: number) {
   if (h === 0) return `${m} min`
   return m === 0 ? `${h} h` : `${h} h ${m} min`
 }
+
+// Quién hizo una operación, en corto (el primer nombre): "Neifer Daniel Bustos Carrillo" → "Neifer".
+export function nombreCorto(nombre: string | null | undefined) {
+  return nombre?.trim().split(/\s+/)[0] ?? ''
+}
