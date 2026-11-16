@@ -3,7 +3,8 @@ import { Plus, Trash2 } from 'lucide-react'
 import { MODOS, NOMBRES_MODO } from '../../../mesas/datos'
 import { cruceDeReglas, guardarTarifas, NOMBRES_DIA, obtenerTarifas } from '../../../mesas/tarifas'
 import type { ConfigTarifas, ModoJuego, ReglaHorario } from '../../../types'
-import { errorNumero, leerNumero, LIMITES, mostrarNumero } from '../../../utils/montos'
+import { errorNumero, leerNumero, LIMITES } from '../../../utils/montos'
+import { CampoNumero } from '../../../components/CampoNumero'
 
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0]
 
@@ -85,15 +86,12 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
             <tr key={modo}>
               <td>{NOMBRES_MODO[modo]}</td>
               <td>
-                <input
-                  type="number"
-                  min={LIMITES.tarifaHora.min}
-                  max={LIMITES.tarifaHora.max}
-                  step={500}
+                <CampoNumero
+                  limite={LIMITES.tarifaHora}
                   aria-label={`${NOMBRES_MODO[modo]} por hora`}
                   aria-invalid={erroresPrecio[modo] ? true : undefined}
-                  value={mostrarNumero(config.porModo[modo].hora)}
-                  onChange={(e) => cambiarPrecio(modo, e.target.value)}
+                  valor={config.porModo[modo].hora}
+                  onValor={(texto) => cambiarPrecio(modo, texto)}
                 />
                 {erroresPrecio[modo] && (
                   <span role="alert" className="campo-error">
@@ -155,13 +153,11 @@ export function DialogoTarifas({ onListo }: { onListo: () => void }) {
             </label>
             <label>
               Ajuste %
-              <input
-                type="number"
-                min={LIMITES.ajusteTarifa.min}
-                max={LIMITES.ajusteTarifa.max}
+              <CampoNumero
+                limite={LIMITES.ajusteTarifa}
                 aria-invalid={errores.ajuste ? true : undefined}
-                value={mostrarNumero(r.ajuste)}
-                onChange={(e) => cambiarRegla(r.id, { ajuste: leerNumero(e.target.value) })}
+                valor={r.ajuste}
+                onValor={(texto) => cambiarRegla(r.id, { ajuste: leerNumero(texto) })}
               />
             </label>
           </div>

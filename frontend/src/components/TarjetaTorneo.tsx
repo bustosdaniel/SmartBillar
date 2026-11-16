@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { CalendarDays, Trophy, Users } from 'lucide-react'
+import { CalendarDays, Clock, Trophy, Users } from 'lucide-react'
 import { NOMBRES_MODO } from '../mesas/datos'
-import { formatearFechaTorneo, NOMBRES_CATEGORIA, TEXTO_ESTADO_TORNEO } from '../torneos/torneos'
+import { AVISO_CANCELADO, formatearFechaTorneo, NOMBRES_CATEGORIA, TEXTO_ESTADO_TORNEO, textoCierreInscripciones } from '../torneos/torneos'
 import type { Torneo } from '../types'
 import { formatearPesos } from '../utils/formato'
 
@@ -31,7 +31,13 @@ export function TarjetaTorneo({ torneo, precio, children }: TarjetaTorneoProps) 
         <li>
           <Trophy size={15} aria-hidden="true" /> {torneo.premio}
         </li>
+        {torneo.estado === 'inscripciones' && (
+          <li>
+            <Clock size={15} aria-hidden="true" /> {textoCierreInscripciones(torneo)}
+          </li>
+        )}
       </ul>
+      {torneo.estado === 'cancelado' && <p className="aviso-claro aviso-ambar">{AVISO_CANCELADO}</p>}
       <div className="torneo-pie">
         <span className="torneo-precio">{precio ?? formatearPesos(torneo.inscripcion)}</span>
         {children}

@@ -66,14 +66,15 @@ export function Caja() {
         </div>
       </header>
 
-      <div className="grid-resumen">
+      <div className="grid-resumen grid-resumen-3">
         <div className="tarjeta dato">
           <span>Base inicial</span>
           <strong>{formatearPesos(caja.base)}</strong>
         </div>
-        <div className="tarjeta dato">
+        <div className={`tarjeta dato ${efectivoEsperado(caja) < 0 ? 'dato-rojo' : ''}`}>
           <span>Efectivo en el cajón</span>
           <strong>{formatearPesos(efectivoEsperado(caja))}</strong>
+          {efectivoEsperado(caja) < 0 && <small className="dato-nota">Hay más egresos que efectivo cobrado.</small>}
         </div>
         <div className="tarjeta dato">
           <span>Transferencias</span>
@@ -178,7 +179,9 @@ export function Caja() {
               <li key={e.id}>
                 <span className="movimiento-texto">
                   <strong>{e.concepto}</strong>
-                  <span>{formatearHora(e.fecha)}</span>
+                  <span>
+                    {formatearHora(e.fecha)} · {e.metodo && e.metodo !== 'efectivo' ? NOMBRES_METODO[e.metodo] : 'Efectivo del cajón'}
+                  </span>
                 </span>
                 <strong className="texto-egreso">−{formatearPesos(e.monto)}</strong>
               </li>

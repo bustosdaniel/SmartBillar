@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { abrirCaja } from '../caja/caja'
 import { errorNumero, LIMITES } from '../utils/montos'
+import { CampoNumero } from './CampoNumero'
 
 export function AbrirCaja() {
   const [error, setError] = useState('')
@@ -26,15 +27,11 @@ export function AbrirCaja() {
     <form className="abrir-caja" onSubmit={handleSubmit}>
       <label>
         Base inicial (efectivo en el cajón)
-        <input
+        <CampoNumero
           name="base"
-          type="number"
-          inputMode="numeric"
-          min={LIMITES.baseCaja.min}
-          max={LIMITES.baseCaja.max}
-          step={1000}
-          value={base}
-          onChange={(e) => setBase(e.target.value)}
+          limite={LIMITES.baseCaja}
+          valor={base}
+          onValor={setBase}
           aria-invalid={errorBase ? true : undefined}
           required
         />

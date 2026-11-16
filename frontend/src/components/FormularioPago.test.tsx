@@ -69,12 +69,13 @@ describe('FormularioPago', () => {
     expect(onPagar).toHaveBeenCalledWith({ metodo: 'efectivo', recibido: 20000, cambio: 5000 })
   })
 
-  it('el efectivo recibido no pasa de $10.000.000', async () => {
+  it('el efectivo recibido no deja escribir más de $10.000.000', async () => {
     const usuario = userEvent.setup()
     render(<FormularioPago total={15000} onCancelar={() => {}} onPagar={vi.fn()} />)
 
     const recibido = screen.getByLabelText('¿Cuánto entregó el cliente?')
-    await usuario.type(recibido, '999999999')
+    // Al llegar al tope ya no deja escribir otra cifra.
+    await usuario.type(recibido, '100000001')
     expect((recibido as HTMLInputElement).value).toBe('10000000')
   })
 })

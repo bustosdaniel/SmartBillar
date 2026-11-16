@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Clock, Percent, PiggyBank } from 'lucide-react'
 import { useAuth } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
+import { Modal } from '../../components/Modal'
 import { TarjetaPlan } from '../../components/TarjetaPlan'
 import { useAhora } from '../../hooks/useAhora'
 import { gratisUsadoEnMes } from '../../mesas/cuenta'
 import { useSesionesFinalizadas } from '../../mesas/sesiones'
 import {
+  cancelarMembresia,
   cancelarSolicitud,
   diasRestantes,
   estadoMembresia,
@@ -38,6 +40,7 @@ export function Membresia() {
   const ahora = useAhora()
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
 
   async function intentar(accion: () => Promise<unknown>) {
     setError('')
@@ -169,7 +172,46 @@ export function Membresia() {
               : 'Tu membresía vence pronto. Renuévala en caja para no perder tus beneficios.'}
           </p>
         )}
+        {estado !== 'vencida' && (
+          <div className="mi-plan-acciones">
+            <button type="button" className="boton boton-chico mi-plan-cancelar" onClick={() => setCancelando(true)}>
+              Cancelar membresía
+            </button>
+          </div>
+        )}
       </div>
+
+      <Modal abierto={cancelando} titulo="Cancelar membresía" onCerrar={() => setCancelando(false)}>
+        <div className="formulario-claro">
+          <p>
+            ¿Seguro que quieres cancelar tu plan <strong>{plan.nombre}</strong>? Tus beneficios terminan de inmediato (aunque te
+            queden {dias} {dias === 1 ? 'día' : 'días'}) y no se devuelve lo que pagaste.
+          </p>
+          {error && (
+            <p role="alert" className="alerta-clara">
+              {error}
+            </p>
+          )}
+          <div className="dialogo-acciones">
+            <button type="button" className="boton boton-secundario" onClick={() => setCancelando(false)}>
+              Mantener mi plan
+            </button>
+            <button
+              type="button"
+              className="boton boton-peligro"
+              disabled={enviando}
+              onClick={() =>
+                intentar(async () => {
+                  await cancelarMembresia()
+                  setCancelando(false)
+                })
+              }
+            >
+              Sí, cancelar
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <div className="grid-resumen">
         <div className="tarjeta dato">

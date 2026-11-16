@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { actualizarPlan } from '../../../membresias/membresias'
 import type { Plan } from '../../../types'
 import { errorNumero, LIMITES, type Limite } from '../../../utils/montos'
+import { CampoNumero } from '../../../components/CampoNumero'
 
 const CAMPOS = {
   precioMensual: LIMITES.precioPlan,
@@ -32,12 +33,9 @@ export function DialogoEditarPlan({ plan, onListo }: { plan: Plan; onListo: () =
   function numerico(campo: Campo) {
     return {
       name: campo,
-      type: 'number',
-      inputMode: 'numeric' as const,
-      min: CAMPOS[campo].min,
-      max: CAMPOS[campo].max,
-      value: valores[campo],
-      onChange: (e: { target: { value: string } }) => setValores((v) => ({ ...v, [campo]: e.target.value })),
+      limite: CAMPOS[campo],
+      valor: valores[campo],
+      onValor: (texto: string) => setValores((v) => ({ ...v, [campo]: texto })),
       'aria-invalid': errores[campo] ? true : undefined,
     }
   }
@@ -87,30 +85,30 @@ export function DialogoEditarPlan({ plan, onListo }: { plan: Plan; onListo: () =
     <form className="formulario-claro" onSubmit={handleSubmit}>
       <label>
         Precio mensual
-        <input {...numerico('precioMensual')} step={1000} required />
+        <CampoNumero {...numerico('precioMensual')} required />
         {errorDe('precioMensual')}
       </label>
       <div className="campos-fila">
         <label>
           % descuento mesa
-          <input {...numerico('descuentoMesa')} />
+          <CampoNumero {...numerico('descuentoMesa')} />
           {errorDe('descuentoMesa')}
         </label>
         <label>
           Horas gratis/mes
-          <input {...numerico('horasGratisMes')} />
+          <CampoNumero {...numerico('horasGratisMes')} />
           {errorDe('horasGratisMes')}
         </label>
       </div>
       <div className="campos-fila">
         <label>
           % descuento bar
-          <input {...numerico('descuentoBar')} />
+          <CampoNumero {...numerico('descuentoBar')} />
           {errorDe('descuentoBar')}
         </label>
         <label>
           % descuento torneos
-          <input {...numerico('descuentoTorneo')} />
+          <CampoNumero {...numerico('descuentoTorneo')} />
           {errorDe('descuentoTorneo')}
         </label>
       </div>

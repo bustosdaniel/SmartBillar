@@ -4,7 +4,8 @@ import { useMesas } from '../../../mesas/datos'
 import { useSesiones } from '../../../mesas/sesiones'
 import type { Caja } from '../../../types'
 import { formatearPesos } from '../../../utils/formato'
-import { limitarTextoMonto, MONTO_MAXIMO } from '../../../utils/montos'
+import { MONTO_MAXIMO } from '../../../utils/montos'
+import { CampoNumero } from '../../../components/CampoNumero'
 
 export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () => void }) {
   const [contado, setContado] = useState('')
@@ -62,24 +63,34 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
         </div>
       </dl>
 
+      {esperado < 0 && (
+        <p role="alert" className="aviso-claro aviso-cambio-plan">
+          <strong>Los egresos ({formatearPesos(totalEgresos(caja))}) superan el efectivo que entró al cajón.</strong> El cajón no
+          puede quedar en negativo: cuenta lo que de verdad hay (si no hay nada, escribe 0) y explica en la observación de dónde
+          salió ese dinero.
+        </p>
+      )}
+
       <label>
         Efectivo contado en el cajón
-        <input
-          type="number"
-          min={0}
-          max={MONTO_MAXIMO}
-          step={100}
-          inputMode="numeric"
-          value={contado}
-          onChange={(e) => setContado(limitarTextoMonto(e.target.value))}
+        <CampoNumero
+          limite={{ min: 0, max: MONTO_MAXIMO }}
+          valor={contado}
+          onValor={setContado}
           placeholder="Cuenta billetes y monedas"
           autoFocus
         />
       </label>
       <div className="billetes">
-        <button type="button" onClick={() => setContado(String(esperado))}>
-          Cuadra exacto
-        </button>
+        {esperado >= 0 ? (
+          <button type="button" onClick={() => setContado(String(esperado))}>
+            Cuadra exacto
+          </button>
+        ) : (
+          <button type="button" onClick={() => setContado('0')}>
+            No hay efectivo ($0)
+          </button>
+        )}
       </div>
 
       {hayConteo && (
@@ -92,7 +103,12 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
       {hayConteo && diferencia !== 0 && (
         <label>
           Observación (obligatoria si no cuadra)
-          <textarea rows={2} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ej: se dio mal un cambio" />
+          <textarea
+            rows={2}
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            placeholder={esperado < 0 ? 'Ej: el egreso de insumos se pagó con dinero de la tarjeta' : 'Ej: se dio mal un cambio'}
+          />
         </label>
       )}
 
@@ -100,6 +116,13 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
         <p role="alert" className="alerta-clara">
           {error}
         </p>
+      )}
+
+      {!hayConteo ? (
+        <p className="nota">Escribe el efectivo contado para poder cerrar.</p>
+      ) : (
+        diferencia !== 0 &&
+        !nota.trim() && <p className="nota">El arqueo no cuadra: escribe la observación para poder cerrar.</p>
       )}
 
       <div className="dialogo-acciones">
@@ -112,7 +135,7 @@ export function DialogoCerrarCaja({ caja, onListo }: { caja: Caja; onListo: () =
           disabled={enviando || !hayConteo || (diferencia !== 0 && !nota.trim())}
           onClick={cerrar}
         >
-          Cerrar caja
+          {enviando ? 'Cerrando…' : 'Cerrar caja'}
         </button>
       </div>
     </div>

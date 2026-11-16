@@ -5,10 +5,12 @@ import { Llaves } from '../../components/Llaves'
 import { NOMBRES_MODO } from '../../mesas/datos'
 import { campeon } from '../../torneos/llaves'
 import {
+  AVISO_CANCELADO,
   formatearFechaTorneo,
   NOMBRES_CATEGORIA,
   nombreJugador,
   TEXTO_ESTADO_TORNEO,
+  textoCierreInscripciones,
   useTorneos,
 } from '../../torneos/torneos'
 import { formatearPesos } from '../../utils/formato'
@@ -87,7 +89,13 @@ export function TorneoDetalle() {
         </div>
       </div>
 
-      {torneo.estado === 'inscripciones' ? (
+      {torneo.estado === 'cancelado' ? (
+        <div className="tarjeta panel-bloque">
+          <h2 className="titulo-bloque">Torneo cancelado</h2>
+          <p>{AVISO_CANCELADO}</p>
+          {yo?.pagado && yo.monto > 0 && <p className="nota">Acércate a la caja para que te devuelvan la inscripción.</p>}
+        </div>
+      ) : torneo.estado === 'inscripciones' ? (
         <div className="tarjeta panel-bloque">
           <h2 className="titulo-bloque">Inscritos</h2>
           {torneo.jugadores.length === 0 ? (
@@ -102,7 +110,10 @@ export function TorneoDetalle() {
               ))}
             </ul>
           )}
-          <p className="nota">Las llaves se publican cuando el club inicia el torneo.</p>
+          <p className="nota">
+            {textoCierreInscripciones(torneo)}. Ese día el torneo arranca y se publican las llaves; las inscripciones sin pagar
+            vencen.
+          </p>
           {yo && (
             <div className="acciones-fila acciones-izquierda">
               <Retirarse torneo={torneo} jugador={yo} conAviso />

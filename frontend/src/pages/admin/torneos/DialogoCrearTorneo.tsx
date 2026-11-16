@@ -3,8 +3,17 @@ import { MODOS, NOMBRES_MODO, useMesas } from '../../../mesas/datos'
 import { crearTorneo, NOMBRES_CATEGORIA } from '../../../torneos/torneos'
 import type { CategoriaTorneo, ModoJuego } from '../../../types'
 import { errorNumero, LIMITES } from '../../../utils/montos'
+import { CampoNumero } from '../../../components/CampoNumero'
 
 const CATEGORIAS: CategoriaTorneo[] = ['abierta', 'principiante', 'avanzado']
+
+// Mañana en formato AAAA-MM-DD (hora local): un torneo para hoy nacería con las inscripciones cerradas.
+function primerDiaPosible() {
+  const manana = new Date()
+  manana.setDate(manana.getDate() + 1)
+  const dos = (n: number) => String(n).padStart(2, '0')
+  return `${manana.getFullYear()}-${dos(manana.getMonth() + 1)}-${dos(manana.getDate())}`
+}
 
 export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void }) {
   const [error, setError] = useState('')
@@ -44,6 +53,10 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
     setError('')
     if (!datos.get('fecha') || !datos.get('hora')) {
       setError('Elige la fecha y la hora del torneo.')
+      return
+    }
+    if (String(datos.get('fecha')) < primerDiaPosible()) {
+      setError('El torneo debe ser a partir de mañana: las inscripciones cierran el día del torneo.')
       return
     }
     setEnviando(true)
@@ -111,7 +124,7 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
       <div className="campos-fila">
         <label>
           Fecha
-          <input name="fecha" type="date" required />
+          <input name="fecha" type="date" min={primerDiaPosible()} required />
         </label>
         <label>
           Hora
@@ -131,15 +144,11 @@ export function DialogoCrearTorneo({ onListo }: { onListo: (id: number) => void 
         </label>
         <label>
           Valor inscripción
-          <input
+          <CampoNumero
             name="inscripcion"
-            type="number"
-            inputMode="numeric"
-            min={LIMITES.inscripcion.min}
-            max={LIMITES.inscripcion.max}
-            step={1000}
-            value={inscripcion}
-            onChange={(e) => setInscripcion(e.target.value)}
+            limite={LIMITES.inscripcion}
+            valor={inscripcion}
+            onValor={setInscripcion}
             aria-invalid={errorInscripcion ? true : undefined}
             required
           />

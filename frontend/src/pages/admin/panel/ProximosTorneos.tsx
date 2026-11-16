@@ -1,13 +1,12 @@
 import { Link } from 'react-router'
 import { Trophy } from 'lucide-react'
 import { NOMBRES_MODO } from '../../../mesas/datos'
-import { formatearFechaTorneo, TEXTO_ESTADO_TORNEO, useTorneos } from '../../../torneos/torneos'
+import { formatearFechaTorneo, ORDEN_ESTADO_TORNEO, TEXTO_ESTADO_TORNEO, useTorneos } from '../../../torneos/torneos'
 
 export function ProximosTorneos() {
-  const orden = { 'en-curso': 0, inscripciones: 1, finalizado: 2 }
   const torneos = useTorneos()
-    .filter((t) => t.estado !== 'finalizado')
-    .toSorted((a, b) => orden[a.estado] - orden[b.estado] || a.fecha.localeCompare(b.fecha))
+    .filter((t) => t.estado === 'en-curso' || t.estado === 'inscripciones')
+    .toSorted((a, b) => ORDEN_ESTADO_TORNEO[a.estado] - ORDEN_ESTADO_TORNEO[b.estado] || a.fecha.localeCompare(b.fecha))
     .slice(0, 3)
 
   return (

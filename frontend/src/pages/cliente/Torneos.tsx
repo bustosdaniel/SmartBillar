@@ -6,7 +6,7 @@ import { TarjetaTorneo } from '../../components/TarjetaTorneo'
 import { useAhora } from '../../hooks/useAhora'
 import { MODOS, NOMBRES_MODO } from '../../mesas/datos'
 import { planVigente, useMembresias, usePlanes } from '../../membresias/membresias'
-import { cuposLibres, inscribirme, precioInscripcion, useTorneos } from '../../torneos/torneos'
+import { cuposLibres, inscribirme, ORDEN_ESTADO_TORNEO, precioInscripcion, useTorneos } from '../../torneos/torneos'
 import type { ModoJuego } from '../../types'
 import { formatearPesos } from '../../utils/formato'
 import { Retirarse } from './torneos/Retirarse'
@@ -32,7 +32,8 @@ export function Torneos() {
   }
 
   const plan = planVigente(membresias, planes, usuario?.id ?? null, ahora)
-  const orden = { inscripciones: 0, 'en-curso': 1, finalizado: 2 }
+  // Al cliente le interesa primero dónde puede inscribirse.
+  const orden = { ...ORDEN_ESTADO_TORNEO, inscripciones: -1 }
   const lista = torneos
     .filter((t) => filtro === 'todos' || t.modo === filtro)
     .toSorted((a, b) => orden[a.estado] - orden[b.estado] || a.fecha.localeCompare(b.fecha))
@@ -103,7 +104,7 @@ export function Torneos() {
                   )}
                   {yo && <Retirarse torneo={t} jugador={yo} />}
                   <Link to={`/cliente/torneos/${t.id}`} className="boton boton-secundario boton-chico">
-                    {t.estado === 'inscripciones' ? 'Detalle' : 'Ver llaves'}
+                    {t.estado === 'inscripciones' || t.estado === 'cancelado' ? 'Detalle' : 'Ver llaves'}
                   </Link>
                 </div>
               </TarjetaTorneo>

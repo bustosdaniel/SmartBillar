@@ -6,19 +6,24 @@ import { Llaves } from '../../components/Llaves'
 import { Modal } from '../../components/Modal'
 import { NOMBRES_MODO } from '../../mesas/datos'
 import {
+  AVISO_CANCELADO,
   cuposLibres,
+  errorEliminarTorneo,
   formatearFechaTorneo,
   iniciarTorneo,
+  MINIMO_JUGADORES,
   NOMBRES_CATEGORIA,
   TEXTO_ESTADO_TORNEO,
+  textoCierreInscripciones,
   useTorneos,
 } from '../../torneos/torneos'
 import type { Jugador } from '../../types'
 import { formatearPesos } from '../../utils/formato'
+import { DialogoEliminarTorneo } from './torneos/DialogoEliminarTorneo'
 import { DialogoInscribir } from './torneos/DialogoInscribir'
 import { DialogoQuitar } from './torneos/DialogoQuitar'
 
-type Dialogo = { tipo: 'inscribir' } | { tipo: 'cobrar' | 'quitar'; jugador: Jugador } | null
+type Dialogo = { tipo: 'inscribir' | 'eliminar' } | { tipo: 'cobrar' | 'quitar'; jugador: Jugador } | null
 
 export function TorneoDetalleAdmin() {
   const esAdministrador = useEsAdministrador()
@@ -48,7 +53,8 @@ export function TorneoDetalleAdmin() {
   }
 
   const pendientes = torneo.jugadores.filter((j) => !j.pagado).length
-  const puedeIniciar = torneo.jugadores.length >= 2 && pendientes === 0
+  const puedeIniciar = torneo.jugadores.length >= MINIMO_JUGADORES && pendientes === 0
+  const cancelado = torneo.estado === 'cancelado'
   const cerrar = () => setDialogo(null)
 
   return (
@@ -64,8 +70,24 @@ export function TorneoDetalleAdmin() {
             {NOMBRES_MODO[torneo.modo]} · {NOMBRES_CATEGORIA[torneo.categoria]} · {formatearFechaTorneo(torneo)}
           </p>
         </div>
-        <span className={`estado torneo-estado-${torneo.estado}`}>{TEXTO_ESTADO_TORNEO[torneo.estado]}</span>
+        <div className="acciones-cabecera">
+          <span className={`estado torneo-estado-${torneo.estado}`}>{TEXTO_ESTADO_TORNEO[torneo.estado]}</span>
+          {esAdministrador && torneo.estado !== 'en-curso' && torneo.estado !== 'finalizado' && (
+            <button
+              type="button"
+              className="boton boton-peligro boton-chico"
+              onClick={() => setDialogo({ tipo: 'eliminar' })}
+              disabled={errorEliminarTorneo(torneo) !== null}
+              title={errorEliminarTorneo(torneo) ?? undefined}
+            >
+              <Trash2 size={15} aria-hidden="true" /> Eliminar torneo
+            </button>
+          )}
+        </div>
       </header>
+      {esAdministrador && torneo.estado === 'inscripciones' && torneo.jugadores.length > 0 && (
+        <p className="nota">{errorEliminarTorneo(torneo)}</p>
+      )}
 
       <div className="grid-resumen">
         <div className="tarjeta dato">
@@ -84,35 +106,49 @@ export function TorneoDetalleAdmin() {
         </div>
       </div>
 
-      {torneo.estado === 'inscripciones' ? (
+      {torneo.estado === 'inscripciones' || cancelado ? (
         <div className="tarjeta panel-bloque">
           <header className="panel-bloque-cabecera">
             <h2>Jugadores inscritos</h2>
-            <div className="acciones-cabecera">
-              <button
-                type="button"
-                className="boton boton-secundario boton-chico"
-                onClick={() => setDialogo({ tipo: 'inscribir' })}
-                disabled={cuposLibres(torneo) <= 0}
-              >
-                <UserPlus size={15} aria-hidden="true" /> Inscribir jugador
-              </button>
-              {esAdministrador && (
-                <button type="button" className="boton boton-chico" onClick={() => iniciar(torneo.id)} disabled={!puedeIniciar}>
-                  <Play size={15} aria-hidden="true" /> Iniciar torneo
+            {!cancelado && (
+              <div className="acciones-cabecera">
+                <button
+                  type="button"
+                  className="boton boton-secundario boton-chico"
+                  onClick={() => setDialogo({ tipo: 'inscribir' })}
+                  disabled={cuposLibres(torneo) <= 0}
+                >
+                  <UserPlus size={15} aria-hidden="true" /> Inscribir jugador
                 </button>
-              )}
-            </div>
+                {esAdministrador && (
+                  <button type="button" className="boton boton-chico" onClick={() => iniciar(torneo.id)} disabled={!puedeIniciar}>
+                    <Play size={15} aria-hidden="true" /> Iniciar torneo
+                  </button>
+                )}
+              </div>
+            )}
           </header>
+          {cancelado ? (
+            <p className="aviso-claro aviso-ambar">
+              {AVISO_CANCELADO}
+              {torneo.jugadores.some((j) => j.pagado && j.monto > 0) &&
+                ' Quita a cada jugador que pagó para devolverle su inscripción desde la caja.'}
+            </p>
+          ) : (
+            <p className="nota">
+              {textoCierreInscripciones(torneo)}. Ese día arranca solo si hay al menos {MINIMO_JUGADORES} inscritos con la
+              inscripción pagada (las que no se pagaron vencen); si no, se cancela.
+            </p>
+          )}
           {error && (
             <p role="alert" className="alerta-clara">
               {error}
             </p>
           )}
-          {!puedeIniciar && (
+          {!puedeIniciar && !cancelado && (
             <p className="nota">
-              {torneo.jugadores.length < 2
-                ? 'Se necesitan al menos 2 jugadores para iniciar.'
+              {torneo.jugadores.length < MINIMO_JUGADORES
+                ? `Se necesitan al menos ${MINIMO_JUGADORES} jugadores para iniciar.`
                 : `Hay ${pendientes} ${pendientes === 1 ? 'inscripción pendiente' : 'inscripciones pendientes'} de pago. Cóbralas antes de iniciar.`}
             </p>
           )}
@@ -141,7 +177,7 @@ export function TorneoDetalleAdmin() {
                       </td>
                       <td className="numero">
                         <div className="acciones-fila">
-                          {!j.pagado && (
+                          {!j.pagado && !cancelado && (
                             <button
                               type="button"
                               className="boton boton-chico"
@@ -183,10 +219,19 @@ export function TorneoDetalleAdmin() {
 
       <Modal
         abierto={dialogo !== null}
-        titulo={dialogo?.tipo === 'cobrar' ? 'Cobrar inscripción' : dialogo?.tipo === 'quitar' ? 'Quitar jugador' : 'Inscribir jugador'}
+        titulo={
+          dialogo?.tipo === 'cobrar'
+            ? 'Cobrar inscripción'
+            : dialogo?.tipo === 'quitar'
+              ? 'Quitar jugador'
+              : dialogo?.tipo === 'eliminar'
+                ? 'Eliminar torneo'
+                : 'Inscribir jugador'
+        }
         onCerrar={cerrar}
       >
         {dialogo?.tipo === 'quitar' && <DialogoQuitar torneo={torneo} jugador={dialogo.jugador} onListo={cerrar} />}
+        {dialogo?.tipo === 'eliminar' && <DialogoEliminarTorneo torneo={torneo} onListo={cerrar} />}
         {(dialogo?.tipo === 'inscribir' || dialogo?.tipo === 'cobrar') && (
           <DialogoInscribir torneo={torneo} pendiente={dialogo.tipo === 'cobrar' ? dialogo.jugador : undefined} onListo={cerrar} />
         )}

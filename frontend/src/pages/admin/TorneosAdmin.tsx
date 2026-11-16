@@ -5,7 +5,7 @@ import { useEsAdministrador } from '../../auth/useAuth'
 import { Encabezado } from '../../components/Encabezado'
 import { Modal } from '../../components/Modal'
 import { TarjetaTorneo } from '../../components/TarjetaTorneo'
-import { useTorneos } from '../../torneos/torneos'
+import { ORDEN_ESTADO_TORNEO, useTorneos } from '../../torneos/torneos'
 import { DialogoCrearTorneo } from './torneos/DialogoCrearTorneo'
 
 export function TorneosAdmin() {
@@ -14,8 +14,9 @@ export function TorneosAdmin() {
   const navigate = useNavigate()
   const [creando, setCreando] = useState(false)
 
-  const orden = { 'en-curso': 0, inscripciones: 1, finalizado: 2 }
-  const lista = torneos.toSorted((a, b) => orden[a.estado] - orden[b.estado] || a.fecha.localeCompare(b.fecha))
+  const lista = torneos.toSorted(
+    (a, b) => ORDEN_ESTADO_TORNEO[a.estado] - ORDEN_ESTADO_TORNEO[b.estado] || a.fecha.localeCompare(b.fecha),
+  )
 
   return (
     <section className="pagina">
@@ -32,7 +33,7 @@ export function TorneosAdmin() {
         {lista.map((t) => (
           <TarjetaTorneo key={t.id} torneo={t}>
             <Link to={`/admin/torneos/${t.id}`} className="boton boton-secundario boton-chico">
-              {t.estado === 'inscripciones' ? 'Gestionar' : 'Ver llaves'}
+              {t.estado === 'inscripciones' || t.estado === 'cancelado' ? 'Gestionar' : 'Ver llaves'}
             </Link>
           </TarjetaTorneo>
         ))}

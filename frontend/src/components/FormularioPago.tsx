@@ -3,8 +3,9 @@ import { Banknote, CreditCard, Smartphone, type LucideIcon } from 'lucide-react'
 import { NOMBRES_METODO, useCaja } from '../caja/caja'
 import type { MetodoPago } from '../types'
 import { formatearPesos } from '../utils/formato'
-import { limitarTextoMonto, MONTO_MAXIMO } from '../utils/montos'
+import { MONTO_MAXIMO } from '../utils/montos'
 import { AbrirCaja } from './AbrirCaja'
+import { CampoNumero } from './CampoNumero'
 
 const METODOS: { metodo: MetodoPago; icono: LucideIcon }[] = [
   { metodo: 'efectivo', icono: Banknote },
@@ -87,14 +88,10 @@ export function FormularioPago({ total, nota, onCancelar, onPagar }: FormularioP
         <div className="efectivo">
           <label>
             ¿Cuánto entregó el cliente?
-            <input
-              type="number"
-              min={0}
-              max={MONTO_MAXIMO}
-              step={100}
-              inputMode="numeric"
-              value={recibido}
-              onChange={(e) => setRecibido(limitarTextoMonto(e.target.value))}
+            <CampoNumero
+              limite={{ min: 0, max: MONTO_MAXIMO }}
+              valor={recibido}
+              onValor={setRecibido}
               placeholder="0"
               autoFocus
             />

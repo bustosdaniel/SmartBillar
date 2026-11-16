@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CATEGORIAS, guardarPrecios, NOMBRES_CATEGORIA, obtenerProductos } from '../../../consumos/productos'
-import { errorNumero, leerNumero, LIMITES_PRODUCTO, mostrarNumero } from '../../../utils/montos'
+import { errorNumero, leerNumero, LIMITES_PRODUCTO } from '../../../utils/montos'
+import { CampoNumero } from '../../../components/CampoNumero'
 
 export function DialogoPrecios({ onListo }: { onListo: () => void }) {
   const [productos] = useState(obtenerProductos)
@@ -31,16 +32,12 @@ export function DialogoPrecios({ onListo }: { onListo: () => void }) {
                 <tr key={p.id}>
                   <td>{p.nombre}</td>
                   <td>
-                    <input
-                      type="number"
-                      min={LIMITES_PRODUCTO[p.categoria].min}
-                      max={LIMITES_PRODUCTO[p.categoria].max}
-                      step={100}
+                    <CampoNumero
+                      limite={LIMITES_PRODUCTO[p.categoria]}
                       aria-invalid={errores[p.id] ? true : undefined}
-                      inputMode="numeric"
                       aria-label={`Precio de ${p.nombre}`}
-                      value={mostrarNumero(precios[p.id])}
-                      onChange={(e) => setPrecios((x) => ({ ...x, [p.id]: leerNumero(e.target.value) }))}
+                      valor={precios[p.id]}
+                      onValor={(texto) => setPrecios((x) => ({ ...x, [p.id]: leerNumero(texto) }))}
                     />
                     {errores[p.id] && (
                       <span role="alert" className="campo-error">
