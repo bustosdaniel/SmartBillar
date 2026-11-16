@@ -6,6 +6,7 @@ import { ClienteLayout } from './layouts/ClienteLayout'
 import { Caja } from './pages/admin/Caja'
 import { ConsumosMesas } from './pages/admin/ConsumosMesas'
 import { Membresias } from './pages/admin/Membresias'
+import { MiCuenta } from './pages/admin/MiCuenta'
 import { Mesas } from './pages/admin/Mesas'
 import { NotificacionesAdmin } from './pages/admin/NotificacionesAdmin'
 import { Panel } from './pages/admin/Panel'
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'notificaciones', element: <NotificacionesAdmin /> },
+          { path: 'cuenta', element: <MiCuenta /> },
         ],
       },
     ],

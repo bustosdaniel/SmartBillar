@@ -54,7 +54,10 @@ export function AppLayout({ items }: { items: ItemMenu[] }) {
           </div>
           <div className="sidebar-usuario">
             <strong>{usuario?.nombre}</strong>
-            <span>{usuario?.rol === 'admin' ? NOMBRES_CARGO[cargo] : 'Cliente'}</span>
+            {/* Al cliente se le muestra su correo (con el que entra); al personal, su cargo. */}
+            <span title={usuario?.rol === 'admin' ? undefined : usuario?.email}>
+              {usuario?.rol === 'admin' ? NOMBRES_CARGO[cargo] : usuario?.email}
+            </span>
           </div>
           <button type="button" className="boton-icono" onClick={logout} aria-label="Cerrar sesión">
             <LogOut size={18} />

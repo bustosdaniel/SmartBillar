@@ -6,6 +6,7 @@ import {
   House,
   ShoppingBag,
   Trophy,
+  UserCog,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -23,6 +24,7 @@ const items: (ItemMenu & { soloAdministrador?: boolean })[] = [
   { ruta: '/admin/torneos', texto: 'Torneos', icono: Trophy },
   { ruta: '/admin/reportes', texto: 'Reportes', icono: ChartColumn, soloAdministrador: true },
   { ruta: '/admin/notificaciones', texto: 'Notificaciones', icono: Bell },
+  { ruta: '/admin/cuenta', texto: 'Mi cuenta', icono: UserCog },
 ]
 
 export function AdminLayout() {
